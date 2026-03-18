@@ -1,0 +1,141 @@
+import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { docuSignRequest, assertSafeId, envelopePath } from '../../transport';
+
+/** Allowlist of valid DocuSign recipient types — prevents prototype pollution */
+const VALID_RECIPIENT_TYPES = new Set([
+	'signers',
+	'carbonCopies',
+	'certifiedDeliveries',
+	'inPersonSigners',
+	'agents',
+	'editors',
+	'intermediaries',
+	'witnesses',
+	'notaries',
+	'seals',
+]);
+
+function assertValidRecipientType(value: string): string {
+	if (!VALID_RECIPIENT_TYPES.has(value)) {
+		throw new Error(
+			`Invalid recipient type. Must be one of: ${[...VALID_RECIPIENT_TYPES].join(', ')}`,
+		);
+	}
+	return value;
+}
+
+/**
+ * Handle all Recipient resource operations.
+ */
+export async function handleRecipient(
+	ctx: IExecuteFunctions,
+	operation: string,
+	i: number,
+): Promise<unknown> {
+	const basePath = `${envelopePath(
+		ctx.getNodeParameter('accountId', i) as string,
+		ctx.getNodeParameter('envelopeId', i) as string,
+	)}/recipients`;
+
+	switch (operation) {
+		case 'getAll': {
+			return docuSignRequest(ctx, 'GET', basePath);
+		}
+
+		case 'add': {
+			const recipientType = assertValidRecipientType(
+				ctx.getNodeParameter('recipientType', i) as string,
+			);
+			const email = ctx.getNodeParameter('recipientEmail', i) as string;
+			const name = ctx.getNodeParameter('recipientName', i) as string;
+			const recipientId = ctx.getNodeParameter('recipientId', i, '') as string;
+			const routingOrder = ctx.getNodeParameter('routingOrder', i, '1') as string;
+			const additionalFields = ctx.getNodeParameter(
+				'additionalFields',
+				i,
+				{},
+			) as IDataObject;
+
+			const recipient: IDataObject = {
+				email,
+				name,
+				routingOrder,
+			};
+
+			if (recipientId) recipient.recipientId = recipientId;
+
+			// All additional recipient fields
+			const directFields = [
+				'clientUserId', 'accessCode', 'note', 'roleName',
+				'requireSignOnPaper', 'embeddedRecipientStartURL',
+				'idCheckConfigurationName', 'requireIdLookup', 'signingGroupId',
+				'hostEmail', 'hostName', 'signerName',
+			];
+			for (const field of directFields) {
+				if (additionalFields[field] !== undefined && additionalFields[field] !== '') {
+					recipient[field] = additionalFields[field];
+				}
+			}
+
+			// Delivery method + phone
+			if (additionalFields.deliveryMethod && additionalFields.deliveryMethod !== 'email') {
+				recipient.deliveryMethod = additionalFields.deliveryMethod;
+				if (additionalFields.phoneNumber) {
+					recipient.phoneNumber = { phoneNumber: additionalFields.phoneNumber };
+				}
+			}
+
+			// Per-recipient email notification
+			if (additionalFields.emailNotificationSubject || additionalFields.emailNotificationBody) {
+				recipient.emailNotification = {
+					emailSubject: additionalFields.emailNotificationSubject || '',
+					emailBody: additionalFields.emailNotificationBody || '',
+					supportedLanguage: additionalFields.supportedLanguage || '',
+				};
+			}
+
+			return docuSignRequest(ctx, 'POST', basePath, {
+				[recipientType]: [recipient],
+			});
+		}
+
+		case 'update': {
+			const recipientType = assertValidRecipientType(
+				ctx.getNodeParameter('recipientType', i) as string,
+			);
+			const recipientId = assertSafeId(
+				ctx.getNodeParameter('recipientId', i) as string,
+				'Recipient ID',
+			);
+			const updateFields = ctx.getNodeParameter(
+				'updateFields',
+				i,
+				{},
+			) as IDataObject;
+
+			const recipient: IDataObject = { recipientId };
+			if (updateFields.email) recipient.email = updateFields.email;
+			if (updateFields.name) recipient.name = updateFields.name;
+			if (updateFields.routingOrder)
+				recipient.routingOrder = updateFields.routingOrder;
+			if (updateFields.note) recipient.note = updateFields.note;
+
+			return docuSignRequest(ctx, 'PUT', basePath, {
+				[recipientType]: [recipient],
+			});
+		}
+
+		case 'delete': {
+			const recipientId = assertSafeId(
+				ctx.getNodeParameter('recipientId', i) as string,
+				'Recipient ID',
+			);
+			return docuSignRequest(ctx, 'DELETE', basePath, {
+				signers: [{ recipientId }],
+			});
+		}
+
+		default:
+			throw new Error(`Unsupported recipient operation: ${operation}`);
+	}
+}

@@ -1,0 +1,173 @@
+/**
+ * Mock n8n execution context for unit testing handlers and transport functions.
+ * Provides configurable mock implementations for all IExecuteFunctions methods.
+ */
+import type {
+	IExecuteFunctions,
+	IDataObject,
+	INodeExecutionData,
+	INode,
+	IBinaryData,
+} from 'n8n-workflow';
+
+interface MockContextOptions {
+	/** Parameters indexed by [name][itemIndex] */
+	parameters?: Record<string, Record<number, unknown>>;
+	/** Credentials indexed by credential type name */
+	credentials?: Record<string, IDataObject>;
+	/** Mock HTTP responses (array consumed in order) */
+	httpResponses?: unknown[];
+	/** Binary data available at each item index */
+	binaryData?: Record<number, Record<string, IBinaryData>>;
+	/** Whether continueOnFail is enabled */
+	continueOnFail?: boolean;
+	/** Input items */
+	inputData?: INodeExecutionData[];
+}
+
+/**
+ * Create a mock IExecuteFunctions for testing.
+ */
+export function createMockContext(
+	options: MockContextOptions = {},
+): IExecuteFunctions {
+	const httpCallIndex = { current: 0 };
+
+	const mockNode: INode = {
+		id: 'test-node-id',
+		name: 'DocuSign',
+		type: 'n8n-nodes-docusign.docuSign',
+		typeVersion: 1,
+		position: [0, 0],
+		parameters: {},
+	};
+
+	const ctx = {
+		getNodeParameter(name: string, itemIndex: number, fallback?: unknown) {
+			const paramsByIndex = options.parameters?.[name];
+			if (paramsByIndex && itemIndex in paramsByIndex) {
+				return paramsByIndex[itemIndex];
+			}
+			if (fallback !== undefined) return fallback;
+			throw new Error(
+				`Parameter "${name}" not found for item ${itemIndex}`,
+			);
+		},
+
+		getCredentials(type: string) {
+			const creds = options.credentials?.[type];
+			if (creds) return Promise.resolve(creds);
+			return Promise.reject(new Error(`No credentials of type "${type}"`));
+		},
+
+		getInputData() {
+			return options.inputData || [{ json: {} }];
+		},
+
+		getNode() {
+			return mockNode;
+		},
+
+		continueOnFail() {
+			return options.continueOnFail || false;
+		},
+
+		helpers: {
+			httpRequestWithAuthentication: {
+				call: async (
+					_thisArg: unknown,
+					_credentialType: string,
+					requestOptions: unknown,
+				) => {
+					if (
+						options.httpResponses &&
+						httpCallIndex.current < options.httpResponses.length
+					) {
+						const response =
+							options.httpResponses[httpCallIndex.current];
+						httpCallIndex.current++;
+
+						if (response instanceof Error) {
+							throw response;
+						}
+
+						return response;
+					}
+					throw new Error('No mock HTTP response configured');
+				},
+			},
+			httpRequest: async () => {
+				if (
+					options.httpResponses &&
+					httpCallIndex.current < options.httpResponses.length
+				) {
+					const response =
+						options.httpResponses[httpCallIndex.current];
+					httpCallIndex.current++;
+					return response;
+				}
+				throw new Error('No mock HTTP response configured');
+			},
+			assertBinaryData(itemIndex: number, propertyName: string) {
+				const data = options.binaryData?.[itemIndex]?.[propertyName];
+				if (!data) {
+					throw new Error(
+						`No binary data found for property "${propertyName}" at index ${itemIndex}`,
+					);
+				}
+				return data;
+			},
+			getBinaryDataBuffer: async (itemIndex: number, propertyName: string) => {
+				const data = options.binaryData?.[itemIndex]?.[propertyName];
+				if (!data) {
+					throw new Error(`No binary data found for property "${propertyName}" at index ${itemIndex}`);
+				}
+				return Buffer.from(data.data, 'base64');
+			},
+			prepareBinaryData: async (
+				buffer: Buffer,
+				fileName: string,
+				mimeType: string,
+			) => ({
+				data: buffer.toString('base64'),
+				fileName,
+				mimeType,
+				fileSize: buffer.length,
+			}),
+			returnJsonArray: (data: IDataObject | IDataObject[]) =>
+				Array.isArray(data)
+					? data.map((d) => ({ json: d }))
+					: [{ json: data }],
+		},
+	} as unknown as IExecuteFunctions;
+
+	return ctx;
+}
+
+/**
+ * Create a mock error that mimics n8n HTTP request errors.
+ */
+export function createHttpError(
+	statusCode: number,
+	body?: unknown,
+	message?: string,
+	headers?: Record<string, string>,
+): Error & {
+	statusCode: number;
+	body: unknown;
+	response?: { headers: Record<string, string> };
+} {
+	const error = new Error(
+		message || `Request failed with status ${statusCode}`,
+	) as Error & {
+		statusCode: number;
+		body: unknown;
+		response?: { headers: Record<string, string> };
+	};
+	error.statusCode = statusCode;
+	error.body = body || {};
+	if (headers) {
+		error.response = { headers };
+	}
+	return error;
+}

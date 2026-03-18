@@ -65,6 +65,16 @@ import { documentGenerationOperations } from './resources/documentGeneration/doc
 import { envelopePublishOperations } from './resources/envelopePublish/envelopePublish.operations';
 import { tabsBlobOperations } from './resources/tabsBlob/tabsBlob.operations';
 import { responsiveHtmlPreviewOperations } from './resources/responsiveHtmlPreview/responsiveHtmlPreview.operations';
+// Phase 6: Account Advanced
+import { accountSignatureOperations } from './resources/accountSignature/accountSignature.operations';
+import { accountSealProviderOperations } from './resources/accountSealProvider/accountSealProvider.operations';
+import { accountSignatureProviderOperations } from './resources/accountSignatureProvider/accountSignatureProvider.operations';
+import { eNoteConfigurationOperations } from './resources/eNoteConfiguration/eNoteConfiguration.operations';
+import { favoriteTemplateOperations } from './resources/favoriteTemplate/favoriteTemplate.operations';
+import { identityVerificationOperations } from './resources/identityVerification/identityVerification.operations';
+import { signingGroupOperations } from './resources/signingGroup/signingGroup.operations';
+import { signingGroupUserOperations } from './resources/signingGroupUser/signingGroupUser.operations';
+import { customTabOperations } from './resources/customTab/customTab.operations';
 
 // ---- Fields ----
 import { envelopeFields } from './resources/envelope/envelope.fields';
@@ -122,6 +132,15 @@ import { documentGenerationFields } from './resources/documentGeneration/documen
 import { envelopePublishFields } from './resources/envelopePublish/envelopePublish.fields';
 import { tabsBlobFields } from './resources/tabsBlob/tabsBlob.fields';
 import { responsiveHtmlPreviewFields } from './resources/responsiveHtmlPreview/responsiveHtmlPreview.fields';
+import { accountSignatureFields } from './resources/accountSignature/accountSignature.fields';
+import { accountSealProviderFields } from './resources/accountSealProvider/accountSealProvider.fields';
+import { accountSignatureProviderFields } from './resources/accountSignatureProvider/accountSignatureProvider.fields';
+import { eNoteConfigurationFields } from './resources/eNoteConfiguration/eNoteConfiguration.fields';
+import { favoriteTemplateFields } from './resources/favoriteTemplate/favoriteTemplate.fields';
+import { identityVerificationFields } from './resources/identityVerification/identityVerification.fields';
+import { signingGroupFields } from './resources/signingGroup/signingGroup.fields';
+import { signingGroupUserFields } from './resources/signingGroupUser/signingGroupUser.fields';
+import { customTabFields } from './resources/customTab/customTab.fields';
 
 // ---- Handlers ----
 import { handleEnvelope } from './resources/envelope/envelope.handler';
@@ -179,6 +198,15 @@ import { handleDocumentGeneration } from './resources/documentGeneration/documen
 import { handleEnvelopePublish } from './resources/envelopePublish/envelopePublish.handler';
 import { handleTabsBlob } from './resources/tabsBlob/tabsBlob.handler';
 import { handleResponsiveHtmlPreview } from './resources/responsiveHtmlPreview/responsiveHtmlPreview.handler';
+import { handleAccountSignature } from './resources/accountSignature/accountSignature.handler';
+import { handleAccountSealProvider } from './resources/accountSealProvider/accountSealProvider.handler';
+import { handleAccountSignatureProvider } from './resources/accountSignatureProvider/accountSignatureProvider.handler';
+import { handleENoteConfiguration } from './resources/eNoteConfiguration/eNoteConfiguration.handler';
+import { handleFavoriteTemplate } from './resources/favoriteTemplate/favoriteTemplate.handler';
+import { handleIdentityVerification } from './resources/identityVerification/identityVerification.handler';
+import { handleSigningGroup } from './resources/signingGroup/signingGroup.handler';
+import { handleSigningGroupUser } from './resources/signingGroupUser/signingGroupUser.handler';
+import { handleCustomTab } from './resources/customTab/customTab.handler';
 
 // ---------------------------------------------------------------------------
 // Handler routing map
@@ -246,6 +274,16 @@ const resourceHandlers: Record<
 	envelopePublish: handleEnvelopePublish,
 	tabsBlob: handleTabsBlob,
 	responsiveHtmlPreview: handleResponsiveHtmlPreview,
+	// Phase 6
+	accountSignature: handleAccountSignature,
+	accountSealProvider: handleAccountSealProvider,
+	accountSignatureProvider: handleAccountSignatureProvider,
+	eNoteConfiguration: handleENoteConfiguration,
+	favoriteTemplate: handleFavoriteTemplate,
+	identityVerification: handleIdentityVerification,
+	signingGroup: handleSigningGroup,
+	signingGroupUser: handleSigningGroupUser,
+	customTab: handleCustomTab,
 };
 
 // ---------------------------------------------------------------------------
@@ -379,6 +417,9 @@ export class DocuSign implements INodeType {
 			...envelopePublishOperations,
 			...tabsBlobOperations,
 			...responsiveHtmlPreviewOperations,
+			...accountSignatureOperations, ...accountSealProviderOperations, ...accountSignatureProviderOperations,
+			...eNoteConfigurationOperations, ...favoriteTemplateOperations, ...identityVerificationOperations,
+			...signingGroupOperations, ...signingGroupUserOperations, ...customTabOperations,
 
 			// ---- All fields ----
 			...envelopeFields,
@@ -436,6 +477,9 @@ export class DocuSign implements INodeType {
 			...envelopePublishFields,
 			...tabsBlobFields,
 			...responsiveHtmlPreviewFields,
+			...accountSignatureFields, ...accountSealProviderFields, ...accountSignatureProviderFields,
+			...eNoteConfigurationFields, ...favoriteTemplateFields, ...identityVerificationFields,
+			...signingGroupFields, ...signingGroupUserFields, ...customTabFields,
 		],
 	};
 

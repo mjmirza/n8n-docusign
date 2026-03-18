@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://unpkg.com/n8n-nodes-docusign@latest/dist/nodes/DocuSign/docusign.svg" alt="DocuSign" width="80" />
+  <img src="https://unpkg.com/n8n-nodes-docusigns@latest/dist/nodes/DocuSign/docusign.png" alt="DocuSign" width="120" />
 </p>
 
-<h1 align="center">n8n-nodes-docusign</h1>
+<h1 align="center">n8n-nodes-docusigns</h1>
 
 <p align="center">
   <strong>The most complete DocuSign eSignature integration for n8n. Period.</strong><br/>

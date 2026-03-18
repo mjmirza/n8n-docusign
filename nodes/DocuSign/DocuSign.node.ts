@@ -82,6 +82,14 @@ import { powerFormDataOperations } from './resources/powerFormData/powerFormData
 import { folderOperations } from './resources/folder/folder.operations';
 import { workspaceOperations } from './resources/workspace/workspace.operations';
 import { workspaceItemOperations } from './resources/workspaceItem/workspaceItem.operations';
+// Phase 8
+import { billingPlanOperations } from './resources/billingPlan/billingPlan.operations';
+import { invoiceOperations } from './resources/invoice/invoice.operations';
+import { paymentOperations } from './resources/payment/payment.operations';
+import { paymentGatewayOperations } from './resources/paymentGateway/paymentGateway.operations';
+import { bulkEnvelopeOperations } from './resources/bulkEnvelope/bulkEnvelope.operations';
+import { chunkedUploadOperations } from './resources/chunkedUpload/chunkedUpload.operations';
+import { cloudStorageOperations } from './resources/cloudStorage/cloudStorage.operations';
 
 // ---- Fields ----
 import { envelopeFields } from './resources/envelope/envelope.fields';
@@ -154,6 +162,13 @@ import { powerFormDataFields } from './resources/powerFormData/powerFormData.fie
 import { folderFields } from './resources/folder/folder.fields';
 import { workspaceFields } from './resources/workspace/workspace.fields';
 import { workspaceItemFields } from './resources/workspaceItem/workspaceItem.fields';
+import { billingPlanFields } from './resources/billingPlan/billingPlan.fields';
+import { invoiceFields } from './resources/invoice/invoice.fields';
+import { paymentFields } from './resources/payment/payment.fields';
+import { paymentGatewayFields } from './resources/paymentGateway/paymentGateway.fields';
+import { bulkEnvelopeFields } from './resources/bulkEnvelope/bulkEnvelope.fields';
+import { chunkedUploadFields } from './resources/chunkedUpload/chunkedUpload.fields';
+import { cloudStorageFields } from './resources/cloudStorage/cloudStorage.fields';
 
 // ---- Handlers ----
 import { handleEnvelope } from './resources/envelope/envelope.handler';
@@ -226,6 +241,13 @@ import { handlePowerFormData } from './resources/powerFormData/powerFormData.han
 import { handleFolder } from './resources/folder/folder.handler';
 import { handleWorkspace } from './resources/workspace/workspace.handler';
 import { handleWorkspaceItem } from './resources/workspaceItem/workspaceItem.handler';
+import { handleBillingPlan } from './resources/billingPlan/billingPlan.handler';
+import { handleInvoice } from './resources/invoice/invoice.handler';
+import { handlePayment } from './resources/payment/payment.handler';
+import { handlePaymentGateway } from './resources/paymentGateway/paymentGateway.handler';
+import { handleBulkEnvelope } from './resources/bulkEnvelope/bulkEnvelope.handler';
+import { handleChunkedUpload } from './resources/chunkedUpload/chunkedUpload.handler';
+import { handleCloudStorage } from './resources/cloudStorage/cloudStorage.handler';
 
 // ---------------------------------------------------------------------------
 // Handler routing map
@@ -310,6 +332,14 @@ const resourceHandlers: Record<
 	folder: handleFolder,
 	workspace: handleWorkspace,
 	workspaceItem: handleWorkspaceItem,
+	// Phase 8
+	billingPlan: handleBillingPlan,
+	invoice: handleInvoice,
+	payment: handlePayment,
+	paymentGateway: handlePaymentGateway,
+	bulkEnvelope: handleBulkEnvelope,
+	chunkedUpload: handleChunkedUpload,
+	cloudStorage: handleCloudStorage,
 };
 
 // ---------------------------------------------------------------------------
@@ -449,6 +479,10 @@ export class DocuSign implements INodeType {
 			// Phase 7
 			...connectConfigurationOperations, ...powerFormOperations, ...powerFormDataOperations,
 			...folderOperations, ...workspaceOperations, ...workspaceItemOperations,
+			// Phase 8
+			...billingPlanOperations, ...invoiceOperations, ...paymentOperations,
+			...paymentGatewayOperations, ...bulkEnvelopeOperations, ...chunkedUploadOperations,
+			...cloudStorageOperations,
 
 			// ---- All fields ----
 			...envelopeFields,
@@ -512,6 +546,10 @@ export class DocuSign implements INodeType {
 			// Phase 7
 			...connectConfigurationFields, ...powerFormFields, ...powerFormDataFields,
 			...folderFields, ...workspaceFields, ...workspaceItemFields,
+			// Phase 8
+			...billingPlanFields, ...invoiceFields, ...paymentFields,
+			...paymentGatewayFields, ...bulkEnvelopeFields, ...chunkedUploadFields,
+			...cloudStorageFields,
 		],
 	};
 

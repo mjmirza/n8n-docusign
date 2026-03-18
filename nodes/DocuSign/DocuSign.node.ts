@@ -55,6 +55,16 @@ import { groupUserOperations } from './resources/groupUser/groupUser.operations'
 import { groupBrandOperations } from './resources/groupBrand/groupBrand.operations';
 import { userContactOperations } from './resources/userContact/userContact.operations';
 import { authorizationOperations } from './resources/authorization/authorization.operations';
+// Phase 5: Envelope Advanced
+import { envelopeWorkflowOperations } from './resources/envelopeWorkflow/envelopeWorkflow.operations';
+import { envelopeTransferRuleOperations } from './resources/envelopeTransferRule/envelopeTransferRule.operations';
+import { envelopeConsumerDisclosureOperations } from './resources/envelopeConsumerDisclosure/envelopeConsumerDisclosure.operations';
+import { envelopeHtmlDefinitionOperations } from './resources/envelopeHtmlDefinition/envelopeHtmlDefinition.operations';
+import { envelopeCommentOperations } from './resources/envelopeComment/envelopeComment.operations';
+import { documentGenerationOperations } from './resources/documentGeneration/documentGeneration.operations';
+import { envelopePublishOperations } from './resources/envelopePublish/envelopePublish.operations';
+import { tabsBlobOperations } from './resources/tabsBlob/tabsBlob.operations';
+import { responsiveHtmlPreviewOperations } from './resources/responsiveHtmlPreview/responsiveHtmlPreview.operations';
 
 // ---- Fields ----
 import { envelopeFields } from './resources/envelope/envelope.fields';
@@ -102,6 +112,16 @@ import { groupUserFields } from './resources/groupUser/groupUser.fields';
 import { groupBrandFields } from './resources/groupBrand/groupBrand.fields';
 import { userContactFields } from './resources/userContact/userContact.fields';
 import { authorizationFields } from './resources/authorization/authorization.fields';
+// Phase 5
+import { envelopeWorkflowFields } from './resources/envelopeWorkflow/envelopeWorkflow.fields';
+import { envelopeTransferRuleFields } from './resources/envelopeTransferRule/envelopeTransferRule.fields';
+import { envelopeConsumerDisclosureFields } from './resources/envelopeConsumerDisclosure/envelopeConsumerDisclosure.fields';
+import { envelopeHtmlDefinitionFields } from './resources/envelopeHtmlDefinition/envelopeHtmlDefinition.fields';
+import { envelopeCommentFields } from './resources/envelopeComment/envelopeComment.fields';
+import { documentGenerationFields } from './resources/documentGeneration/documentGeneration.fields';
+import { envelopePublishFields } from './resources/envelopePublish/envelopePublish.fields';
+import { tabsBlobFields } from './resources/tabsBlob/tabsBlob.fields';
+import { responsiveHtmlPreviewFields } from './resources/responsiveHtmlPreview/responsiveHtmlPreview.fields';
 
 // ---- Handlers ----
 import { handleEnvelope } from './resources/envelope/envelope.handler';
@@ -149,6 +169,16 @@ import { handleGroupUser } from './resources/groupUser/groupUser.handler';
 import { handleGroupBrand } from './resources/groupBrand/groupBrand.handler';
 import { handleUserContact } from './resources/userContact/userContact.handler';
 import { handleAuthorization } from './resources/authorization/authorization.handler';
+// Phase 5
+import { handleEnvelopeWorkflow } from './resources/envelopeWorkflow/envelopeWorkflow.handler';
+import { handleEnvelopeTransferRule } from './resources/envelopeTransferRule/envelopeTransferRule.handler';
+import { handleEnvelopeConsumerDisclosure } from './resources/envelopeConsumerDisclosure/envelopeConsumerDisclosure.handler';
+import { handleEnvelopeHtmlDefinition } from './resources/envelopeHtmlDefinition/envelopeHtmlDefinition.handler';
+import { handleEnvelopeComment } from './resources/envelopeComment/envelopeComment.handler';
+import { handleDocumentGeneration } from './resources/documentGeneration/documentGeneration.handler';
+import { handleEnvelopePublish } from './resources/envelopePublish/envelopePublish.handler';
+import { handleTabsBlob } from './resources/tabsBlob/tabsBlob.handler';
+import { handleResponsiveHtmlPreview } from './resources/responsiveHtmlPreview/responsiveHtmlPreview.handler';
 
 // ---------------------------------------------------------------------------
 // Handler routing map
@@ -206,6 +236,16 @@ const resourceHandlers: Record<
 	groupBrand: handleGroupBrand,
 	userContact: handleUserContact,
 	authorization: handleAuthorization,
+	// Phase 5
+	envelopeWorkflow: handleEnvelopeWorkflow,
+	envelopeTransferRule: handleEnvelopeTransferRule,
+	envelopeConsumerDisclosure: handleEnvelopeConsumerDisclosure,
+	envelopeHtmlDefinition: handleEnvelopeHtmlDefinition,
+	envelopeComment: handleEnvelopeComment,
+	documentGeneration: handleDocumentGeneration,
+	envelopePublish: handleEnvelopePublish,
+	tabsBlob: handleTabsBlob,
+	responsiveHtmlPreview: handleResponsiveHtmlPreview,
 };
 
 // ---------------------------------------------------------------------------
@@ -329,6 +369,16 @@ export class DocuSign implements INodeType {
 			...groupBrandOperations,
 			...userContactOperations,
 			...authorizationOperations,
+			// Phase 5
+			...envelopeWorkflowOperations,
+			...envelopeTransferRuleOperations,
+			...envelopeConsumerDisclosureOperations,
+			...envelopeHtmlDefinitionOperations,
+			...envelopeCommentOperations,
+			...documentGenerationOperations,
+			...envelopePublishOperations,
+			...tabsBlobOperations,
+			...responsiveHtmlPreviewOperations,
 
 			// ---- All fields ----
 			...envelopeFields,
@@ -376,6 +426,16 @@ export class DocuSign implements INodeType {
 			...groupBrandFields,
 			...userContactFields,
 			...authorizationFields,
+			// Phase 5
+			...envelopeWorkflowFields,
+			...envelopeTransferRuleFields,
+			...envelopeConsumerDisclosureFields,
+			...envelopeHtmlDefinitionFields,
+			...envelopeCommentFields,
+			...documentGenerationFields,
+			...envelopePublishFields,
+			...tabsBlobFields,
+			...responsiveHtmlPreviewFields,
 		],
 	};
 

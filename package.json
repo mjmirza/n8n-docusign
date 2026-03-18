@@ -41,7 +41,8 @@
 		"lint": "eslint nodes credentials --ext .ts",
 		"test": "jest",
 		"test:coverage": "jest --coverage",
-		"prepublishOnly": "npm run build"
+		"prepublishOnly": "cp README.md README.dev.md && cp README.npm.md README.md && npm run build",
+		"postpublish": "mv README.dev.md README.md"
 	},
 	"devDependencies": {
 		"@types/jest": "^29.5.14",

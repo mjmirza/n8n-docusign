@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-docusigns",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "DocuSign eSignature — 80 resources, 330+ operations, webhook triggers, enterprise-grade security",
 	"license": "FUCL",
 	"author": {

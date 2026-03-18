@@ -8,6 +8,15 @@ export class DocuSignOAuth2Api implements ICredentialType {
 
 	properties: INodeProperties[] = [
 		{
+			displayName:
+				'Setup: Go to developers.docusign.com → Settings → Apps and Keys → create an app. ' +
+				'Copy the Integration Key (Client ID) and add a Secret Key. ' +
+				'Under Redirect URIs, add your n8n OAuth callback URL (shown below after you save).',
+			name: 'setupNotice',
+			type: 'notice',
+			default: '',
+		},
+		{
 			displayName: 'Environment',
 			name: 'environment',
 			type: 'options',
@@ -22,7 +31,7 @@ export class DocuSignOAuth2Api implements ICredentialType {
 				},
 			],
 			default: 'demo',
-			description: 'The DocuSign environment to connect to',
+			description: 'The DocuSign environment to connect to. Use Demo for testing, Production for live signing.',
 		},
 		{
 			displayName: 'Grant Type',

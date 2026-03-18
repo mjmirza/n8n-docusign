@@ -227,7 +227,7 @@ npm install n8n-nodes-docusign
 ## Quick Start (2 minutes)
 
 1. **Install** the node (see above)
-2. **Create credentials:** DocuSign OAuth2 → authorize with your DocuSign account
+2. **Connect DocuSign** (see setup guide below)
 3. **Drag "DocuSign"** into any workflow
 4. **Pick a category** (Envelopes, Templates, Account, etc.)
 5. **Pick a resource** (Envelope, Recipient, Document, etc.) and operation
@@ -237,14 +237,67 @@ For real-time triggers, use the **DocuSign Trigger** node — select your events
 
 ---
 
-## Authentication
+## Connecting DocuSign to n8n — Step by Step
 
-| Method | Best For |
-|--------|----------|
-| **OAuth2** | Interactive apps where a user authorizes access |
-| **JWT** | Server-to-server automation (no user interaction needed) |
+### Option 1: OAuth2 (Recommended — easiest)
 
-Both methods support **Demo (Sandbox)** and **Production** environments.
+This is the **click-and-authorize** method. No technical knowledge required.
+
+**One-time setup in DocuSign (takes 2 minutes):**
+
+1. Go to [DocuSign Admin → Apps and Keys](https://admindemo.docusign.com/apps-and-keys) (use [admin.docusign.com](https://admin.docusign.com/apps-and-keys) for production)
+2. Click **"Add App and Integration Key"**
+3. Give it any name (e.g., "n8n Integration")
+4. Copy the **Integration Key** — this is your Client ID
+5. Under **Secret Keys**, click **"Add Secret Key"** and copy it
+6. Under **Additional Settings → Redirect URIs**, click **"+ Add URI"** and paste your n8n OAuth callback URL:
+   - Self-hosted: `https://your-n8n-domain.com/rest/oauth2-credential/callback`
+   - n8n Cloud: `https://your-instance.app.n8n.cloud/rest/oauth2-credential/callback`
+7. Click **Save**
+
+**In n8n:**
+
+1. Go to **Credentials → Add Credential → DocuSign OAuth2 API**
+2. Select your environment (Demo for testing, Production for live)
+3. Paste your **Client ID** (Integration Key) and **Client Secret** (Secret Key)
+4. Click **"Sign in with DocuSign"** — a DocuSign login page opens
+5. Log in and click **"Allow"**
+6. Done — n8n stores and auto-refreshes your token
+
+### Option 2: JWT (For server-to-server automation)
+
+Use this when you need **unattended automation** (no human clicks "authorize").
+
+**One-time setup in DocuSign:**
+
+1. Go to [DocuSign Admin → Apps and Keys](https://admindemo.docusign.com/apps-and-keys)
+2. Create an app (or use existing) and copy the **Integration Key**
+3. Note your **User ID** (GUID) and **API Account ID** shown on the same page
+4. Under **Service Integration**, click **"Generate RSA"** and save the **private key**
+5. Grant consent once by opening this URL in your browser (replace `YOUR_INTEGRATION_KEY`):
+   ```
+   https://account-d.docusign.com/oauth/auth?response_type=code&scope=signature%20impersonation&client_id=YOUR_INTEGRATION_KEY&redirect_uri=https://www.docusign.com
+   ```
+   (For production, use `account.docusign.com` instead of `account-d.docusign.com`)
+6. Click **"Allow"** on the consent screen
+
+**In n8n:**
+
+1. Go to **Credentials → Add Credential → DocuSign JWT API**
+2. Select your environment
+3. Paste: **Integration Key**, **User ID**, **RSA Private Key**, **Account ID**
+4. Click **Save** — n8n auto-tests the connection
+5. Done
+
+### Which method should I use?
+
+| Scenario | Use |
+|----------|-----|
+| Personal workflows, testing | **OAuth2** |
+| Team workflows where someone clicks authorize | **OAuth2** |
+| Automated server processes (cron, triggers) | **JWT** |
+| n8n Cloud | **OAuth2** |
+| Self-hosted n8n running headless | **JWT** |
 
 ---
 

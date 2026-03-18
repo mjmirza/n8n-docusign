@@ -1,0 +1,201 @@
+import type { INodeProperties } from 'n8n-workflow';
+import { accountIdField, binaryPropertyField } from '../../utils/descriptions';
+
+export const workspaceItemFields: INodeProperties[] = [
+	accountIdField(['workspaceItem']),
+
+	// ------------------------------------------------------------------
+	// Workspace ID (all operations)
+	// ------------------------------------------------------------------
+	{
+		displayName: 'Workspace ID',
+		name: 'workspaceId',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'The ID of the workspace',
+		displayOptions: {
+			show: {
+				resource: ['workspaceItem'],
+			},
+		},
+	},
+
+	// ------------------------------------------------------------------
+	// Folder ID (all operations)
+	// ------------------------------------------------------------------
+	{
+		displayName: 'Folder ID',
+		name: 'folderId',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'The ID of the folder within the workspace',
+		displayOptions: {
+			show: {
+				resource: ['workspaceItem'],
+			},
+		},
+	},
+
+	// ------------------------------------------------------------------
+	// File ID (getFile, updateFile, listFilePages)
+	// ------------------------------------------------------------------
+	{
+		displayName: 'File ID',
+		name: 'fileId',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'The ID of the file',
+		displayOptions: {
+			show: {
+				resource: ['workspaceItem'],
+				operation: ['getFile', 'updateFile', 'listFilePages'],
+			},
+		},
+	},
+
+	// Binary property for download (getFile)
+	binaryPropertyField(['workspaceItem'], ['getFile']),
+
+	// ------------------------------------------------------------------
+	// Upload Source (createFile, updateFile)
+	// ------------------------------------------------------------------
+	{
+		displayName: 'Upload Source',
+		name: 'uploadSource',
+		type: 'options',
+		options: [
+			{ name: 'Binary Data', value: 'binary' },
+			{ name: 'Base64 String', value: 'base64' },
+		],
+		default: 'binary',
+		description: 'Source of the file to upload',
+		displayOptions: {
+			show: {
+				resource: ['workspaceItem'],
+				operation: ['createFile', 'updateFile'],
+			},
+		},
+	},
+	{
+		displayName: 'Input Binary Property',
+		name: 'inputBinaryPropertyName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property containing the file to upload',
+		displayOptions: {
+			show: {
+				resource: ['workspaceItem'],
+				operation: ['createFile', 'updateFile'],
+				uploadSource: ['binary'],
+			},
+		},
+	},
+	{
+		displayName: 'Base64 Content',
+		name: 'base64Content',
+		type: 'string',
+		default: '',
+		description: 'Base64-encoded file content',
+		displayOptions: {
+			show: {
+				resource: ['workspaceItem'],
+				operation: ['createFile', 'updateFile'],
+				uploadSource: ['base64'],
+			},
+		},
+	},
+
+	// ------------------------------------------------------------------
+	// Items JSON (deleteFolderItems)
+	// ------------------------------------------------------------------
+	{
+		displayName: 'Items (JSON)',
+		name: 'itemsJson',
+		type: 'json',
+		default: '[]',
+		required: true,
+		description: 'Array of items to delete: [{"itemId": "id1", "itemType": "file"}, ...]',
+		displayOptions: {
+			show: {
+				resource: ['workspaceItem'],
+				operation: ['deleteFolderItems'],
+			},
+		},
+	},
+
+	// ------------------------------------------------------------------
+	// Filters for listFolderItems
+	// ------------------------------------------------------------------
+	{
+		displayName: 'Filters',
+		name: 'filters',
+		type: 'collection',
+		placeholder: 'Add Filter',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: ['workspaceItem'],
+				operation: ['listFolderItems'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Count',
+				name: 'count',
+				type: 'number',
+				default: 100,
+				description: 'Number of items to return',
+			},
+			{
+				displayName: 'Start Position',
+				name: 'start_position',
+				type: 'number',
+				default: 0,
+				description: 'Starting index position',
+			},
+			{
+				displayName: 'Type',
+				name: 'type',
+				type: 'string',
+				default: '',
+				description: 'Filter by item type (e.g., "file", "folder")',
+			},
+		],
+	},
+
+	// ------------------------------------------------------------------
+	// Filters for listFilePages
+	// ------------------------------------------------------------------
+	{
+		displayName: 'Page Filters',
+		name: 'pageFilters',
+		type: 'collection',
+		placeholder: 'Add Filter',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: ['workspaceItem'],
+				operation: ['listFilePages'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Count',
+				name: 'count',
+				type: 'number',
+				default: 100,
+				description: 'Number of pages to return',
+			},
+			{
+				displayName: 'Start Position',
+				name: 'start_position',
+				type: 'number',
+				default: 0,
+				description: 'Starting index position',
+			},
+		],
+	},
+];

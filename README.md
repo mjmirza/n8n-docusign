@@ -131,4 +131,4 @@ npm run postpublish     # Restores dev README
 
 ## License
 
-[MIT](LICENSE)
+[FUCL (Fair Use Code License)](LICENSE)

@@ -1,8 +1,8 @@
 {
 	"name": "n8n-nodes-docusign",
 	"version": "0.1.0",
-	"description": "DocuSign eSignature — 4 resources, 15+ operations, webhook triggers for envelope events",
-	"license": "MIT",
+	"description": "DocuSign eSignature — 80 resources, 330+ operations, webhook triggers, enterprise-grade security",
+	"license": "FUCL",
 	"author": {
 		"name": "Mirza Iqbal"
 	},

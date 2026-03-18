@@ -391,7 +391,7 @@ export class DocuSign implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'DocuSign',
 		name: 'docuSign',
-		icon: 'file:docusign.svg',
+		icon: 'file:docusign.png',
 		group: ['transform'],
 		version: 1,
 		subtitle:

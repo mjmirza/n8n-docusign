@@ -90,6 +90,14 @@ import { paymentGatewayOperations } from './resources/paymentGateway/paymentGate
 import { bulkEnvelopeOperations } from './resources/bulkEnvelope/bulkEnvelope.operations';
 import { chunkedUploadOperations } from './resources/chunkedUpload/chunkedUpload.operations';
 import { cloudStorageOperations } from './resources/cloudStorage/cloudStorage.operations';
+// Phase 9
+import { requestLogOperations } from './resources/requestLog/requestLog.operations';
+import { diagnosticResourceOperations } from './resources/diagnosticResource/diagnosticResource.operations';
+import { diagnosticServiceOperations } from './resources/diagnosticService/diagnosticService.operations';
+import { bccEmailArchiveOperations } from './resources/bccEmailArchive/bccEmailArchive.operations';
+import { notaryOperations } from './resources/notary/notary.operations';
+import { notaryJurisdictionOperations } from './resources/notaryJurisdiction/notaryJurisdiction.operations';
+import { notaryJournalOperations } from './resources/notaryJournal/notaryJournal.operations';
 
 // ---- Fields ----
 import { envelopeFields } from './resources/envelope/envelope.fields';
@@ -169,6 +177,13 @@ import { paymentGatewayFields } from './resources/paymentGateway/paymentGateway.
 import { bulkEnvelopeFields } from './resources/bulkEnvelope/bulkEnvelope.fields';
 import { chunkedUploadFields } from './resources/chunkedUpload/chunkedUpload.fields';
 import { cloudStorageFields } from './resources/cloudStorage/cloudStorage.fields';
+import { requestLogFields } from './resources/requestLog/requestLog.fields';
+import { diagnosticResourceFields } from './resources/diagnosticResource/diagnosticResource.fields';
+import { diagnosticServiceFields } from './resources/diagnosticService/diagnosticService.fields';
+import { bccEmailArchiveFields } from './resources/bccEmailArchive/bccEmailArchive.fields';
+import { notaryFields } from './resources/notary/notary.fields';
+import { notaryJurisdictionFields } from './resources/notaryJurisdiction/notaryJurisdiction.fields';
+import { notaryJournalFields } from './resources/notaryJournal/notaryJournal.fields';
 
 // ---- Handlers ----
 import { handleEnvelope } from './resources/envelope/envelope.handler';
@@ -248,6 +263,13 @@ import { handlePaymentGateway } from './resources/paymentGateway/paymentGateway.
 import { handleBulkEnvelope } from './resources/bulkEnvelope/bulkEnvelope.handler';
 import { handleChunkedUpload } from './resources/chunkedUpload/chunkedUpload.handler';
 import { handleCloudStorage } from './resources/cloudStorage/cloudStorage.handler';
+import { handleRequestLog } from './resources/requestLog/requestLog.handler';
+import { handleDiagnosticResource } from './resources/diagnosticResource/diagnosticResource.handler';
+import { handleDiagnosticService } from './resources/diagnosticService/diagnosticService.handler';
+import { handleBccEmailArchive } from './resources/bccEmailArchive/bccEmailArchive.handler';
+import { handleNotary } from './resources/notary/notary.handler';
+import { handleNotaryJurisdiction } from './resources/notaryJurisdiction/notaryJurisdiction.handler';
+import { handleNotaryJournal } from './resources/notaryJournal/notaryJournal.handler';
 
 // ---------------------------------------------------------------------------
 // Handler routing map
@@ -340,6 +362,14 @@ const resourceHandlers: Record<
 	bulkEnvelope: handleBulkEnvelope,
 	chunkedUpload: handleChunkedUpload,
 	cloudStorage: handleCloudStorage,
+	// Phase 9
+	requestLog: handleRequestLog,
+	diagnosticResource: handleDiagnosticResource,
+	diagnosticService: handleDiagnosticService,
+	bccEmailArchive: handleBccEmailArchive,
+	notary: handleNotary,
+	notaryJurisdiction: handleNotaryJurisdiction,
+	notaryJournal: handleNotaryJournal,
 };
 
 // ---------------------------------------------------------------------------
@@ -483,6 +513,10 @@ export class DocuSign implements INodeType {
 			...billingPlanOperations, ...invoiceOperations, ...paymentOperations,
 			...paymentGatewayOperations, ...bulkEnvelopeOperations, ...chunkedUploadOperations,
 			...cloudStorageOperations,
+			// Phase 9
+			...requestLogOperations, ...diagnosticResourceOperations, ...diagnosticServiceOperations,
+			...bccEmailArchiveOperations, ...notaryOperations, ...notaryJurisdictionOperations,
+			...notaryJournalOperations,
 
 			// ---- All fields ----
 			...envelopeFields,
@@ -550,6 +584,10 @@ export class DocuSign implements INodeType {
 			...billingPlanFields, ...invoiceFields, ...paymentFields,
 			...paymentGatewayFields, ...bulkEnvelopeFields, ...chunkedUploadFields,
 			...cloudStorageFields,
+			// Phase 9
+			...requestLogFields, ...diagnosticResourceFields, ...diagnosticServiceFields,
+			...bccEmailArchiveFields, ...notaryFields, ...notaryJurisdictionFields,
+			...notaryJournalFields,
 		],
 	};
 

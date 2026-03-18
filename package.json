@@ -1,11 +1,13 @@
 {
 	"name": "n8n-nodes-docusign",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"description": "DocuSign eSignature — 80 resources, 330+ operations, webhook triggers, enterprise-grade security",
 	"license": "FUCL",
 	"author": {
-		"name": "Mirza Iqbal"
+		"name": "Mirza Iqbal",
+		"url": "https://next8n.com"
 	},
+	"homepage": "https://next8n.com",
 	"keywords": [
 		"n8n-community-node-package",
 		"n8n",

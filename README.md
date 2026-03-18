@@ -13,23 +13,33 @@ Built by [next8n](https://next8n.com) | [npm](https://www.npmjs.com/package/n8n-
 cd ~/.n8n && npm install n8n-nodes-docusign
 ```
 
-## Credentials
+## Connecting DocuSign
 
 ### OAuth2 (Recommended)
-| Field | Value |
-|-------|-------|
-| Environment | Demo or Production |
-| Client ID | Your Integration Key from DocuSign Admin → Apps and Keys |
-| Client Secret | Generated in the same app settings |
 
-### JWT (Service Integration)
-| Field | Value |
-|-------|-------|
-| Environment | Demo or Production |
-| Integration Key | Your app's Integration Key |
-| User ID | GUID of the user to impersonate |
-| RSA Private Key | PEM-format private key |
-| Account ID | Your DocuSign Account ID |
+1. Create an app at [DocuSign Admin → Apps and Keys](https://admindemo.docusign.com/apps-and-keys)
+2. Copy **Integration Key** (Client ID) and generate a **Secret Key**
+3. Add your n8n OAuth callback as a **Redirect URI**: `https://your-n8n.com/rest/oauth2-credential/callback`
+4. In n8n: **Credentials → DocuSign OAuth2 API** → paste Client ID + Secret → click **Sign in with DocuSign**
+
+| Field | Where to find it |
+|-------|-----------------|
+| Client ID | DocuSign Admin → Apps and Keys → Integration Key |
+| Client Secret | DocuSign Admin → Apps and Keys → Secret Keys → Add Secret Key |
+| Redirect URI | n8n generates this — copy from the credential form and add to DocuSign app |
+
+### JWT (Server-to-server)
+
+1. Same app setup as OAuth2, but also **Generate RSA** keypair under Service Integration
+2. Grant consent once: `https://account-d.docusign.com/oauth/auth?response_type=code&scope=signature%20impersonation&client_id=YOUR_KEY&redirect_uri=https://www.docusign.com`
+3. In n8n: **Credentials → DocuSign JWT API** → paste Integration Key, User ID, RSA Private Key, Account ID
+
+| Field | Where to find it |
+|-------|-----------------|
+| Integration Key | DocuSign Admin → Apps and Keys |
+| User ID | DocuSign Admin → Apps and Keys → User ID (GUID) |
+| RSA Private Key | Generated via "Generate RSA" button → save the private key |
+| Account ID | DocuSign Admin → Apps and Keys → API Account ID |
 
 ## Architecture
 

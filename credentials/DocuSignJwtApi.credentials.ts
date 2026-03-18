@@ -11,6 +11,15 @@ export class DocuSignJwtApi implements ICredentialType {
 
 	properties: INodeProperties[] = [
 		{
+			displayName:
+				'Setup: Go to developers.docusign.com → Settings → Apps and Keys → create an app. ' +
+				'Copy the Integration Key. Under Service Integration, click Generate RSA and save the private key. ' +
+				'Then grant consent once by visiting: https://account-d.docusign.com/oauth/auth?response_type=code&scope=signature%20impersonation&client_id=YOUR_INTEGRATION_KEY&redirect_uri=https://www.docusign.com',
+			name: 'setupNotice',
+			type: 'notice',
+			default: '',
+		},
+		{
 			displayName: 'Environment',
 			name: 'environment',
 			type: 'options',
@@ -25,7 +34,7 @@ export class DocuSignJwtApi implements ICredentialType {
 				},
 			],
 			default: 'demo',
-			description: 'The DocuSign environment to connect to',
+			description: 'The DocuSign environment to connect to. Use Demo for testing, Production for live signing.',
 		},
 		{
 			displayName: 'Integration Key (Client ID)',
@@ -33,7 +42,7 @@ export class DocuSignJwtApi implements ICredentialType {
 			type: 'string',
 			default: '',
 			required: true,
-			description: 'The Integration Key from your DocuSign app',
+			description: 'The Integration Key (GUID) from your DocuSign app. Found in Apps and Keys.',
 		},
 		{
 			displayName: 'User ID (GUID)',
@@ -41,7 +50,7 @@ export class DocuSignJwtApi implements ICredentialType {
 			type: 'string',
 			default: '',
 			required: true,
-			description: 'The GUID of the user to impersonate',
+			description: 'The GUID of the DocuSign user to impersonate. Found in Apps and Keys under your profile.',
 		},
 		{
 			displayName: 'RSA Private Key',
@@ -50,7 +59,7 @@ export class DocuSignJwtApi implements ICredentialType {
 			typeOptions: { password: true, rows: 5 },
 			default: '',
 			required: true,
-			description: 'The RSA private key (PEM format) for JWT signing',
+			description: 'The RSA private key in PEM format. Starts with -----BEGIN RSA PRIVATE KEY-----',
 		},
 		{
 			displayName: 'Account ID',
@@ -58,7 +67,7 @@ export class DocuSignJwtApi implements ICredentialType {
 			type: 'string',
 			default: '',
 			required: true,
-			description: 'The DocuSign Account ID (GUID) to use',
+			description: 'The DocuSign Account ID (GUID). Found in Apps and Keys under API Account ID.',
 		},
 	];
 

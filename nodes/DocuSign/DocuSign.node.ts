@@ -75,6 +75,13 @@ import { identityVerificationOperations } from './resources/identityVerification
 import { signingGroupOperations } from './resources/signingGroup/signingGroup.operations';
 import { signingGroupUserOperations } from './resources/signingGroupUser/signingGroupUser.operations';
 import { customTabOperations } from './resources/customTab/customTab.operations';
+// Phase 7
+import { connectConfigurationOperations } from './resources/connectConfiguration/connectConfiguration.operations';
+import { powerFormOperations } from './resources/powerForm/powerForm.operations';
+import { powerFormDataOperations } from './resources/powerFormData/powerFormData.operations';
+import { folderOperations } from './resources/folder/folder.operations';
+import { workspaceOperations } from './resources/workspace/workspace.operations';
+import { workspaceItemOperations } from './resources/workspaceItem/workspaceItem.operations';
 
 // ---- Fields ----
 import { envelopeFields } from './resources/envelope/envelope.fields';
@@ -141,6 +148,12 @@ import { identityVerificationFields } from './resources/identityVerification/ide
 import { signingGroupFields } from './resources/signingGroup/signingGroup.fields';
 import { signingGroupUserFields } from './resources/signingGroupUser/signingGroupUser.fields';
 import { customTabFields } from './resources/customTab/customTab.fields';
+import { connectConfigurationFields } from './resources/connectConfiguration/connectConfiguration.fields';
+import { powerFormFields } from './resources/powerForm/powerForm.fields';
+import { powerFormDataFields } from './resources/powerFormData/powerFormData.fields';
+import { folderFields } from './resources/folder/folder.fields';
+import { workspaceFields } from './resources/workspace/workspace.fields';
+import { workspaceItemFields } from './resources/workspaceItem/workspaceItem.fields';
 
 // ---- Handlers ----
 import { handleEnvelope } from './resources/envelope/envelope.handler';
@@ -207,6 +220,12 @@ import { handleIdentityVerification } from './resources/identityVerification/ide
 import { handleSigningGroup } from './resources/signingGroup/signingGroup.handler';
 import { handleSigningGroupUser } from './resources/signingGroupUser/signingGroupUser.handler';
 import { handleCustomTab } from './resources/customTab/customTab.handler';
+import { handleConnectConfiguration } from './resources/connectConfiguration/connectConfiguration.handler';
+import { handlePowerForm } from './resources/powerForm/powerForm.handler';
+import { handlePowerFormData } from './resources/powerFormData/powerFormData.handler';
+import { handleFolder } from './resources/folder/folder.handler';
+import { handleWorkspace } from './resources/workspace/workspace.handler';
+import { handleWorkspaceItem } from './resources/workspaceItem/workspaceItem.handler';
 
 // ---------------------------------------------------------------------------
 // Handler routing map
@@ -284,6 +303,13 @@ const resourceHandlers: Record<
 	signingGroup: handleSigningGroup,
 	signingGroupUser: handleSigningGroupUser,
 	customTab: handleCustomTab,
+	// Phase 7
+	connectConfiguration: handleConnectConfiguration,
+	powerForm: handlePowerForm,
+	powerFormData: handlePowerFormData,
+	folder: handleFolder,
+	workspace: handleWorkspace,
+	workspaceItem: handleWorkspaceItem,
 };
 
 // ---------------------------------------------------------------------------
@@ -420,6 +446,9 @@ export class DocuSign implements INodeType {
 			...accountSignatureOperations, ...accountSealProviderOperations, ...accountSignatureProviderOperations,
 			...eNoteConfigurationOperations, ...favoriteTemplateOperations, ...identityVerificationOperations,
 			...signingGroupOperations, ...signingGroupUserOperations, ...customTabOperations,
+			// Phase 7
+			...connectConfigurationOperations, ...powerFormOperations, ...powerFormDataOperations,
+			...folderOperations, ...workspaceOperations, ...workspaceItemOperations,
 
 			// ---- All fields ----
 			...envelopeFields,
@@ -480,6 +509,9 @@ export class DocuSign implements INodeType {
 			...accountSignatureFields, ...accountSealProviderFields, ...accountSignatureProviderFields,
 			...eNoteConfigurationFields, ...favoriteTemplateFields, ...identityVerificationFields,
 			...signingGroupFields, ...signingGroupUserFields, ...customTabFields,
+			// Phase 7
+			...connectConfigurationFields, ...powerFormFields, ...powerFormDataFields,
+			...folderFields, ...workspaceFields, ...workspaceItemFields,
 		],
 	};
 

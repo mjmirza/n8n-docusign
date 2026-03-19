@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/n8n-nodes-docusign"><img src="https://img.shields.io/npm/v/n8n-nodes-docusign?style=for-the-badge&color=CB3837&label=npm" alt="npm version" /></a>
-  <a href="https://www.npmjs.com/package/n8n-nodes-docusign"><img src="https://img.shields.io/npm/dt/n8n-nodes-docusign?style=for-the-badge&color=blue&label=downloads" alt="npm downloads" /></a>
+  <a href="https://www.npmjs.com/package/n8n-nodes-docusigns"><img src="https://img.shields.io/npm/v/n8n-nodes-docusigns?style=for-the-badge&color=CB3837&label=npm" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/n8n-nodes-docusigns"><img src="https://img.shields.io/npm/dt/n8n-nodes-docusigns?style=for-the-badge&color=blue&label=downloads" alt="npm downloads" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-FUCL-orange?style=for-the-badge" alt="License" /></a>
 </p>
 
@@ -53,7 +53,7 @@ No other DocuSign node comes close.
 ## How it works
 
 ```
-[DocuSign] <--> [n8n-nodes-docusign] <--> [Your CRM / Email / Sheets / Slack / Anything]
+[DocuSign] <--> [n8n-nodes-docusigns] <--> [Your CRM / Email / Sheets / Slack / Anything]
 ```
 
 **Trigger: Contract signed**
@@ -211,7 +211,7 @@ HMAC-SHA256 signature verification included — every webhook is cryptographical
 ### From n8n (Recommended)
 
 1. Go to **Settings → Community Nodes**
-2. Enter `n8n-nodes-docusign`
+2. Enter `n8n-nodes-docusigns`
 3. Click **Install**
 4. Done. The **DocuSign** node appears in your node palette.
 
@@ -219,7 +219,7 @@ HMAC-SHA256 signature verification included — every webhook is cryptographical
 
 ```bash
 cd ~/.n8n
-npm install n8n-nodes-docusign
+npm install n8n-nodes-docusigns
 ```
 
 ---

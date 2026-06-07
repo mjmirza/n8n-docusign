@@ -1,62 +1,66 @@
 {
-	"name": "n8n-nodes-docusigns",
-	"version": "1.0.3",
-	"description": "DocuSign eSignature — 80 resources, 330+ operations, webhook triggers, enterprise-grade security",
-	"license": "FUCL",
-	"author": {
-		"name": "Mirza Iqbal",
-		"url": "https://next8n.com"
-	},
-	"homepage": "https://next8n.com",
-	"keywords": [
-		"n8n-community-node-package",
-		"n8n",
-		"docusign",
-		"esignature",
-		"signature",
-		"envelope",
-		"documents",
-		"contracts",
-		"signing",
-		"templates",
-		"recipients"
-	],
-	"n8n": {
-		"n8nNodesApiVersion": 1,
-		"credentials": [
-			"dist/credentials/DocuSignOAuth2Api.credentials.js",
-			"dist/credentials/DocuSignJwtApi.credentials.js"
-		],
-		"nodes": [
-			"dist/nodes/DocuSign/DocuSign.node.js",
-			"dist/nodes/DocuSign/DocuSignTrigger.node.js"
-		]
-	},
-	"main": "index.js",
-	"files": [
-		"dist"
-	],
-	"scripts": {
-		"build": "tsc && gulp build:icons",
-		"dev": "tsc --watch",
-		"format": "prettier nodes credentials --write",
-		"lint": "eslint nodes credentials --ext .ts",
-		"test": "jest",
-		"test:coverage": "jest --coverage",
-		"prepublishOnly": "cp README.md README.dev.md && cp README.npm.md README.md && npm run build",
-		"postpublish": "mv README.dev.md README.md"
-	},
-	"devDependencies": {
-		"@types/jest": "^29.5.14",
-		"@types/node": "^20.0.0",
-		"gulp": "^5.0.1",
-		"jest": "^29.7.0",
-		"n8n-workflow": "^1.0.0",
-		"prettier": "^3.0.0",
-		"ts-jest": "^29.4.6",
-		"typescript": "^5.0.0"
-	},
-	"peerDependencies": {
-		"n8n-workflow": "*"
-	}
+  "name": "n8n-nodes-docusigns",
+  "version": "1.0.3",
+  "description": "DocuSign eSignature — 80 resources, 330+ operations, webhook triggers, enterprise-grade security",
+  "license": "FUCL",
+  "author": {
+    "name": "Mirza Iqbal",
+    "url": "https://next8n.com"
+  },
+  "homepage": "https://next8n.com",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "docusign",
+    "esignature",
+    "signature",
+    "envelope",
+    "documents",
+    "contracts",
+    "signing",
+    "templates",
+    "recipients"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/DocuSignOAuth2Api.credentials.js",
+      "dist/credentials/DocuSignJwtApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/DocuSign/DocuSign.node.js",
+      "dist/nodes/DocuSign/DocuSignTrigger.node.js"
+    ]
+  },
+  "main": "index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && gulp build:icons",
+    "dev": "tsc --watch",
+    "format": "prettier nodes credentials --write",
+    "lint": "eslint nodes credentials --ext .ts",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "prepublishOnly": "cp README.md README.dev.md && cp README.npm.md README.md && npm run build",
+    "postpublish": "mv README.dev.md README.md"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.0.0",
+    "gulp": "^5.0.1",
+    "jest": "^29.7.0",
+    "n8n-workflow": "^1.0.0",
+    "prettier": "^3.0.0",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  },
+  "overrides": {
+    "form-data": "^4.0.5",
+    "lodash": "^4.18.1"
+  }
 }

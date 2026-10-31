@@ -1,5 +1,7 @@
 # n8n-nodes-docusigns
 
+> **License.** Source-available under the [Fair Use Code License](https://github.com/mjmirza/n8n-docusign/blob/master/LICENSE). Free to use in your own workflows. Copying the code, derivative works, AI-generated clones, and commercial redistribution need written consent. Commercial licensing and setup help: [next8n.com](https://next8n.com).
+
 n8n community node for [DocuSign eSignature REST API v2.1](https://developers.docusign.com/docs/esign-rest-api/) — 80 resources, 330+ operations, webhook triggers.
 
 Built by [next8n](https://next8n.com) | [npm](https://www.npmjs.com/package/n8n-nodes-docusigns) | [DocuSign API Reference](https://developers.docusign.com/docs/esign-rest-api/reference/)

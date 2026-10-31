@@ -1,13 +1,20 @@
 {
   "name": "n8n-nodes-docusigns",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "DocuSign eSignature — 80 resources, 330+ operations, webhook triggers, enterprise-grade security",
   "license": "FUCL",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mjmirza/n8n-docusign.git"
+  },
+  "homepage": "https://next8n.com",
+  "bugs": {
+    "url": "https://github.com/mjmirza/n8n-docusign/issues"
+  },
   "author": {
     "name": "Mirza Iqbal",
     "url": "https://next8n.com"
   },
-  "homepage": "https://next8n.com",
   "keywords": [
     "n8n-community-node-package",
     "n8n",
@@ -51,7 +58,7 @@
     "@types/node": "^20.0.0",
     "gulp": "^5.0.1",
     "jest": "^29.7.0",
-    "n8n-workflow": "^1.0.0",
+    "n8n-workflow": "^1.120.9",
     "prettier": "^3.0.0",
     "ts-jest": "^29.4.6",
     "typescript": "^5.0.0"

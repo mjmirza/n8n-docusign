@@ -3,6 +3,7 @@ module.exports = {
 	testEnvironment: 'node',
 	roots: ['<rootDir>/tests'],
 	testMatch: ['**/*.test.ts'],
+	setupFilesAfterEnv: ['<rootDir>/tests/setup/spec-routes.ts'],
 	collectCoverageFrom: [
 		'nodes/**/transport.ts',
 		'nodes/**/utils/**/*.ts',

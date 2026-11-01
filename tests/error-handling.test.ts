@@ -16,7 +16,7 @@ import { describe, it, expect, beforeEach } from '@jest/globals';
 beforeEach(() => {
 	expect.hasAssertions();
 });
-import { createMockContext, createHttpError, getRecordedRequests } from './helpers/mockContext';
+import { createMockContext, createHttpError, getRecordedRequests, allowOffSpecRequests } from './helpers/mockContext';
 import { docuSignRequest } from '../nodes/DocuSign/transport';
 
 import { handleEnvelope } from '../nodes/DocuSign/resources/envelope/envelope.handler';
@@ -320,6 +320,7 @@ describe('Error Handling: Edge Cases', () => {
 	});
 
 	it('handles null response body gracefully', async () => {
+		allowOffSpecRequests(); // synthetic path, tests transport plumbing only
 		const ctx = createMockContext({
 			credentials: C,
 			httpResponses: [null],
@@ -329,6 +330,7 @@ describe('Error Handling: Edge Cases', () => {
 	});
 
 	it('handles undefined response body gracefully', async () => {
+		allowOffSpecRequests(); // synthetic path, tests transport plumbing only
 		const ctx = createMockContext({
 			credentials: C,
 			httpResponses: [undefined],

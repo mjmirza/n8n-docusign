@@ -34,7 +34,12 @@ export async function handleEnvelopeCustomField(
 				ctx.getNodeParameter('customFieldId', i) as string,
 				'Custom Field ID',
 			);
-			return docuSignRequest(ctx, 'DELETE', `${basePath}/${fieldId}`);
+			// Custom fields are deleted as a list: DELETE .../custom_fields with the field IDs in the body.
+			// Field IDs are unique across text and list fields, so naming it in both lists is safe.
+			return docuSignRequest(ctx, 'DELETE', basePath, {
+				textCustomFields: [{ fieldId }],
+				listCustomFields: [{ fieldId }],
+			});
 		}
 
 		default:

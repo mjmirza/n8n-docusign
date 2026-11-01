@@ -111,7 +111,7 @@ export const connectConfigurationFields: INodeProperties[] = [
 				name: 'status',
 				type: 'string',
 				default: '',
-				description: 'Filter by status (e.g., "Failed", "Sent")',
+				description: 'Keep only log entries with this status (e.g., "Failed", "Sent"), checked after DocuSign returns them',
 			},
 		],
 	},

@@ -159,6 +159,16 @@ The **DocuSign Trigger** registers a DocuSign Connect configuration for the work
 
 Create a **DocuSign Connect HMAC API** credential with a key from DocuSign Admin, **Connect**, **Connect Keys**, and attach it to the trigger. The credential is encrypted and not included in workflow exports. The older Options > HMAC Secret field still works when no credential is attached, but it is stored in the workflow, so move the key to the credential. DocuSign signs every event with its active keys, and the trigger accepts a call only when one signature header matches one of your keys (constant time comparison). Separate two keys with a comma while you rotate. Calls without a valid signature get HTTP 401, and the trigger will not activate without a key.
 
+## Upgrading to 3.2
+
+| Change | What to do |
+|---|---|
+| Envelope Attachment Get on node version 1 returns the binary of 2.1.0 plus the JSON fields of 3.0.0 | Nothing. Workflows built on either release keep working |
+| Template page rotation sends DocuSign's left or right; 180 degrees is two turns | Nothing. Every rotation choice now works |
+| Workspace folder list sends Include Files and Include Sub Folders; the Type filter turns the matching one on. Delete accepts DocuSign's id and type keys and converts itemId and itemType | Nothing |
+| Chunked Upload Update defaults Chunk Index to 1, the first part after Create | Set it explicitly if you relied on 0, which DocuSign rejects after Create |
+| Phone numbers like +14155550100 split the country code without a space; Retry-After on wrapped n8n errors is honoured | Nothing |
+
 ## Upgrading to 3.1
 
 | Change | What to do |

@@ -1,6 +1,18 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { docuSignRequest, envelopePath, assertSafeId } from '../../transport';
 
+/** 3.0.0 version 1 output: a JSON body as-is, anything else as text under data. */
+function legacyJson(bytes: Buffer): IDataObject {
+	const text = bytes.toString('utf8');
+	try {
+		const parsed: unknown = JSON.parse(text);
+		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as IDataObject;
+	} catch {
+		// Not JSON: 3.0.0 passed the body through as text.
+	}
+	return { data: text };
+}
+
 export async function handleEnvelopeAttachment(
 	ctx: IExecuteFunctions,
 	operation: string,
@@ -22,13 +34,18 @@ export async function handleEnvelopeAttachment(
 				'Attachment ID',
 			);
 			// Every node version returns binary, as 2.1.0 did: the endpoint serves the file (application/octet-stream).
-			const bytes = (await docuSignRequest(ctx, 'GET', `${basePath}/${attachmentId}`, undefined, undefined, {
+			const raw = (await docuSignRequest(ctx, 'GET', `${basePath}/${attachmentId}`, undefined, undefined, {
 				encoding: 'arraybuffer',
 				json: false,
-			})) as Buffer;
+			})) as unknown;
+			// The transport returns a Buffer; anything else (a parsed JSON body) is serialised back to bytes.
+			const bytes = Buffer.isBuffer(raw) ? raw : Buffer.from(typeof raw === 'string' ? raw : JSON.stringify(raw ?? ''));
 			const fileName = `attachment_${attachmentId}`;
 			const binary = await ctx.helpers.prepareBinaryData(bytes, fileName, 'application/octet-stream');
-			return { json: { attachmentId, fileName }, binary: { data: binary } } as INodeExecutionData;
+			const json: IDataObject = { attachmentId, fileName };
+			// Version 1 also keeps 3.0.0's JSON fields, so workflows built on 2.1.0 or 3.0.0 both still work.
+			if (ctx.getNode().typeVersion < 2) Object.assign(json, legacyJson(bytes), { attachmentId, fileName });
+			return { json, binary: { data: binary } } as INodeExecutionData;
 		}
 
 		case 'create': {

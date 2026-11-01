@@ -151,3 +151,24 @@ sender-provided numbers; empty lets the recipient supply one (`recipMayProvideNu
 Font Size has an Account Default choice, the default, which leaves `fontSize` out as earlier
 versions did for their Size 12 default. Every chosen size is sent, including Size 12.
 
+## Parameters the spec does not define are not sent
+
+Folder List Items has no `count` parameter and folder Search has no `search_text`, so those two
+filters left the picker and are no longer sent. Account Tab Settings drops `enableAutoStamp` and
+`confirmInitialEnvelopeSend`, which `tabAccountSettings` does not define; older saved values are
+left out of the request. Permission profile settings `enableSequentialSigningAPI` and
+`enableVaulting` are sent as the spec's `allowApiSequentialSigning` and `allowVaulting`, and user
+profile address fields as `address1`, `address2`, `stateOrProvince` and `postalCode`.
+
+## Folder List Items includes the items from version 4
+
+The spec's `include_items` defaults to false, so List Items returned only folder details unless
+Include Items was added. Node version 4 sends `include_items=true` by default; saved nodes on
+earlier versions keep the request they sent.
+
+## Empty-list detection keeps real data
+
+A version 4 list response counts as empty only when its arrays are all empty and every other field
+is paging or identifier metadata (names ending in Size, Position, Uri or Id). A response with
+settings or other data beside an empty array is output as before.
+

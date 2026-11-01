@@ -26,12 +26,13 @@ export async function handleFolder(
 			const filters = ctx.getNodeParameter('filters', i, {}) as IDataObject;
 			const qs: IDataObject = {};
 			if (filters.start_position !== undefined) qs.start_position = filters.start_position;
-			if (filters.count !== undefined) qs.count = filters.count;
 			if (filters.status) qs.status = filters.status;
 			if (filters.from_date) qs.from_date = filters.from_date;
 			if (filters.to_date) qs.to_date = filters.to_date;
 			if (filters.search_text) qs.search_text = filters.search_text;
 			if (filters.include_items !== undefined) qs.include_items = filters.include_items;
+			// From node version 4 List Items asks for the items unless Include Items is turned off.
+			else if (ctx.getNode().typeVersion >= 4) qs.include_items = 'true';
 			return docuSignRequest(ctx, 'GET', `${basePath}/${folderId}`, undefined, qs);
 		}
 
@@ -62,7 +63,6 @@ export async function handleFolder(
 			);
 			const searchFilters = ctx.getNodeParameter('searchFilters', i, {}) as IDataObject;
 			const qs: IDataObject = {};
-			if (searchFilters.search_text) qs.search_text = searchFilters.search_text;
 			if (searchFilters.count !== undefined) qs.count = searchFilters.count;
 			if (searchFilters.start_position !== undefined) qs.start_position = searchFilters.start_position;
 			if (searchFilters.include_recipients !== undefined) qs.include_recipients = searchFilters.include_recipients;

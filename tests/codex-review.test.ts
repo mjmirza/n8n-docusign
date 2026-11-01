@@ -22,6 +22,8 @@ import {
 import { DocuSignJwtApi, buildDocuSignJwtAssertion } from '../credentials/DocuSignJwtApi.credentials';
 import { handleRecipient } from '../nodes/DocuSign/resources/recipient/recipient.handler';
 import { handleTemplateDocument } from '../nodes/DocuSign/resources/templateDocument/templateDocument.handler';
+import { handleAccountPermissionProfile } from '../nodes/DocuSign/resources/accountPermissionProfile/accountPermissionProfile.handler';
+import { handleAccountTabSetting } from '../nodes/DocuSign/resources/accountTabSetting/accountTabSetting.handler';
 import { handleBulkEnvelope } from '../nodes/DocuSign/resources/bulkEnvelope/bulkEnvelope.handler';
 import { handleEnvelopeWorkflow } from '../nodes/DocuSign/resources/envelopeWorkflow/envelopeWorkflow.handler';
 import { parseJsonInput } from '../nodes/DocuSign/utils/jsonInput';
@@ -1906,5 +1908,68 @@ describe('round 9e: README describes the version 4 list rule', () => {
 		const readme = readFileSync('README.md', 'utf8');
 		expect(readme).not.toContain('| Version 3 nodes output no items for list responses whose result arrays are empty');
 		expect(readme).toContain('that rule moved to version 4');
+	});
+});
+
+// Round 9f: fifth branch review.
+
+describe('round 9f: an empty list never swallows real data', () => {
+	it('a list response with data fields beside an empty array still outputs its item', () => {
+		expect(isEmptyListResponse('listSettings', { accountSettings: { allowInPerson: 'true' }, additionalSettings: [] })).toBe(false);
+		expect(isEmptyListResponse('list', { groups: [], resultSetSize: '0', totalSetSize: '0', nextUri: '' })).toBe(true);
+	});
+});
+
+describe('round 9f: request fields use the spec names', () => {
+	it('permission profile settings map to accountRoleSettings names', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', permissionProfileName: 'P', settings: { enableSequentialSigningAPI: 'false', enableVaulting: 'true', allowBulkSending: 'true' } }), httpResponses: [{}] });
+		await handleAccountPermissionProfile(ctx, 'create', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as IDataObject).settings).toEqual({ allowApiSequentialSigning: 'false', allowVaulting: 'true', allowBulkSending: 'true' });
+	});
+
+	it('user profile address uses addressInformation names', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', userId: 'u-1', additionalFields: { street1: '1 Main', street2: 'Apt 2', state: 'CA', zip: '94105', city: 'SF' } }), httpResponses: [{}] });
+		await handleUserProfile(ctx, 'update', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as IDataObject).address).toEqual({ address1: '1 Main', address2: 'Apt 2', stateOrProvince: 'CA', postalCode: '94105', city: 'SF' });
+	});
+
+	it('tab settings drop the two fields tabAccountSettings does not define', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', tabSettings: { tabLockingEnabled: 'true', enableAutoStamp: 'true', confirmInitialEnvelopeSend: 'false' } }), httpResponses: [{}] });
+		await handleAccountTabSetting(ctx, 'update', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ tabLockingEnabled: 'true' });
+		const field = JSON.stringify(new DocuSign().description.properties.find((p) => p.name === 'tabSettings'));
+		expect(field).not.toContain('enableAutoStamp');
+		expect(field).not.toContain('confirmInitialEnvelopeSend');
+	});
+});
+
+describe('round 9f: folders', () => {
+	const run = async (op: string, extra: IDataObject, typeVersion = 4) => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', folderId: 'f-1', searchFolderId: 'drafts', ...extra }), httpResponses: [{}], typeVersion });
+		await handleFolder(ctx, op, 0);
+		return (getRecordedRequests(ctx)[0].options.qs ?? {}) as IDataObject;
+	};
+
+	it('version 4 List Items asks for the items by default', async () => {
+		expect(await run('listItems', { filters: {} })).toEqual({ include_items: 'true' });
+	});
+
+	it('earlier versions keep the request they sent', async () => {
+		expect(await run('listItems', { filters: {} }, 3)).toEqual({});
+	});
+
+	it('list items and search send only parameters their routes define', async () => {
+		expect(await run('listItems', { filters: { count: 5, search_text: 'x' } })).toEqual({ search_text: 'x', include_items: 'true' });
+		expect(await run('search', { searchFilters: { search_text: 'x', count: 5 } })).toEqual({ count: 5 });
+	});
+});
+
+describe('round 9f: subscription settings must match', () => {
+	it('documents, certificate and acknowledgement settings are compared', () => {
+		const base = { events: ['envelope-completed'] };
+		expect(matchesSubscription({ ...base, includeDocuments: 'true' }, ['envelope-completed'], {})).toBe(false);
+		expect(matchesSubscription({ ...base, includeDocuments: 'true' }, ['envelope-completed'], { includeDocuments: true })).toBe(true);
+		expect(matchesSubscription({ ...base, requiresAcknowledgement: 'false' }, ['envelope-completed'], {})).toBe(false);
+		expect(matchesSubscription({ ...base, includeCertificateOfCompletion: 'true' }, ['envelope-completed'], {})).toBe(false);
 	});
 });

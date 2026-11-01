@@ -15,14 +15,20 @@ import crypto from 'crypto';
 import { docuSignRequest, assertSafeId } from './transport';
 
 /** True when a stored Connect configuration still has this trigger's events, JSON SIM delivery and HMAC. */
-export function matchesSubscription(config: IDataObject, events: string[]): boolean {
+export function matchesSubscription(config: IDataObject, events: string[], options: IDataObject = {}): boolean {
 	const stored = Array.isArray(config.events) ? (config.events as string[]).map(String) : [];
 	const sameEvents = stored.length === events.length && events.every((e) => stored.includes(e));
 	const format = (config.eventData as IDataObject | undefined)?.format;
 	const json = format === undefined || String(format).toLowerCase() === 'json';
 	const sim = config.deliveryMode === undefined || config.deliveryMode === 'SIM';
 	const hmac = config.includeHMAC === undefined || String(config.includeHMAC) === 'true';
-	return sameEvents && json && sim && hmac;
+	// An unreported setting counts as matching; a reported one must equal what this node creates.
+	const same = (key: string, want: boolean) => config[key] === undefined || String(config[key]) === String(want);
+	const settings =
+		same('includeDocuments', options.includeDocuments === true) &&
+		same('includeCertificateOfCompletion', options.includeCertificateOfCompletion === true) &&
+		same('requiresAcknowledgement', options.requireAcknowledgement !== false);
+	return sameEvents && json && sim && hmac && settings;
 }
 
 /** Refuses activation without a Connect HMAC key; DocuSign keys cannot be created through the API. */
@@ -286,7 +292,8 @@ export class DocuSignTrigger implements INodeType {
 							? (config.configurations as IDataObject[])
 							: [config];
 						const events = this.getNodeParameter('events', []) as string[];
-						if (configurations.some((c) => c?.urlToPublishTo === webhookUrl && matchesSubscription(c, events))) {
+						const wanted = this.getNodeParameter('options', {}) as IDataObject;
+						if (configurations.some((c) => c?.urlToPublishTo === webhookUrl && matchesSubscription(c, events, wanted))) {
 							return true;
 						}
 						// An old URL or changed settings: remove it so create() registers the current one.

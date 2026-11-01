@@ -392,7 +392,9 @@ function buildResourceOptions(): Array<{
 export function isEmptyListResponse(operation: string, obj: Record<string, unknown>): boolean {
 	if (!/^(list|getAll|getMany)/i.test(operation)) return false;
 	const arrays = Object.values(obj).filter((v) => Array.isArray(v)) as unknown[][];
-	return arrays.length > 0 && arrays.every((a) => a.length === 0);
+	if (arrays.length === 0 || arrays.some((a) => a.length > 0)) return false;
+	// Any other field must be paging or identifier metadata, never real data such as settings.
+	return Object.entries(obj).every(([k, v]) => Array.isArray(v) || /(Size|Position|Uri|Id)$/.test(k));
 }
 
 export class DocuSign implements INodeType {

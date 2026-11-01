@@ -27,13 +27,13 @@ export async function handleUserProfile(
 			const additionalFields = ctx.getNodeParameter('additionalFields', i, {}) as IDataObject;
 			const body: IDataObject = {};
 
-			// Build address object from flat fields
+			// Build addressInformation from flat fields, using the spec's key names.
 			const address: IDataObject = {};
-			if (additionalFields.street1) address.street1 = additionalFields.street1;
-			if (additionalFields.street2) address.street2 = additionalFields.street2;
+			if (additionalFields.street1) address.address1 = additionalFields.street1;
+			if (additionalFields.street2) address.address2 = additionalFields.street2;
 			if (additionalFields.city) address.city = additionalFields.city;
-			if (additionalFields.state) address.state = additionalFields.state;
-			if (additionalFields.zip) address.zip = additionalFields.zip;
+			if (additionalFields.state) address.stateOrProvince = additionalFields.state;
+			if (additionalFields.zip) address.postalCode = additionalFields.zip;
 			if (additionalFields.country) address.country = additionalFields.country;
 			if (additionalFields.phone) address.phone = additionalFields.phone;
 			if (additionalFields.fax) address.fax = additionalFields.fax;

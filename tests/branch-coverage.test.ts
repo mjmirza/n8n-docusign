@@ -133,7 +133,7 @@ describe('Branch: envelopeRecipientTab', () => {
 					tooltip: 'Enter a number', tabOrder: '1', name: 'numField',
 					conditionalParentLabel: 'parentTab', conditionalParentValue: 'yes',
 					anchorIgnoreIfNotPresent: 'true', anchorCaseSensitive: 'true',
-					anchorMatchWholeWord: 'true', anchorHorizontalAlignment: 'center',
+					anchorMatchWholeWord: 'true', anchorHorizontalAlignment: 'right',
 					customTabId: 'ct-1', recipientId: 'r2', tabGroupLabels: 'grp1,grp2',
 					tabId: 'tab-existing',
 				}] } },

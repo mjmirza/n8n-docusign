@@ -388,6 +388,13 @@ function buildResourceOptions(): Array<{
 	return all.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** A list operation's response with at least one result array and every result array empty. */
+export function isEmptyListResponse(operation: string, obj: Record<string, unknown>): boolean {
+	if (!/^(list|getAll|getMany)/i.test(operation)) return false;
+	const arrays = Object.values(obj).filter((v) => Array.isArray(v)) as unknown[][];
+	return arrays.length > 0 && arrays.every((a) => a.length === 0);
+}
+
 export class DocuSign implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'DocuSign',
@@ -641,6 +648,8 @@ export class DocuSign implements INodeType {
 								});
 							}
 						}
+					} else if (emptyMeansNoItems && isEmptyListResponse(operation, obj)) {
+						// Version 3: a list operation whose result arrays are all empty outputs no items.
 					} else {
 						returnData.push({ json: result as IDataObject, pairedItem: { item: i } });
 					}

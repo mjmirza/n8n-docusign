@@ -61,7 +61,7 @@ export const envelopeRecipientTabFields: INodeProperties[] = [
 				name: 'tab',
 				values: [
 					{ displayName: 'Anchor Case Sensitive', name: 'anchorCaseSensitive', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false' },
-					{ displayName: 'Anchor Horizontal Alignment', name: 'anchorHorizontalAlignment', type: 'options', options: [{ name: 'Left', value: 'left' }, { name: 'Center', value: 'center' }, { name: 'Right', value: 'right' }], default: 'left' },
+					{ displayName: 'Anchor Horizontal Alignment', name: 'anchorHorizontalAlignment', type: 'options', options: [{ name: 'Left', value: 'left' }, { name: 'Right', value: 'right' }], default: 'left' },
 					{ displayName: 'Anchor Ignore If Not Present', name: 'anchorIgnoreIfNotPresent', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false', description: 'Ignore anchor if string not found in document' },
 					{ displayName: 'Anchor Match Whole Word', name: 'anchorMatchWholeWord', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false' },
 					{ displayName: 'Anchor String', name: 'anchorString', type: 'string', default: '', displayOptions: { show: { placementMethod: ['anchor'] } } },

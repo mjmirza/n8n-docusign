@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.4.0] - 2026-11-01
+
+### Fixed
+- The trigger fails closed: a signed payload must name a subscribed event and carry this trigger's Connect configuration ID, otherwise it is ignored with HTTP 200.
+- Node version 3 outputs no items for a list operation whose response holds only empty result arrays, such as `{ groups: [] }`, not just for bare empty arrays.
+- Anchored tabs send the chosen Anchor Match Whole Word, Case Sensitive and Ignore If Not Present values, including No.
+- Anchor Horizontal Alignment offers Left and Right only, the values DocuSign defines; Center is rejected with a message.
+
+
 ## [3.3.0] - 2026-11-01
 
 ### Fixed

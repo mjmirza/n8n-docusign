@@ -12,7 +12,7 @@ import { handleChunkedUpload } from '../nodes/DocuSign/resources/chunkedUpload/c
 import { handleEnvelopeView } from '../nodes/DocuSign/resources/envelopeView/envelopeView.handler';
 import { handleAuthorization } from '../nodes/DocuSign/resources/authorization/authorization.handler';
 import { handleEnvelopeAttachment } from '../nodes/DocuSign/resources/envelopeAttachment/envelopeAttachment.handler';
-import { DocuSign } from '../nodes/DocuSign/DocuSign.node';
+import { DocuSign, isEmptyListResponse } from '../nodes/DocuSign/DocuSign.node';
 import {
 	DocuSignTrigger,
 	verifyDocuSignSignature,
@@ -238,7 +238,8 @@ describe('DocuSign Connect trigger (H5, H6, M13)', () => {
 		expect(getRecordedRequests(ctx)).toHaveLength(0);
 	});
 
-	const raw = Buffer.from('{"event":"envelope-sent"}');
+	// A signed event from this trigger's own subscription: a subscribed event and its configurationId.
+	const raw = Buffer.from('{"event":"envelope-sent","configurationId":"c-1"}');
 	const sign = (key: string) => createHmac('sha256', key).update(raw).digest('base64');
 
 	function webhookCtx(headers: IDataObject, options: IDataObject, rawBody: Buffer | null = raw) {
@@ -248,10 +249,10 @@ describe('DocuSign Connect trigger (H5, H6, M13)', () => {
 		const ctx = {
 			getBodyData: () => JSON.parse(raw.toString()),
 			getHeaderData: () => headers,
-			getNodeParameter: () => options,
+			getNodeParameter: (name: string) => (name === 'events' ? ['envelope-sent'] : options),
 			getRequestObject: () => ({ rawBody: rawBody ?? undefined }),
 			getResponseObject: () => res,
-			getWorkflowStaticData: () => ({}),
+			getWorkflowStaticData: () => ({ connectId: 'c-1' }),
 			helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
 		} as unknown as IWebhookFunctions;
 		return { ctx, status };
@@ -642,7 +643,8 @@ describe('round 3: envelope update sends every offered field', () => {
 });
 
 describe('round 3: Connect HMAC key lives in a credential', () => {
-	const raw = Buffer.from('{"event":"envelope-sent"}');
+	// A signed event from this trigger's own subscription: a subscribed event and its configurationId.
+	const raw = Buffer.from('{"event":"envelope-sent","configurationId":"c-1"}');
 	const sign = (key: string) => createHmac('sha256', key).update(raw).digest('base64');
 	const trigger = new DocuSignTrigger();
 
@@ -653,14 +655,14 @@ describe('round 3: Connect HMAC key lives in a credential', () => {
 			ctx: {
 				getBodyData: () => JSON.parse(raw.toString()),
 				getHeaderData: () => ({ 'x-docusign-signature-1': signature }),
-				getNodeParameter: () => (optionKey ? { hmacSecret: optionKey } : {}),
+				getNodeParameter: (name: string) => (name === 'events' ? ['envelope-sent'] : optionKey ? { hmacSecret: optionKey } : {}),
 				getCredentials: async (type: string) => {
 					if (type === 'docuSignConnectHmacApi' && credentialKey) return { hmacSecret: credentialKey };
 					throw new Error('not set');
 				},
 				getRequestObject: () => ({ rawBody: raw }),
 				getResponseObject: () => ({ status: (c: number) => (status(c), { json: jest.fn() }) }),
-				getWorkflowStaticData: () => ({}),
+				getWorkflowStaticData: () => ({ connectId: 'c-1' }),
 				helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
 			} as unknown as IWebhookFunctions,
 		};
@@ -1431,5 +1433,88 @@ describe('round 7: the Connect log Status filter names envelope statuses', () =>
 		const status = (field as { options: Array<{ name: string; description: string }> }).options.find((o) => o.name === 'status');
 		expect(status?.description).not.toContain('Failed');
 		expect(status?.description).toContain('Get Event Failures');
+	});
+});
+
+// Round 8: findings from the Codex review of 3.3.0.
+
+describe('round 8: the trigger fails closed on events without subscription details', () => {
+	const trigger = new DocuSignTrigger();
+	const run = async (body: IDataObject, connectId?: string) => {
+		const raw = Buffer.from(JSON.stringify(body));
+		const status = jest.fn();
+		const ctx = {
+			getBodyData: () => body,
+			getHeaderData: () => ({ 'x-docusign-signature-1': createHmac('sha256', 'k').update(raw).digest('base64') }),
+			getNodeParameter: (name: string, fallback?: unknown) => (name === 'events' ? ['envelope-completed'] : name === 'options' ? { hmacSecret: 'k' } : fallback),
+			getCredentials: async () => {
+				throw new Error('not set');
+			},
+			getRequestObject: () => ({ rawBody: raw }),
+			getResponseObject: () => ({ status: (c: number) => (status(c), { json: jest.fn() }) }),
+			getWorkflowStaticData: () => (connectId ? { connectId } : {}),
+			helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
+		} as unknown as IWebhookFunctions;
+		return trigger.webhook.call(ctx);
+	};
+
+	it.each([
+		['no event name (legacy XML)', { envelopeStatus: 'Sent' }, '7'],
+		['no configurationId', { event: 'envelope-completed' }, '7'],
+		['no stored subscription', { event: 'envelope-completed', configurationId: 7 }, undefined],
+	])('ignores a signed payload with %s', async (_k, body, connectId) => {
+		expect((await run(body, connectId)).workflowData).toBeUndefined();
+	});
+});
+
+describe('round 8: an empty list response outputs no items on version 3', () => {
+	const run = async (typeVersion: number, resource: string, operation: string, extra: IDataObject, response: IDataObject) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ resource, operation, accountId: 'acct-1', ...extra }),
+			httpResponses: [response],
+			typeVersion,
+		});
+		return (await new DocuSign().execute.call(ctx))[0];
+	};
+
+	it('Group Get Many without Return All returns no items for an empty groups list', async () => {
+		expect(await run(3, 'group', 'list', { returnAll: false, groupFilters: {} }, { groups: [], resultSetSize: '0' })).toEqual([]);
+	});
+
+	it('version 2 keeps the response item saved workflows rely on', async () => {
+		expect(await run(2, 'group', 'list', { returnAll: false, groupFilters: {} }, { groups: [] })).toHaveLength(1);
+	});
+
+	it('a non-list operation with an empty array field still outputs its item', () => {
+		expect(isEmptyListResponse('get', { envelopeId: 'e-1', customFields: [] })).toBe(false);
+		expect(isEmptyListResponse('listDocuments', { envelopeId: 'e-1', envelopeDocuments: [] })).toBe(true);
+		expect(isEmptyListResponse('list', { users: [{ userId: 'u' }] })).toBe(false);
+	});
+});
+
+describe('round 8: anchor options go out exactly as chosen', () => {
+	const run = async (tab: IDataObject) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [tab] } }),
+			httpResponses: [{}],
+		});
+		await handleEnvelopeRecipientTab(ctx, 'create', 0);
+		return (getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0];
+	};
+
+	it('sends No for whole-word matching instead of leaving it to the default', async () => {
+		const sent = await run({ placementMethod: 'anchor', anchorString: '/sig/', anchorMatchWholeWord: 'false', anchorCaseSensitive: 'false' });
+		expect(sent).toMatchObject({ anchorString: '/sig/', anchorMatchWholeWord: 'false', anchorCaseSensitive: 'false' });
+	});
+
+	it('rejects Center alignment, which DocuSign does not support', async () => {
+		await expect(run({ placementMethod: 'anchor', anchorString: '/sig/', anchorHorizontalAlignment: 'center' })).rejects.toThrow('Left or Right');
+	});
+
+	it('the picker offers only Left and Right', () => {
+		const tabs = new DocuSign().description.properties.filter((p) => p.name === 'tabs');
+		expect(JSON.stringify(tabs)).not.toContain('"center"');
 	});
 });

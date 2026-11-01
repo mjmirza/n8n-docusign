@@ -420,16 +420,15 @@ export class DocuSignTrigger implements INodeType {
 	}
 }
 
-/** True when the event name and Connect configuration match this trigger's subscription. */
+// Only a subscribed event from this trigger's own Connect configuration runs the workflow.
+// Fails closed: a payload missing either field (for example legacy XML) is ignored.
 export function isForThisSubscription(ctx: IWebhookFunctions, body: IDataObject): boolean {
 	const configured = ctx.getNodeParameter('events', []);
 	const events = Array.isArray(configured) ? (configured as string[]) : [];
-	if (typeof body.event === 'string' && events.length > 0 && !events.includes(body.event)) return false;
+	if (typeof body.event !== 'string' || !events.includes(body.event)) return false;
 	const connectId = ctx.getWorkflowStaticData('node').connectId;
-	if (body.configurationId !== undefined && connectId !== undefined && String(body.configurationId) !== String(connectId)) {
-		return false;
-	}
-	return true;
+	if (body.configurationId === undefined || connectId === undefined) return false;
+	return String(body.configurationId) === String(connectId);
 }
 
 /** The HMAC credential wins; the deprecated node option is the fallback for older workflows. */

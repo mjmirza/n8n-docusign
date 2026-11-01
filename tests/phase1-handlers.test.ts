@@ -166,7 +166,7 @@ describe('handleEnvelopeRecipientTab', () => {
 				tabType: { 0: 'textTabs' },
 				tabs: { 0: { tab: [{
 					documentId: '1', pageNumber: '1', placementMethod: 'anchor',
-					anchorString: '/text/', anchorHorizontalAlignment: 'center',
+					anchorString: '/text/', anchorHorizontalAlignment: 'right',
 					tabGroupLabels: 'group1, group2', customTabId: 'custom-1',
 					recipientId: 'r1',
 				}] } },

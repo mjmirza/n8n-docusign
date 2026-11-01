@@ -2126,3 +2126,29 @@ describe('round 9h: ID check on versions 1 to 3 sends what 3.4.0 sent', () => {
 		expect((getRecordedRequests(r)[0].options.body as { signers: IDataObject[] }).signers[0]).not.toHaveProperty('requireIdLookup');
 	});
 });
+
+describe('round 9i: envelope signer Require ID Lookup', () => {
+	const run = async (requireIdLookup: string | undefined, typeVersion: number) => {
+		const signer: IDataObject = { email: 'a@example.com', name: 'A', idCheckConfigurationName: 'ID Check $' };
+		if (requireIdLookup !== undefined) signer.requireIdLookup = requireIdLookup;
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', emailSubject: 'S', status: 'created', signers: { signer: [signer] }, documents: { document: [] }, additionalFields: {} }),
+			httpResponses: [{}],
+			typeVersion,
+		});
+		await handleEnvelope(ctx, 'create', 0);
+		return (getRecordedRequests(ctx)[0].options.body as { recipients: { signers: IDataObject[] } }).recipients.signers[0];
+	};
+	it('version 4 keeps a chosen No', async () => {
+		expect(await run('false', 4)).not.toHaveProperty('requireIdLookup');
+	});
+	it('version 4 Automatic turns it on with an ID check', async () => {
+		expect((await run('', 4)).requireIdLookup).toBe('true');
+	});
+	it.each([1, 2, 3])('version %i sends only a chosen Yes', async (v) => {
+		expect(await run('', v)).not.toHaveProperty('requireIdLookup');
+		expect(await run('false', v)).not.toHaveProperty('requireIdLookup');
+		expect((await run('true', v)).requireIdLookup).toBe('true');
+	});
+});

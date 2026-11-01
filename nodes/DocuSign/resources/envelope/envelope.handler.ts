@@ -113,8 +113,9 @@ export async function handleEnvelope(
 				if (s.note) signer.note = s.note;
 				applyDeliveryMethod(signer, s.deliveryMethod, s.phoneNumber);
 				if (s.idCheckConfigurationName) signer.idCheckConfigurationName = s.idCheckConfigurationName;
-				// Version 4: an ID check turns requireIdLookup on. Earlier versions send it only when Yes was chosen.
-				if (s.requireIdLookup === 'true' || (ctx.getNode().typeVersion >= 4 && s.idCheckConfigurationName)) signer.requireIdLookup = 'true';
+				// Version 4 with Automatic: an ID check turns requireIdLookup on. A chosen No is never overridden.
+				const autoIdLookup = ctx.getNode().typeVersion >= 4 && !s.requireIdLookup && s.idCheckConfigurationName;
+				if (s.requireIdLookup === 'true' || autoIdLookup) signer.requireIdLookup = 'true';
 				const phoneAuthentication = buildPhoneAuthentication(s.idCheckConfigurationName, s.phoneAuthNumbers);
 				if (phoneAuthentication) signer.phoneAuthentication = phoneAuthentication;
 				if (s.requireSignOnPaper === 'true') signer.requireSignOnPaper = 'true';

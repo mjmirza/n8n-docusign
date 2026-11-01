@@ -2302,3 +2302,31 @@ describe('round 9l: documentation pins', () => {
 		expect(JSON.parse(read('package-lock.json')).version).toBe(version);
 	});
 });
+
+describe('round 9m: Required and Locked on Send Empty updates', () => {
+	const run = async (tab: IDataObject, typeVersion: number) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [tab] }, sendEmptyValues: true }),
+			httpResponses: [{}],
+			typeVersion,
+		});
+		await handleEnvelopeRecipientTab(ctx, 'update', 0);
+		return (getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0];
+	};
+
+	it.each([1, 2, 3])('version %i sends No when n8n fills the new empty default', async (v) => {
+		const tab = await run({ tabId: 'tab-1', required: '', locked: '' }, v);
+		expect(tab.required).toBe('false');
+		expect(tab.locked).toBe('false');
+	});
+
+	it.each([
+		[false, 'false'],
+		[true, 'true'],
+	])('version 4 sends an expression boolean %s as %s', async (value, expected) => {
+		const tab = await run({ tabId: 'tab-1', required: value, locked: value }, 4);
+		expect(tab.required).toBe(expected);
+		expect(tab.locked).toBe(expected);
+	});
+});

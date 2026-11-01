@@ -47,7 +47,12 @@ export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues 
 	const tabsData = ctx.getNodeParameter('tabs', i, {}) as IDataObject;
 	const tabEntries = (tabsData.tab || []) as IDataObject[];
 
-	return tabEntries.map((t) => {
+	return tabEntries.map((entry) => {
+		// Required and Locked defaulted to No before version 4; a value n8n fills in as '' keeps that.
+		const t: IDataObject = v4 ? entry : { ...entry };
+		for (const key of ['required', 'locked']) {
+			if (!v4 && t[key] === '') t[key] = 'false';
+		}
 		const tab: IDataObject = {
 			documentId: t.documentId || '1',
 			pageNumber: t.pageNumber || '1',
@@ -133,7 +138,8 @@ export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues 
 		if (sendEmptyValues) applyExplicitValues(tab, t);
 		if (v4) {
 			for (const key of ['required', 'locked']) {
-				if (t[key] === 'true' || t[key] === 'false') tab[key] = t[key];
+				const value = typeof t[key] === 'boolean' ? String(t[key]) : t[key];
+				if (value === 'true' || value === 'false') tab[key] = value;
 				else delete tab[key];
 			}
 		}

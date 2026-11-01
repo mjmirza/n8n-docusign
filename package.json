@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-docusigns",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "DocuSign eSignature for n8n. 80 resources, 349 operations and envelope event triggers.",
   "license": "MIT",
   "repository": {
@@ -33,7 +33,8 @@
     "n8nNodesApiVersion": 1,
     "credentials": [
       "dist/credentials/DocuSignOAuth2Api.credentials.js",
-      "dist/credentials/DocuSignJwtApi.credentials.js"
+      "dist/credentials/DocuSignJwtApi.credentials.js",
+      "dist/credentials/DocuSignConnectHmacApi.credentials.js"
     ],
     "nodes": [
       "dist/nodes/DocuSign/DocuSign.node.js",

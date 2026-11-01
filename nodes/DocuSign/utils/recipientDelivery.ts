@@ -12,7 +12,12 @@ export function toRecipientPhone(value: string): IDataObject {
 
 /** Sets DocuSign's delivery method ("SMS", not "sms") and the phone shape it requires. */
 export function applyDeliveryMethod(target: IDataObject, method: unknown, phone: unknown): void {
-	if (!method || method === 'email') return;
+	if (!method) return;
+	if (method === 'email') {
+		// Sending it explicitly lets an update switch an SMS recipient back to email.
+		target.deliveryMethod = 'email';
+		return;
+	}
 	target.deliveryMethod = method === 'sms' ? 'SMS' : method;
 	if (phone) target.phoneNumber = toRecipientPhone(String(phone));
 }

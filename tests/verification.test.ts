@@ -1,9 +1,14 @@
-import { describe, it, expect, jest } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import type { IDataObject, IHookFunctions } from 'n8n-workflow';
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 import { DocuSign } from '../nodes/DocuSign/DocuSign.node';
 import { DocuSignTrigger } from '../nodes/DocuSign/DocuSignTrigger.node';
 import { createMockContext, createHttpError } from './helpers/mockContext';
+
+// Some tests assert inside catch; an unexpected success must fail them.
+beforeEach(() => {
+	expect.hasAssertions();
+});
 
 /** Hook context whose DocuSign API call fails, so the lifecycle catch paths run. */
 function failingHookContext(staticData: IDataObject) {

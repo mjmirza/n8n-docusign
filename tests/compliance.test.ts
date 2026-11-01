@@ -8,7 +8,7 @@
  * - DocuSign: API contract compliance
  * - Operational: Rate limiting, timeout, retry policies
  */
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { assertSafeId, sanitizeEndpoint, getBaseUrl, docuSignRequest } from '../nodes/DocuSign/transport';
 import { createMockContext, createHttpError, getRecordedRequests } from './helpers/mockContext';
 import { DocuSign } from '../nodes/DocuSign/DocuSign.node';
@@ -20,6 +20,11 @@ import {
 	assertValidBase64,
 	assertFileSize,
 } from '../nodes/DocuSign/utils/validators';
+
+// Some tests assert inside catch; an unexpected success must fail them.
+beforeEach(() => {
+	expect.hasAssertions();
+});
 
 // ==================================================================
 // 1. GDPR COMPLIANCE
@@ -53,20 +58,25 @@ describe('Compliance: GDPR', () => {
 	});
 
 	it('ID validation does not echo sensitive IDs', () => {
+		// Each ID carries a character assertSafeId rejects, so the error path really runs.
 		const sensitiveIds = [
-			'SSN-123-45-6789',
-			'credit-card-4111111111111111',
-			'password-SuperSecret123',
+			'SSN 123-45-6789',
+			'credit-card=4111111111111111',
+			'password:SuperSecret123',
 		];
 		for (const id of sensitiveIds) {
-			try {
-				assertSafeId(id);
-			} catch (e) {
-				const msg = (e as Error).message;
-				expect(msg).not.toContain('SSN');
-				expect(msg).not.toContain('4111');
-				expect(msg).not.toContain('SuperSecret');
-			}
+			let msg = '';
+			expect(() => {
+				try {
+					assertSafeId(id);
+				} catch (e) {
+					msg = (e as Error).message;
+					throw e;
+				}
+			}).toThrow();
+			expect(msg).not.toContain('SSN');
+			expect(msg).not.toContain('4111');
+			expect(msg).not.toContain('SuperSecret');
 		}
 	});
 });

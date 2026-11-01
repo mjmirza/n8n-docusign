@@ -12,7 +12,8 @@ export async function handleDiagnosticResource(
 ): Promise<unknown> {
 	switch (operation) {
 		case 'get': {
-			return docuSignRequest(ctx, 'GET', 'service_information');
+			// GET /restapi/v2.1 lists the resources of the versioned API.
+			return docuSignRequest(ctx, 'GET', '', undefined, undefined, { apiRoot: 'version' });
 		}
 
 		default:

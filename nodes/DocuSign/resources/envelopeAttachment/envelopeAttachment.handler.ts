@@ -1,4 +1,4 @@
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { docuSignRequest, envelopePath, assertSafeId } from '../../transport';
 
 export async function handleEnvelopeAttachment(
@@ -21,7 +21,14 @@ export async function handleEnvelopeAttachment(
 				ctx.getNodeParameter('attachmentId', i) as string,
 				'Attachment ID',
 			);
-			return docuSignRequest(ctx, 'GET', `${basePath}/${attachmentId}`);
+			// The attachment endpoint returns the file itself (application/octet-stream).
+			const bytes = (await docuSignRequest(ctx, 'GET', `${basePath}/${attachmentId}`, undefined, undefined, {
+				encoding: 'arraybuffer',
+				json: false,
+			})) as Buffer;
+			const fileName = `attachment_${attachmentId}`;
+			const binary = await ctx.helpers.prepareBinaryData(bytes, fileName, 'application/octet-stream');
+			return { json: { attachmentId, fileName }, binary: { data: binary } } as INodeExecutionData;
 		}
 
 		case 'create': {
@@ -62,7 +69,8 @@ export async function handleEnvelopeAttachment(
 				ctx.getNodeParameter('attachmentId', i) as string,
 				'Attachment ID',
 			);
-			return docuSignRequest(ctx, 'DELETE', `${basePath}/${attachmentId}`);
+			// Attachments are deleted as a list: DELETE .../attachments with the IDs in the body.
+			return docuSignRequest(ctx, 'DELETE', basePath, { attachments: [{ attachmentId }] });
 		}
 
 		default:

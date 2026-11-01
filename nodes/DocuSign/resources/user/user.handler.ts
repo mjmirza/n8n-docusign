@@ -111,7 +111,7 @@ export async function handleUser(
 			const response = (await docuSignRequest(
 				ctx,
 				'GET',
-				`${basePath}/${userId}/profile_image`,
+				`${basePath}/${userId}/profile/image`,
 				undefined,
 				undefined,
 				{ encoding: null, json: false },
@@ -147,7 +147,7 @@ export async function handleUser(
 			return docuSignRequest(
 				ctx,
 				'PUT',
-				`${basePath}/${userId}/profile_image`,
+				`${basePath}/${userId}/profile/image`,
 				fileBuffer as unknown as IDataObject,
 				undefined,
 				{ contentType: 'image/png' },
@@ -159,7 +159,7 @@ export async function handleUser(
 				ctx.getNodeParameter('userId', i) as string,
 				'User ID',
 			);
-			return docuSignRequest(ctx, 'DELETE', `${basePath}/${userId}/profile_image`);
+			return docuSignRequest(ctx, 'DELETE', `${basePath}/${userId}/profile/image`);
 		}
 
 		default:

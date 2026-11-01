@@ -1,10 +1,11 @@
+import type { IDataObject } from 'n8n-workflow';
 /**
  * Phase 1 handler tests — covers all new envelope sub-resource handlers.
  * Tests every operation for security (ID validation, input sanitization)
  * and correctness (proper API paths, request bodies).
  */
 import { describe, it, expect } from '@jest/globals';
-import { createMockContext } from './helpers/mockContext';
+import { createMockContext, getRecordedRequests } from './helpers/mockContext';
 
 import { handleEnvelopeCustomField } from '../nodes/DocuSign/resources/envelopeCustomField/envelopeCustomField.handler';
 import { handleEnvelopeRecipientTab } from '../nodes/DocuSign/resources/envelopeRecipientTab/envelopeRecipientTab.handler';
@@ -409,10 +410,11 @@ describe('handleEnvelopeAttachment', () => {
 		const ctx = createMockContext({
 			credentials: BASE_CREDS,
 			parameters: { ...BASE_PARAMS, attachmentId: { 0: 'att-1' } },
-			httpResponses: [{ attachmentId: 'att-1' }],
+			httpResponses: [Buffer.from('file')],
 		});
-		const result = await handleEnvelopeAttachment(ctx, 'get', 0);
-		expect(result).toHaveProperty('attachmentId');
+		const result = (await handleEnvelopeAttachment(ctx, 'get', 0)) as { json: IDataObject; binary: IDataObject };
+		expect(result.json).toHaveProperty('attachmentId', 'att-1');
+		expect(result.binary).toHaveProperty('data');
 	});
 
 	it('create — should PUT attachment with base64', async () => {
@@ -516,10 +518,11 @@ describe('handleEnvelopeTemplate', () => {
 	it('delete — should DELETE template', async () => {
 		const ctx = createMockContext({
 			credentials: BASE_CREDS,
-			parameters: { ...BASE_PARAMS, templateId: { 0: 'tmpl-1' } },
+			parameters: { ...BASE_PARAMS, templateId: { 0: 'tmpl-1' }, documentId: { 0: '1' } },
 			httpResponses: [{}],
 		});
 		await handleEnvelopeTemplate(ctx, 'delete', 0);
+		expect(String(getRecordedRequests(ctx)[0].options.url)).toMatch(/\/documents\/1\/templates\/tmpl-1$/);
 	});
 
 	it('listByDocument — should GET templates by document', async () => {

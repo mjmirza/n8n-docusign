@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.1.0] - 2026-11-01
+
+### Added
+- **DocuSign Connect HMAC API** credential for the trigger's HMAC key. Credentials are stored encrypted and are not part of workflow exports, so sharing a workflow no longer shares the key that signs DocuSign events. The trigger uses the credential when one is attached and falls back to the old Options > HMAC Secret field, now marked deprecated, so existing workflows keep working.
+
+### Fixed
+- Envelope Update sends Purge State, Status, Voided Reason, Message Lock, Recipients Lock and Brand ID. Before, only the email subject and body were sent and every other field was silently dropped. Voiding without a reason now stops with a clear message.
+- Writes are not repeated after a 502, 503 or 504. Before, PUT and DELETE were retried, and a PUT that had already added an attachment added it a second time. Only GET and HEAD retry on those codes; every method still retries on 429.
+- The trigger no longer creates a duplicate Connect subscription when the lookup fails for a reason other than "not found", and keeps the stored subscription ID when cleanup fails, so the next deactivation can still remove it.
+- Corrected routes, checked against the DocuSign v2.1 OpenAPI spec:
+  - Folder List Items reads `folders/{folderId}`.
+  - Workspace folder list and delete use the folder URL.
+  - User profile image uses `profile/image`.
+  - Attachment Delete sends the ID list to `attachments`.
+  - Envelope Template Delete is scoped to a document; Document ID now shows for Delete.
+  - Password Rules Get For User reads `current_user/password_rules`, which returns the signed-in user's rules.
+  - Diagnostics call `/restapi/service_information` and `/restapi/v2.1`.
+- Envelope Attachment Get and Envelope Comment Get return the file as binary output (`data`). Comments come from the PDF transcript, the only comments endpoint DocuSign provides.
+- Update Notification Settings sends expirations and reminders as nested objects.
+- Choosing Email as the delivery method on a recipient update now switches an SMS recipient back to email.
+
+### Changed
+- Security, compliance, transport and verification tests require an assertion in every test, and the tests that relied on a catch block now trigger the error they check.
+
 ## [2.0.1] - 2026-11-01
 
 ### Fixed
@@ -12,7 +36,7 @@
 - JWT setup text names the Production consent host too and says to register a redirect URI.
 
 ### Changed
-- Tests that asserted `true`, or only asserted inside a `catch`, now check the real result.
+- Tests that asserted `true` now check the real result, and `tests/error-handling.test.ts` requires an assertion in every test. The catch-only tests in other files were fixed in 2.1.0.
 - README says most, not all, of the eSignature API is covered.
 
 ## [2.0.0] - 2026-11-01

@@ -1,4 +1,4 @@
-import type { IExecuteFunctions } from 'n8n-workflow';
+import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import { docuSignRequest, envelopePath } from '../../transport';
 
 /**
@@ -16,7 +16,14 @@ export async function handleEnvelopeComment(
 
 	switch (operation) {
 		case 'get': {
-			return docuSignRequest(ctx, 'GET', `${envPath}/comments`);
+			// DocuSign exposes envelope comments as a PDF transcript: GET .../comments/transcript.
+			const pdf = (await docuSignRequest(ctx, 'GET', `${envPath}/comments/transcript`, undefined, undefined, {
+				encoding: 'arraybuffer',
+				json: false,
+			})) as Buffer;
+			const fileName = 'comments_transcript.pdf';
+			const binary = await ctx.helpers.prepareBinaryData(pdf, fileName, 'application/pdf');
+			return { json: { fileName }, binary: { data: binary } } as INodeExecutionData;
 		}
 
 		default:

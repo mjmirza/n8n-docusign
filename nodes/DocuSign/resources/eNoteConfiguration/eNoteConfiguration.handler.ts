@@ -30,7 +30,8 @@ export async function handleENoteConfiguration(
 			}
 			const eNoteEnabled = ctx.getNodeParameter('eNoteEnabled', i, '') as string;
 			if (eNoteEnabled !== '') {
-				body.eNoteEnabled = eNoteEnabled;
+				// eNoteConfiguration names this flag eNoteConfigured.
+				body.eNoteConfigured = eNoteEnabled;
 			}
 			const organization = ctx.getNodeParameter('organization', i, '') as string;
 			if (organization) {

@@ -38,6 +38,7 @@ export async function handleTemplateDocument(
 		}
 
 		case 'update': {
+			// The spec's body is an envelopeDefinition, so the document goes inside documents[].
 			const documentId = assertSafeId(ctx.getNodeParameter('documentId', i) as string, 'Document ID');
 			const docData = ctx.getNodeParameter('documentData', i, {}) as IDataObject;
 			const content = (docData.content || [{}]) as IDataObject[];
@@ -47,17 +48,21 @@ export async function handleTemplateDocument(
 				const binaryData = ctx.helpers.assertBinaryData(i, doc.binaryProperty as string);
 				const buffer = await ctx.helpers.getBinaryDataBuffer(i, doc.binaryProperty as string);
 				return docuSignRequest(ctx, 'PUT', `${basePath}/${documentId}`, {
-					documentBase64: buffer.toString('base64'),
-					name: doc.name || binaryData.fileName || '',
-					fileExtension: doc.fileExtension || 'pdf',
-					documentId,
+					documents: [{
+						documentBase64: buffer.toString('base64'),
+						name: doc.name || binaryData.fileName || '',
+						fileExtension: doc.fileExtension || 'pdf',
+						documentId,
+					}],
 				});
 			} else if (doc.documentBase64) {
 				return docuSignRequest(ctx, 'PUT', `${basePath}/${documentId}`, {
-					documentBase64: doc.documentBase64,
-					name: doc.name || '',
-					fileExtension: doc.fileExtension || 'pdf',
-					documentId,
+					documents: [{
+						documentBase64: doc.documentBase64,
+						name: doc.name || '',
+						fileExtension: doc.fileExtension || 'pdf',
+						documentId,
+					}],
 				});
 			}
 

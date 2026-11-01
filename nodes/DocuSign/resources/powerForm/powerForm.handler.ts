@@ -69,7 +69,10 @@ export async function handlePowerForm(
 			for (const id of powerFormIds) {
 				assertSafeId(id, 'PowerForm ID');
 			}
-			return docuSignRequest(ctx, 'DELETE', basePath, { powerFormIds } as unknown as IDataObject);
+			// powerFormsRequest takes the forms as objects under powerForms.
+			return docuSignRequest(ctx, 'DELETE', basePath, {
+				powerForms: powerFormIds.map((powerFormId) => ({ powerFormId })),
+			} as unknown as IDataObject);
 		}
 
 		case 'listSenders': {

@@ -21,6 +21,9 @@ import {
 import { DocuSignJwtApi, buildDocuSignJwtAssertion } from '../credentials/DocuSignJwtApi.credentials';
 import { handleRecipient } from '../nodes/DocuSign/resources/recipient/recipient.handler';
 import { handleTemplateDocument } from '../nodes/DocuSign/resources/templateDocument/templateDocument.handler';
+import { handlePowerForm } from '../nodes/DocuSign/resources/powerForm/powerForm.handler';
+import { handleAccountCustomField } from '../nodes/DocuSign/resources/accountCustomField/accountCustomField.handler';
+import { handleENoteConfiguration } from '../nodes/DocuSign/resources/eNoteConfiguration/eNoteConfiguration.handler';
 import { handleTemplateRecipient } from '../nodes/DocuSign/resources/templateRecipient/templateRecipient.handler';
 import { handleEnvelopePublish } from '../nodes/DocuSign/resources/envelopePublish/envelopePublish.handler';
 import { handleUserContact } from '../nodes/DocuSign/resources/userContact/userContact.handler';
@@ -45,7 +48,7 @@ import { handleBillingPlan } from '../nodes/DocuSign/resources/billingPlan/billi
 import { handleEnvelopeCustomField } from '../nodes/DocuSign/resources/envelopeCustomField/envelopeCustomField.handler';
 import { handleTemplateCustomField } from '../nodes/DocuSign/resources/templateCustomField/templateCustomField.handler';
 import { handleAccount } from '../nodes/DocuSign/resources/account/account.handler';
-import { matchSpecRoute, unknownQueryParams } from './setup/spec-routes';
+import { matchSpecRoute, unknownBodyKeys, unknownQueryParams } from './setup/spec-routes';
 import { toRecipientPhone } from '../nodes/DocuSign/utils/recipientDelivery';
 import { readFileSync } from 'fs';
 
@@ -396,7 +399,7 @@ describe('retries (M9)', () => {
 			credentials: C,
 			httpResponses: [createHttpError(502, {}, 'bad gateway', { 'retry-after': '1' }), { ok: true }],
 		});
-		await expect(docuSignRequest(ctx, 'POST', 'accounts/a/envelopes', { a: 1 })).rejects.toThrow('[502]');
+		await expect(docuSignRequest(ctx, 'POST', 'accounts/a/envelopes', { emailSubject: 's' })).rejects.toThrow('[502]');
 		expect(getRecordedRequests(ctx)).toHaveLength(1);
 	});
 
@@ -405,7 +408,7 @@ describe('retries (M9)', () => {
 			credentials: C,
 			httpResponses: [createHttpError(429, {}, 'slow down', { 'retry-after': '1' }), { ok: true }],
 		});
-		await expect(docuSignRequest(ctx, 'POST', 'accounts/a/envelopes', { a: 1 })).resolves.toEqual({ ok: true });
+		await expect(docuSignRequest(ctx, 'POST', 'accounts/a/envelopes', { emailSubject: 's' })).resolves.toEqual({ ok: true });
 	});
 });
 
@@ -720,7 +723,7 @@ describe('round 3: writes are not repeated after a 5xx', () => {
 			credentials: C,
 			httpResponses: [createHttpError(502, {}, 'bad gateway', { 'retry-after': '1' }), { ok: true }],
 		});
-		await expect(docuSignRequest(ctx, 'PUT', 'accounts/a/envelopes/e/attachments', { a: 1 })).rejects.toThrow('[502]');
+		await expect(docuSignRequest(ctx, 'PUT', 'accounts/a/envelopes/e/attachments', { attachments: [] })).rejects.toThrow('[502]');
 		expect(getRecordedRequests(ctx)).toHaveLength(1);
 	});
 });
@@ -1672,5 +1675,71 @@ describe('round 9b: branding uploads follow the documented contract', () => {
 		const body = Buffer.from(req.body as unknown as Buffer).toString();
 		expect(body).toContain('Content-Disposition: form-data; name="file.xml"; filename="sending.xml"');
 		expect(body).toContain('<xml/>');
+	});
+});
+
+// Round 9c: second branch review, plus bugs the new body-key check found.
+
+describe('round 9c: request bodies use the spec field names', () => {
+	it('PowerForm Delete Many sends powerForms objects', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', powerFormIds: 'pf-1, pf-2' }), httpResponses: [{}] });
+		await handlePowerForm(ctx, 'deleteList', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ powerForms: [{ powerFormId: 'pf-1' }, { powerFormId: 'pf-2' }] });
+	});
+
+	it('account custom field sends customFieldType', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', fieldType: 'text', name: 'Region', additionalFields: {} }), httpResponses: [{}] });
+		await handleAccountCustomField(ctx, 'create', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ customFieldType: 'text', name: 'Region' });
+	});
+
+	it('eNote configuration sends eNoteConfigured', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', eNoteEnabled: 'true' }), httpResponses: [{}] });
+		await handleENoteConfiguration(ctx, 'update', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ eNoteConfigured: 'true' });
+	});
+
+	it('template document update wraps the document in an envelopeDefinition', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', templateId: 'tp-1', documentId: '1', documentData: { content: [{ documentBase64: 'JVBERg==', name: 'c.pdf' }] } }), httpResponses: [{}] });
+		await handleTemplateDocument(ctx, 'update', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ documents: [{ documentBase64: 'JVBERg==', name: 'c.pdf', fileExtension: 'pdf', documentId: '1' }] });
+	});
+
+	it('historical republish converts an envelopeIds list to envelopes', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', requestBody: '{"envelopeIds":["e-1","e-2"]}' }), httpResponses: [{}] });
+		await handleConnectConfiguration(ctx, 'publishToConnect', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ envelopes: [{ envelopeId: 'e-1' }, { envelopeId: 'e-2' }] });
+	});
+
+	it('the spec check names a body key the schema does not define', () => {
+		expect(unknownBodyKeys('DELETE', `${DEMO}/accounts/a/powerforms`, { powerFormIds: ['x'] })).toEqual(['powerFormIds']);
+		expect(unknownBodyKeys('DELETE', `${DEMO}/accounts/a/powerforms`, { powerForms: [] })).toEqual([]);
+	});
+});
+
+describe('round 9c: attachment replace and tab alignment', () => {
+	it('Create with an Attachment ID to Replace updates that attachment', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', attachmentName: 'a.pdf', attachmentType: 'pdf', source: 'base64', base64Content: 'JVBERg==', replaceAttachmentId: 'a-7' }),
+			httpResponses: [{}],
+		});
+		await handleEnvelopeAttachment(ctx, 'create', 0);
+		const req = getRecordedRequests(ctx)[0].options;
+		expect(req.url).toBe(`${DEMO}/accounts/acct-1/envelopes/e-1/attachments/a-7`);
+		expect(req.body).toMatchObject({ attachmentId: 'a-7', name: 'a.pdf', data: 'JVBERg==' });
+	});
+
+	it.each([
+		[{ placementMethod: 'anchor', anchorString: '/x/', anchorHorizontalAlignment: 'left' }, false],
+		[{ tabId: 't-1', anchorHorizontalAlignment: 'left' }, true],
+	])('Left alignment is sent for %j', async (tab, sendEmptyValues) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [tab] }, sendEmptyValues }),
+			httpResponses: [{}],
+		});
+		await handleEnvelopeRecipientTab(ctx, sendEmptyValues ? 'update' : 'create', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0].anchorHorizontalAlignment).toBe('left');
 	});
 });

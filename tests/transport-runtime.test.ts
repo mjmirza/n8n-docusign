@@ -4,7 +4,7 @@ import { NodeApiError } from 'n8n-workflow';
  * resolveCredentials, createCrudHandler) using mocked n8n context.
  */
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { createMockContext, createHttpError, allowOffSpecRequests } from './helpers/mockContext';
+import { createMockContext, createHttpError, allowOffSpecRequests, getRecordedRequests } from './helpers/mockContext';
 import { docuSignRequest, docuSignGetAll, createCrudHandler } from '../nodes/DocuSign/transport';
 
 // Some tests assert inside catch; an unexpected success must fail them.
@@ -670,11 +670,12 @@ describe('transport runtime', () => {
 				ctx,
 				'POST',
 				'accounts/acct-1/envelopes',
-				{ data: 'test' },
+				{ emailSubject: 'test' },
 				undefined,
 				{ contentType: 'multipart/form-data' },
 			);
 			expect(result).toEqual({ ok: true });
+			expect((getRecordedRequests(ctx)[0].options.headers as Record<string, string>)['Content-Type']).toBe('multipart/form-data');
 		});
 	});
 

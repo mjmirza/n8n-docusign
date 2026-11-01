@@ -3,7 +3,7 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import type { IDataObject, IExecuteFunctions, INodeProperties } from 'n8n-workflow';
 import { DocuSign } from '../nodes/DocuSign/DocuSign.node';
-import { createMockContext, getRecordedRequests } from './helpers/mockContext';
+import { createMockContext, getRecordedRequests, noteUserJson } from './helpers/mockContext';
 import { clearBaseUriCache } from '../nodes/DocuSign/transport';
 
 const node = new DocuSign();
@@ -62,7 +62,9 @@ function contextFor(resource: string, operation: string): IExecuteFunctions {
 	(ctx as unknown as IDataObject).getNodeParameter = (name: string, _i: number, fallback?: unknown) => {
 		if (name === 'resource') return resource;
 		if (name === 'operation') return operation;
-		return placeholder(name, fallback, resource, operation);
+		const value = placeholder(name, fallback, resource, operation);
+		noteUserJson(value);
+		return value;
 	};
 	return ctx;
 }
@@ -109,7 +111,7 @@ describe('JSON input reaches DocuSign in the request body', () => {
 		const ctx = contextFor(resource, operation);
 		const base = (ctx as unknown as { getNodeParameter: (n: string, i: number, f?: unknown) => unknown }).getNodeParameter;
 		(ctx as unknown as IDataObject).getNodeParameter = (name: string, i: number, fallback?: unknown) =>
-			fields.has(name) ? '{"probe":"marker-7"}' : base(name, i, fallback);
+			fields.has(name) ? (noteUserJson('{"probe":"marker-7"}'), '{"probe":"marker-7"}') : base(name, i, fallback);
 		await node.execute.call(ctx);
 		const sent = getRecordedRequests(ctx)[0];
 		expect(sent).toBeDefined();

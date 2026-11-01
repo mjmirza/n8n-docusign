@@ -16,6 +16,16 @@ export const envelopeAttachmentFields: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Attachment ID to Replace',
+		name: 'replaceAttachmentId',
+		type: 'string',
+		default: '',
+		description: 'Leave empty to add a new attachment. Set it to update that existing attachment instead.',
+		displayOptions: {
+			show: { resource: ['envelopeAttachment'], operation: ['create'] },
+		},
+	},
+	{
 		displayName: 'Attachment Name',
 		name: 'attachmentName',
 		type: 'string',

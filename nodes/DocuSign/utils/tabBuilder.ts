@@ -107,7 +107,10 @@ export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues 
 		if (t.anchorHorizontalAlignment === 'center') {
 			throw new NodeOperationError(ctx.getNode(), 'DocuSign anchors align only Left or Right', { itemIndex: i });
 		}
-		if (t.anchorHorizontalAlignment === 'right') tab.anchorHorizontalAlignment = 'right';
+		const alignment = t.anchorHorizontalAlignment;
+		if (alignment === 'right' || (alignment === 'left' && (tab.anchorString || sendEmptyValues))) {
+			tab.anchorHorizontalAlignment = alignment;
+		}
 
 		// References
 		if (t.customTabId) tab.customTabId = t.customTabId;

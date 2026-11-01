@@ -110,6 +110,11 @@ export async function handleConnectConfiguration(
 			} catch {
 				throw new NodeOperationError(ctx.getNode(), 'Invalid JSON in request body');
 			}
+			// The spec body is { config, envelopes: [{ envelopeId }] }; an older envelopeIds list is converted.
+			if (Array.isArray(body.envelopeIds) && body.envelopes === undefined) {
+				const { envelopeIds, ...rest } = body;
+				body = { ...rest, envelopes: (envelopeIds as unknown[]).map((envelopeId) => ({ envelopeId: String(envelopeId) })) };
+			}
 			// Historical republish is POST .../connect/envelopes/publish/historical.
 			return docuSignRequest(
 				ctx,

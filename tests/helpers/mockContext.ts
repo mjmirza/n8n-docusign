@@ -52,6 +52,31 @@ export function offSpecAllowed(): boolean {
 	return value;
 }
 
+const userJsonKeys = new Set<string>();
+
+/** Records the keys of JSON a test passes as a parameter; passthrough bodies may carry them. */
+export function noteUserJson(value: unknown): void {
+	let parsed = value;
+	if (typeof value === 'string') {
+		try {
+			parsed = JSON.parse(value);
+		} catch {
+			return;
+		}
+	}
+	const objects = Array.isArray(parsed) ? parsed : [parsed];
+	for (const o of objects) {
+		if (o && typeof o === 'object' && !Array.isArray(o)) for (const k of Object.keys(o)) userJsonKeys.add(k);
+	}
+}
+
+/** Returns and clears the keys noted by noteUserJson. */
+export function drainUserJsonKeys(): Set<string> {
+	const keys = new Set(userJsonKeys);
+	userJsonKeys.clear();
+	return keys;
+}
+
 /** Returns and clears the requests recorded since the previous call. */
 export function drainAllRequests(): RecordedRequest[] {
 	return allRequests.splice(0, allRequests.length);
@@ -87,6 +112,7 @@ export function createMockContext(
 		getNodeParameter(name: string, itemIndex: number, fallback?: unknown) {
 			const paramsByIndex = options.parameters?.[name];
 			if (paramsByIndex && itemIndex in paramsByIndex) {
+				noteUserJson(paramsByIndex[itemIndex]);
 				return paramsByIndex[itemIndex];
 			}
 			if (fallback !== undefined) return fallback;

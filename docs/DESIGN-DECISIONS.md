@@ -146,7 +146,11 @@ activation registers the current settings, rather than leaving events that never
 `Phone Auth $` needs a `phoneAuthentication` object. With Phone Auth Numbers set, those are the
 sender-provided numbers; empty lets the recipient supply one (`recipMayProvideNumber`).
 
-## Accepted exception: two 3.4.0-only behaviours are reverted for saved nodes
+## Two 3.4.0-only behaviours are reverted for saved nodes
+
+Maintainer decision: node versions 1 to 3 keep the 3.3.0 behaviour (one item for an empty list,
+no No anchor options sent) because it is what every release before 3.4.0 did; tradeoff and
+evidence below.
 
 3.4.0 changed two outputs of saved nodes without a new node version: version 3 list operations
 dropped responses whose result arrays were empty, and saved tabs sent a No anchor option. 3.3.0 and

@@ -32,11 +32,11 @@ which returns a PDF. Get returns that PDF as binary data.
 v2.1 defines `GET /v2.1/current_user/password_rules` and no per-user variant. The User ID field
 is kept so saved workflows still validate, and the description says which rules come back.
 
-## Envelope Attachment: Get output depends on node version
+## Envelope Attachment: Get returns binary on every node version
 
-DocuSign returns the attachment file itself (`application/octet-stream`). Node version 2
-returns it as binary data. Node version 1, which saved workflows use, keeps the earlier JSON
-response so their downstream steps keep working.
+DocuSign returns the attachment file itself (`application/octet-stream`), so Get returns it
+as binary data. 2.1.0 shipped that output, and 3.0.0 briefly put version 1 back on JSON, which
+broke 2.1.0 workflows. Since 3.1.0 both versions return binary, the contract of 2.1.0.
 
 ## Custom fields: Delete sends the field in both lists
 

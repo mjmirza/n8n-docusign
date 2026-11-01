@@ -8,10 +8,24 @@ import type {
 	ICredentialTestFunctions,
 	ICredentialsDecrypted,
 	INodeCredentialTestResult,
+	JsonObject,
 } from 'n8n-workflow';
-import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 import crypto from 'crypto';
 import { docuSignRequest, assertSafeId } from './transport';
+
+/** Deletes a Connect configuration; a 404 means it is already gone. */
+async function deleteStaleSubscription(
+	ctx: IHookFunctions,
+	accountId: string,
+	connectId: string,
+): Promise<void> {
+	try {
+		await docuSignRequest(ctx, 'DELETE', `/accounts/${accountId}/connect/${connectId}`);
+	} catch (error) {
+		if (!isNotFound(error)) throw new NodeApiError(ctx.getNode(), error as JsonObject);
+	}
+}
 
 export class DocuSignTrigger implements INodeType {
 	description: INodeTypeDescription = {
@@ -250,6 +264,9 @@ export class DocuSignTrigger implements INodeType {
 						if (configurations.some((c) => c?.urlToPublishTo === webhookUrl)) {
 							return true;
 						}
+						// The stored subscription points at an old URL; remove it so it stops receiving data.
+						await deleteStaleSubscription(this, accountId, connectId);
+						delete webhookData.connectId;
 					} catch (error) {
 						this.logger.warn('DocuSign Connect configuration check failed', {
 							connectId: String(webhookData.connectId),

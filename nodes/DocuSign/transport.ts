@@ -7,7 +7,7 @@ import type {
 	IDataObject,
 	JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError, sleep } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError, sleep } from 'n8n-workflow';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -477,7 +477,10 @@ export async function docuSignGetAll(
 	let startPosition = 0;
 	const count = Math.min(maxResults, 100);
 
-	for (let page = 0; page < 50; page++) {
+	// A hard ceiling only guards against a server that never ends; reaching it is an error, never a silent cut.
+	const maxPages = 10000;
+	let finished = false;
+	for (let page = 0; page < maxPages; page++) {
 		const pageQs = {
 			...qs,
 			count: String(count),
@@ -511,12 +514,19 @@ export async function docuSignGetAll(
 			resultSetSize === 0 ||
 			!response.nextUri
 		) {
+			finished = true;
 			break;
 		}
 
 		startPosition += resultSetSize;
 	}
 
+	if (!finished) {
+		throw new NodeOperationError(
+			ctx.getNode(),
+			`Stopped after ${maxPages} pages with more results still available; narrow the request with filters`,
+		);
+	}
 	return results.slice(0, maxResults);
 }
 

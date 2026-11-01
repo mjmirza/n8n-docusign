@@ -159,12 +159,21 @@ The **DocuSign Trigger** registers a DocuSign Connect configuration for the work
 
 Create a **DocuSign Connect HMAC API** credential with a key from DocuSign Admin, **Connect**, **Connect Keys**, and attach it to the trigger. The credential is encrypted and not included in workflow exports. The older Options > HMAC Secret field still works when no credential is attached, but it is stored in the workflow, so move the key to the credential. DocuSign signs every event with its active keys, and the trigger accepts a call only when one signature header matches one of your keys (constant time comparison). Separate two keys with a comma while you rotate. Calls without a valid signature get HTTP 401, and the trigger will not activate without a key.
 
+## Upgrading to 3.1
+
+| Change | What to do |
+|---|---|
+| Envelope Attachment Get returns binary data on node version 1 again, the 2.1.0 output | If a node built on 3.0.0 read the JSON response, read the file from the binary output instead |
+| Template Update Notification Settings sends exactly the fields you set, and 0 stays 0 | Nothing. Earlier versions dropped a lone Expire After and turned a 0 warning into 3 days |
+| Template Create SMS signers send a Phone Number; list, radio group and formula tabs send their items, radios, group name and formula | Nothing. New fields, empty by default |
+| Return All no longer stops at 50 pages; a changed webhook URL deletes the old Connect subscription | Nothing |
+
 ## Upgrading to 3.0
 
 | Change | What to do |
 |---|---|
-| The DocuSign node has a version 2. New nodes use it; saved nodes stay on version 1 | Nothing, unless you want the new behaviour below |
-| Version 2: Envelope Attachment Get returns the file as binary data in `data` | On version 1 it returns the JSON response again, as it did before 2.1.0. If a 2.1.0 workflow on version 1 reads the binary output, switch that node to version 2 |
+| The DocuSign node has a version 2. New nodes use it; saved nodes stay on version 1. Both behave the same | Nothing |
+| 3.0.0 only: Envelope Attachment Get returned JSON on version 1 | Fixed in 3.1.0. Both versions return the file as binary data in `data`, as 2.1.0 did. Upgrade from 3.0.0 to 3.1.0 |
 | Cloud Storage Get File is gone from the picker | DocuSign has no endpoint for it. Use List Files. Saved workflows that use it stop with a clear message |
 | New, off by default: Group Get Many paging, Send Empty and No Values on tab updates, phone numbers on recipient updates, four more envelope operations | Nothing. Turn them on where you need them |
 

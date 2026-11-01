@@ -1,5 +1,31 @@
 # Changelog
 
+## [3.0.0] - 2026-11-01
+
+### Breaking
+- The DocuSign node has a version 2. Saved nodes stay on version 1. On version 1, Envelope Attachment Get again returns DocuSign's JSON response, as before 2.1.0. On version 2 it returns the file as binary data. A 2.1.0 workflow on version 1 that reads the binary output needs its node switched to version 2.
+- Cloud Storage Get File is removed from the picker. DocuSign has no endpoint for it, so it never worked. Saved workflows that use it stop with a message pointing to List Files.
+
+### Added
+- Envelope picker: Get Notification Settings, List Audit Events, List Status Changes and Update Notification Settings. The handlers existed but could not be selected.
+- Group Get Many: Return All, plus Count, Start Position, Group Type, Search Text and Include User Count filters. Off by default, so existing workflows still send one request.
+- Envelope and template recipient tab Update: Send Empty and No Values, off by default. When on, the update sends cleared text and No values, so it can unlock a tab or turn Required off.
+- Phone Number on envelope recipient Update and on template recipient Create and Update, sent in DocuSign's SMS shape.
+- `npm run lint:n8n` runs n8n's verification scanner on the source and the packed package. CI and the publish workflow run it, so a release n8n would reject is never published.
+- `docs/DESIGN-DECISIONS.md` records where the node follows DocuSign's API rather than an operation's name, with the spec evidence.
+
+### Fixed
+- Connect Configuration Update calls `PUT /connect` with the configuration's ID in the body, and Publish to Connect is a POST.
+- Envelope and template custom field Delete send the field ID list to `.../custom_fields`.
+- List Recipient Names By Email calls the v2 API, the only version that has the endpoint.
+- List Status Changes maps the Filters to DocuSign's query names, the same as Get Many.
+- Template recipient SMS sends `SMS` and the phone shape.
+- Recipient Add checks the Recipient ID for unsafe characters.
+- The README no longer claims every ID is validated; it says which IDs are checked.
+
+### Changed
+- Every request any test sends must match a method and path in DocuSign's v2.1 spec. Every operation in the picker is run, and its JSON input must reach the request body.
+
 ## [2.1.0] - 2026-11-01
 
 ### Added

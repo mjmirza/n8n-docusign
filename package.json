@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-docusigns",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "DocuSign eSignature for n8n. 80 resources, 349 operations and envelope event triggers.",
   "license": "MIT",
   "repository": {
@@ -51,7 +51,8 @@
     "test": "jest",
     "test:coverage": "jest --coverage",
     "prepublishOnly": "npm run build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint:n8n": "node scripts/n8n-scan.mjs"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

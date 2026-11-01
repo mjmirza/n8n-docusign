@@ -63,7 +63,7 @@ export async function handleRecipient(
 				routingOrder,
 			};
 
-			if (recipientId) recipient.recipientId = recipientId;
+			if (recipientId) recipient.recipientId = assertSafeId(recipientId, 'Recipient ID');
 
 			// All additional recipient fields
 			const directFields = [

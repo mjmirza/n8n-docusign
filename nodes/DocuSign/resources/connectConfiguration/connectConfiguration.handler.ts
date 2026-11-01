@@ -52,7 +52,8 @@ export async function handleConnectConfiguration(
 			} catch {
 				throw new NodeOperationError(ctx.getNode(), 'Invalid JSON in request body');
 			}
-			return docuSignRequest(ctx, 'PUT', `${basePath}/${connectId}`, body);
+			// Updates go to PUT /connect with the configuration's connectId inside the body.
+			return docuSignRequest(ctx, 'PUT', basePath, { ...body, connectId });
 		}
 
 		case 'delete': {
@@ -105,9 +106,10 @@ export async function handleConnectConfiguration(
 			} catch {
 				throw new NodeOperationError(ctx.getNode(), 'Invalid JSON in request body');
 			}
+			// Historical republish is POST .../connect/envelopes/publish/historical.
 			return docuSignRequest(
 				ctx,
-				'PUT',
+				'POST',
 				`${basePath}/envelopes/publish/historical`,
 				body,
 			);

@@ -549,7 +549,7 @@ export const envelopeFields: INodeProperties[] = [
 		type: 'collection',
 		placeholder: 'Add Filter',
 		default: {},
-		displayOptions: { show: { resource: ['envelope'], operation: ['getAll'] } },
+		displayOptions: { show: { resource: ['envelope'], operation: ['getAll', 'listStatusChanges'] } },
 		options: [
 			{ displayName: 'Folder IDs', name: 'folderIds', type: 'string', default: '' },
 			{ displayName: 'From Date', name: 'fromDate', type: 'dateTime', default: '', description: 'Start date (ISO 8601)' },

@@ -4,7 +4,7 @@ import { NodeApiError } from 'n8n-workflow';
  * resolveCredentials, createCrudHandler) using mocked n8n context.
  */
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { createMockContext, createHttpError } from './helpers/mockContext';
+import { createMockContext, createHttpError, allowOffSpecRequests } from './helpers/mockContext';
 import { docuSignRequest, docuSignGetAll, createCrudHandler } from '../nodes/DocuSign/transport';
 
 // Some tests assert inside catch; an unexpected success must fail them.
@@ -443,6 +443,7 @@ describe('transport runtime', () => {
 		});
 
 		it('should handle non-account paths (e.g., diagnostics)', async () => {
+			allowOffSpecRequests(); // synthetic path, tests transport plumbing only
 			const ctx = createMockContext({
 				credentials: {
 					docuSignOAuth2Api: { environment: 'demo' },
@@ -896,6 +897,7 @@ describe('transport runtime', () => {
 		});
 
 		it('should handle get operation', async () => {
+			allowOffSpecRequests(); // synthetic path, tests transport plumbing only
 			const ctx = createMockContext({
 				credentials: {
 					docuSignOAuth2Api: { environment: 'demo' },
@@ -951,6 +953,7 @@ describe('transport runtime', () => {
 		});
 
 		it('should handle update without itemId (bulk update)', async () => {
+			allowOffSpecRequests(); // synthetic path, tests transport plumbing only
 			const ctx = createMockContext({
 				credentials: {
 					docuSignOAuth2Api: { environment: 'demo' },

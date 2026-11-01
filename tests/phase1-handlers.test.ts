@@ -411,6 +411,7 @@ describe('handleEnvelopeAttachment', () => {
 			credentials: BASE_CREDS,
 			parameters: { ...BASE_PARAMS, attachmentId: { 0: 'att-1' } },
 			httpResponses: [Buffer.from('file')],
+			typeVersion: 2,
 		});
 		const result = (await handleEnvelopeAttachment(ctx, 'get', 0)) as { json: IDataObject; binary: IDataObject };
 		expect(result.json).toHaveProperty('attachmentId', 'att-1');

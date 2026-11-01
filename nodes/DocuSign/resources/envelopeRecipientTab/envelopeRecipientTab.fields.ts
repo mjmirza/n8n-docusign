@@ -129,4 +129,15 @@ export const envelopeRecipientTabFields: INodeProperties[] = [
 			show: { resource: ['envelopeRecipientTab'], operation: ['delete'] },
 		},
 	},
+	{
+		displayName: 'Send Empty and No Values',
+		name: 'sendEmptyValues',
+		type: 'boolean',
+		default: false,
+		description:
+			'Whether to also send fields left empty or set to No, so an update can clear text, unlock a tab or turn Required off. Off sends only filled-in fields, as before.',
+		displayOptions: {
+			show: { resource: ['envelopeRecipientTab'], operation: ['update'] },
+		},
+	},
 ];

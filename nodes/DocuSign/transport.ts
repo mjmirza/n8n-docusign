@@ -304,8 +304,9 @@ export interface DocuSignRequestOptions {
 	returnFullResponse?: boolean;
 	/** null or 'arraybuffer' returns the body as a Buffer */
 	encoding?: null | 'arraybuffer';
-	/** Diagnostics live above the account API: 'restapi' is /restapi, 'version' is /restapi/v2.1 itself */
-	apiRoot?: 'restapi' | 'version';
+	/** Diagnostics live above the account API: 'restapi' is /restapi, 'version' is /restapi/v2.1 itself.
+	 * 'v2' targets /restapi/v2 for endpoints DocuSign did not carry into v2.1. */
+	apiRoot?: 'restapi' | 'version' | 'v2';
 	/** Extra request headers, for example X-DocuSign-Edit for locked envelopes */
 	headers?: Record<string, string>;
 	json?: boolean;
@@ -335,6 +336,7 @@ export async function docuSignRequest(
 	const accountMatch = /^accounts\/([a-zA-Z0-9_-]+)/.exec(cleanPath);
 	let baseUrl = await resolveBaseUrl(ctx, credentialType, environment, accountMatch?.[1]);
 	if (options?.apiRoot === 'restapi') baseUrl = baseUrl.replace(/\/v2\.1$/, '');
+	if (options?.apiRoot === 'v2') baseUrl = baseUrl.replace(/\/v2\.1$/, '/v2');
 	const fullUrl = cleanPath ? `${baseUrl}/${cleanPath}` : baseUrl;
 	const binaryResponse = options?.encoding === null || options?.encoding === 'arraybuffer';
 

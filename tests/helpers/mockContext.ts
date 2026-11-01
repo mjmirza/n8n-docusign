@@ -23,6 +23,8 @@ interface MockContextOptions {
 	continueOnFail?: boolean;
 	/** Input items */
 	inputData?: INodeExecutionData[];
+	/** Node type version; defaults to 1 like a workflow saved before version 2 existed */
+	typeVersion?: number;
 	/** Custom /oauth/userinfo answer (or an Error to throw); defaults to no accounts */
 	userInfo?: unknown;
 }
@@ -31,6 +33,28 @@ interface MockContextOptions {
 export interface RecordedRequest {
 	credentialType?: string;
 	options: Record<string, unknown>;
+}
+
+/** Every request recorded since the last drain, across all mock contexts. */
+const allRequests: RecordedRequest[] = [];
+
+let allowOffSpec = false;
+
+/** Lets one test call made-up paths, for transport tests that exercise generic plumbing. */
+export function allowOffSpecRequests(): void {
+	allowOffSpec = true;
+}
+
+/** Reports and resets the opt-out set by allowOffSpecRequests. */
+export function offSpecAllowed(): boolean {
+	const value = allowOffSpec;
+	allowOffSpec = false;
+	return value;
+}
+
+/** Returns and clears the requests recorded since the previous call. */
+export function drainAllRequests(): RecordedRequest[] {
+	return allRequests.splice(0, allRequests.length);
 }
 
 /** Requests made through a context built by createMockContext. */
@@ -54,7 +78,7 @@ export function createMockContext(
 		id: 'test-node-id',
 		name: 'DocuSign',
 		type: 'n8n-nodes-docusign.docuSign',
-		typeVersion: 1,
+		typeVersion: options.typeVersion ?? 1,
 		position: [0, 0],
 		parameters: {},
 	};
@@ -103,6 +127,7 @@ export function createMockContext(
 						return options.userInfo ?? { accounts: [] };
 					}
 					requests.push({ credentialType, options: requestOptions });
+					allRequests.push({ credentialType, options: requestOptions });
 					if (
 						options.httpResponses &&
 						httpCallIndex.current < options.httpResponses.length

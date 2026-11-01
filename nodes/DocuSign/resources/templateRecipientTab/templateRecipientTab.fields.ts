@@ -129,4 +129,15 @@ export const templateRecipientTabFields: INodeProperties[] = [
 			show: { resource: ['templateRecipientTab'], operation: ['delete'] },
 		},
 	},
+	{
+		displayName: 'Send Empty and No Values',
+		name: 'sendEmptyValues',
+		type: 'boolean',
+		default: false,
+		description:
+			'Whether to also send fields left empty or set to No, so an update can clear text, unlock a tab or turn Required off. Off sends only filled-in fields, as before.',
+		displayOptions: {
+			show: { resource: ['templateRecipientTab'], operation: ['update'] },
+		},
+	},
 ];

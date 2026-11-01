@@ -1,5 +1,6 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { docuSignRequest, templatePath, assertSafeId } from '../../transport';
+import { applyDeliveryMethod } from '../../utils/recipientDelivery';
 
 const VALID_RECIPIENT_TYPES = new Set([
 	'signers', 'carbonCopies', 'certifiedDeliveries', 'inPersonSigners',
@@ -47,9 +48,7 @@ export async function handleTemplateRecipient(
 				}
 			}
 
-			if (additionalFields.deliveryMethod && additionalFields.deliveryMethod !== 'email') {
-				recipient.deliveryMethod = additionalFields.deliveryMethod;
-			}
+			applyDeliveryMethod(recipient, additionalFields.deliveryMethod, additionalFields.phoneNumber);
 
 			if (additionalFields.emailNotificationSubject || additionalFields.emailNotificationBody) {
 				recipient.emailNotification = {
@@ -68,8 +67,10 @@ export async function handleTemplateRecipient(
 
 			const recipient: IDataObject = { recipientId };
 			for (const [key, value] of Object.entries(updateFields)) {
+				if (key === 'deliveryMethod' || key === 'phoneNumber') continue;
 				if (value !== undefined && value !== '') recipient[key] = value;
 			}
+			applyDeliveryMethod(recipient, updateFields.deliveryMethod, updateFields.phoneNumber);
 
 			return docuSignRequest(ctx, 'PUT', basePath, { [recipientType]: [recipient] });
 		}

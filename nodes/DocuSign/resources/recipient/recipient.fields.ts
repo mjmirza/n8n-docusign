@@ -158,6 +158,7 @@ export const recipientFields: INodeProperties[] = [
 			{ displayName: 'Email Notification Subject', name: 'emailNotificationSubject', type: 'string', default: '' },
 			{ displayName: 'Name', name: 'name', type: 'string', default: '' },
 			{ displayName: 'Note', name: 'note', type: 'string', default: '' },
+			{ displayName: 'Phone Number (for SMS)', name: 'phoneNumber', type: 'string', default: '', description: 'Used when delivery method is SMS. Country code, a space, then the number, e.g. +49 1701234567.' },
 			{ displayName: 'Routing Order', name: 'routingOrder', type: 'string', default: '' },
 		],
 	},

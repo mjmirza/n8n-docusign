@@ -1,146 +1,209 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/mjmirza/n8n-docusign/master/docs/images/docusign-node.png" alt="DocuSign node icon" width="96" height="96" />
+</p>
+
 # n8n-nodes-docusigns
 
-> **License.** Source-available under the [Fair Use Code License](https://github.com/mjmirza/n8n-docusign/blob/master/LICENSE). Free to use in your own workflows. Copying the code, derivative works, AI-generated clones, and commercial redistribution need written consent. Commercial licensing and setup help: [next8n.com](https://next8n.com).
+Send, track and manage DocuSign envelopes from any n8n workflow, without writing API code.
 
-n8n community node for [DocuSign eSignature REST API v2.1](https://developers.docusign.com/docs/esign-rest-api/) — 80 resources, 330+ operations, webhook triggers.
+[![npm version](https://img.shields.io/npm/v/n8n-nodes-docusigns)](https://www.npmjs.com/package/n8n-nodes-docusigns)
+[![npm downloads](https://img.shields.io/npm/dm/n8n-nodes-docusigns)](https://www.npmjs.com/package/n8n-nodes-docusigns)
+[![CI](https://img.shields.io/github/actions/workflow/status/mjmirza/n8n-docusign/ci.yml?branch=master&label=CI)](https://github.com/mjmirza/n8n-docusign/actions/workflows/ci.yml)
+[![License MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/mjmirza/n8n-docusign/blob/master/LICENSE)
+[![npm provenance](https://img.shields.io/badge/npm-signed%20provenance-brightgreen)](https://www.npmjs.com/package/n8n-nodes-docusigns#provenance)
 
-Built by [next8n](https://next8n.com) | [npm](https://www.npmjs.com/package/n8n-nodes-docusigns) | [DocuSign API Reference](https://developers.docusign.com/docs/esign-rest-api/reference/)
+## What you get
 
-## Installation
+- **Contracts go out on their own.** A new deal, hire or order in another tool creates and sends the DocuSign envelope, so nobody copies names and emails by hand.
+- **You hear the moment someone signs.** The DocuSign Trigger fires on completed, declined, voided and nine other events, so the next step starts within seconds instead of after someone checks the inbox.
+- **Signed PDFs land where they belong.** Download completed documents as n8n binary data and store them in your drive, CRM or archive in the same workflow.
+- **Templates do the heavy lifting.** Create envelopes from your existing DocuSign templates and fill the recipient roles from workflow data.
+- **The whole eSignature API is there when you need it.** 80 resources and 349 operations cover envelopes, templates, users, groups, PowerForms, Connect, billing and more.
+- **Failures are readable.** API errors show the DocuSign status code and reason in n8n, transient errors retry with backoff, and every ID is validated before a request leaves n8n.
 
-```bash
-# In n8n: Settings → Community Nodes → n8n-nodes-docusigns
+## From install to first signed envelope
 
-# Or manually:
-cd ~/.n8n && npm install n8n-nodes-docusigns
+1. In n8n open **Settings**, then **Community Nodes**, choose **Install**, enter `n8n-nodes-docusigns` and confirm.
+2. Create a **DocuSign OAuth2 API** credential (steps below), pick **Demo / Sandbox** for a first test and click **Sign in with DocuSign**.
+3. Add the **DocuSign** node, set **Category** to Envelopes, **Resource** to Envelope and **Operation** to Create From Template.
+4. Pick your account, paste a template ID, map one signer email and name, and run the node.
+5. The output holds the new `envelopeId` and status `sent`, and the signer receives the email from DocuSign.
+
+Add a **DocuSign Trigger** with the event Envelope Completed to continue the workflow once everyone has signed.
+
+## Credentials
+
+Both credentials start from an app in DocuSign Apps and Keys. Use the [demo account page](https://admindemo.docusign.com/apps-and-keys) for testing and the [production page](https://admin.docusign.com/apps-and-keys) for live accounts.
+
+### OAuth2 (recommended)
+
+1. In Apps and Keys choose **Add App and Integration Key** and copy the **Integration Key**.
+2. Under **Authentication** add a **Secret Key** and copy it once.
+3. Under **Redirect URIs** add the OAuth callback URL shown in the n8n credential form.
+4. In n8n create **DocuSign OAuth2 API**, paste the key and secret, choose the environment and sign in.
+
+Reference. [DocuSign Authorization Code Grant](https://developers.docusign.com/platform/auth/authcode/)
+
+### JWT (server to server)
+
+1. Use the same app, then under **Service Integration** choose **Generate RSA** and save the private key.
+2. Copy your **User ID** and **API Account ID** from the top of Apps and Keys.
+3. Grant consent once by opening the consent URL shown in the n8n credential form while logged in as that user.
+4. In n8n create **DocuSign JWT API** and paste the Integration Key, User ID, private key and Account ID.
+
+Reference. [DocuSign JWT Grant](https://developers.docusign.com/platform/auth/jwt/)
+
+## Operations
+
+The action node groups 80 resources into areas. Pick an area, a resource, then an operation.
+
+| Area | Resource | Operations |
+|---|---|---|
+| Envelopes | Envelope | Create, Create From Template, Delete, Download Documents, Get, Get Embedded Signing URL, Get Many, Send, Update, Void |
+| Envelopes | Envelope Attachment | Create / Update, Delete, Get, Get Many |
+| Envelopes | Envelope Comment | Get |
+| Envelopes | Envelope Consumer Disclosure | Get, Get by Language |
+| Envelopes | Envelope Custom Field | Create, Delete, Get Many, Update |
+| Envelopes | Envelope Document | Download, Get Many |
+| Envelopes | Envelope Document Field | Create, Delete, Get Many, Update |
+| Envelopes | Envelope Document Tab | Create, Delete, Get, Get by Page, Update |
+| Envelopes | Envelope Document Visibility | Get, Update, Update All Recipients |
+| Envelopes | Envelope Email Setting | Create, Delete, Get, Update |
+| Envelopes | Envelope Form Data | Get |
+| Envelopes | Envelope HTML Definition | List, Get Document |
+| Envelopes | Envelope Lock | Create, Delete, Get, Update |
+| Envelopes | Envelope Publish | Create Historical |
+| Envelopes | Envelope Recipient | Add, Delete, Get Many, Update |
+| Envelopes | Envelope Recipient Tab | Create, Delete, Get Many, Update |
+| Envelopes | Envelope Template | Apply, Apply to Document, Delete, Get Many, List by Document |
+| Envelopes | Envelope Transfer Rule | Create, Delete, Get Many, Update, Update Rules |
+| Envelopes | Envelope View | Create Console View, Create Correct View, Create Edit View, Create Recipient View, Create Sender View, Create Shared Recipient View, Delete Correct View |
+| Envelopes | Envelope Workflow | Create Workflow Step, Delete Delayed Routing, Delete Scheduled Sending, Delete Workflow, Delete Workflow Step, Get Delayed Routing, Get Scheduled Sending, Get Workflow, Get Workflow Step, Update Delayed Routing, Update Scheduled Sending, Update Workflow, Update Workflow Step |
+| Envelopes | Document Generation | Get Form Fields, Update Form Fields |
+| Envelopes | Responsive HTML Preview | Create Envelope Preview, Create Document Preview |
+| Envelopes | Tabs Blob | Get, Update |
+| Templates | Template | Create, Delete Document Page, Delete Group Share, Get, Get Many, Get Notification Settings, Get Page Images, Rotate Document Page, Update, Update Group Share, Update Notification Settings |
+| Templates | Template Custom Field | Create, Delete, Get Many, Update |
+| Templates | Template Document | Delete, Download, Get Many, Update, Update All |
+| Templates | Template Document Field | Create, Delete, Get Many, Update |
+| Templates | Template Document Tab | Create, Delete, Get, Get by Page, Update |
+| Templates | Template Document Visibility | Get, Update, Update List |
+| Templates | Template HTML Definition | List, List Document, Create Responsive HTML, Create Document Responsive HTML |
+| Templates | Template Lock | Create, Delete, Get, Update |
+| Templates | Template Recipient | Create, Create Preview, Delete, Delete Many, Get Many, Update |
+| Templates | Template Recipient Tab | Create, Delete, Get Many, Update |
+| Templates | Template View | Create Edit View |
+| Account | Account | Get, Get Billing Charges, Get Envelope Purge Configuration, Get Notification Defaults, List Recipient Names by Email, List Settings, List Shared Access, List Supported Languages, List Unsupported File Types, Update Envelope Purge Configuration, Update Notification Defaults, Update Settings, Update Shared Access |
+| Account | Account Brand | Create, Delete, Delete List, Delete Logo, Get, Get Export File, Get Logo, Get Many, Get Resource, List Resources, Update, Update Logo, Update Resource |
+| Account | Account Consumer Disclosure | Get, Get Default, Update |
+| Account | Account Custom Field | Create, Delete, Get Many, Update |
+| Account | Account Password Rule | Get, Get for User, Update |
+| Account | Account Permission Profile | Create, Delete, Get, Get Many, Update |
+| Account | Account Seal Provider | Get Many |
+| Account | Account Signature | Create, Delete, Delete Image, Get, Get Image, Get Many, Update, Update By ID, Update Image |
+| Account | Account Signature Provider | Get Many |
+| Account | Account Tab Setting | Get, Update |
+| Account | Account Watermark | Get, Preview, Update |
+| Account | Authorization | Create User Authorization, Create User Authorizations, Delete User Authorization, Delete User Authorizations, Get Agent User Authorizations, Get Principal User Authorizations, Get User Authorization, Update User Authorization |
+| Account | eNote Configuration | Delete, Get, Update |
+| Account | Favorite Template | Get, Un-Favorite, Update |
+| Account | Identity Verification | Get Many |
+| Users & Groups | User | Create, Delete, Delete Profile Image, Get, Get Many, Get Profile Image, Get Settings, Update, Update List, Update Profile Image, Update Settings |
+| Users & Groups | User Contact | Create, Delete, Delete List, Get, Update |
+| Users & Groups | User Custom Setting | Delete, Get Many, Update |
+| Users & Groups | User Profile | Get, Update |
+| Users & Groups | User Signature | Create, Delete, Delete Image, Get, Get Image, Get Many, Update, Update Image, Update List |
+| Users & Groups | Group | Create, Delete, Get Many, Update |
+| Users & Groups | Group Brand | Delete, Get, Update |
+| Users & Groups | Group User | Delete, Get Many, Update |
+| Billing | Billing Plan | Get, Get Account Plan, Get Credit Card, Get Downgrade Request, Get Many, Purchase Envelopes, Update, Update Downgrade |
+| Billing | Invoice | Get, Get Many |
+| Billing | Payment | Get, Get Many |
+| Billing | Payment Gateway | Get Many |
+| Connect | Connect Configuration | Create, Delete, Delete Event Log, Get, Get Event Failures, Get Event Log, Get Many, Publish to Connect, Retry Event for Envelope, Update |
+| Folders | Folder | Get Many, List Items, Move Envelopes, Search |
+| Signing Groups | Signing Group | Create, Delete, Get, Get Many, Update, Update List |
+| Signing Groups | Signing Group User | Delete, Get Many, Update |
+| PowerForms | PowerForm | Create, Delete, Delete Many, Get, Get Many, List Senders, Update |
+| PowerForms | PowerForm Data | Get Many |
+| Bulk Operations | Bulk Envelope | Create Bulk Send List, Delete Bulk Send List, Get Bulk Send List, Get Many, Send Bulk, Update Bulk Send List |
+| Bulk Operations | Chunked Upload | Commit, Create, Delete, Get, Update |
+| Workspaces | Workspace | Create, Delete, Get, Get Many, Update |
+| Workspaces | Workspace Item | Create File, Delete Folder Items, Get File, List File Pages, List Folder Items, Update File |
+| Advanced | BCC Email Archive | Create, Delete, Get, List |
+| Advanced | Cloud Storage | Get File, List Files, List Folders, List Providers |
+| Advanced | Custom Tab | Create, Delete, Get, Get Many, Update |
+| Advanced | Notary | Create, Get, Update |
+| Advanced | Notary Journal | List |
+| Advanced | Notary Jurisdiction | Create, Delete, Get, List, Update |
+| Advanced | Request Log | Delete, Get, Get Settings, List, Update Settings |
+| Advanced | Diagnostic Resource | Get |
+| Advanced | Diagnostic Service | Get |
+
+### Trigger events
+
+The **DocuSign Trigger** registers a DocuSign Connect configuration for the workflow and removes it when the workflow is deactivated. Events available are listed below.
+
+- Envelope Completed
+- Envelope Created
+- Envelope Declined
+- Envelope Delivered
+- Envelope Sent
+- Envelope Voided
+- Recipient Auth Failed
+- Recipient Auto Responded
+- Recipient Completed
+- Recipient Declined
+- Recipient Delivered
+- Recipient Sent
+
+Incoming calls are checked against an HMAC secret with a constant time comparison.
+
+## Compatibility
+
+- n8n 1.x and 2.x, self-hosted. Tested against `n8n-workflow` 2.45.
+- n8n Cloud once the package passes n8n verification. It ships with no runtime dependencies and passes the `@n8n/scan-community-package` checks.
+- DocuSign eSignature REST API v2.1, demo and production environments.
+
+## For developers
+
+### Structure
+
 ```
-
-## Connecting DocuSign
-
-### OAuth2 (Recommended)
-
-1. Create an app at [DocuSign Admin → Apps and Keys](https://admindemo.docusign.com/apps-and-keys)
-2. Copy **Integration Key** (Client ID) and generate a **Secret Key**
-3. Add your n8n OAuth callback as a **Redirect URI**: `https://your-n8n.com/rest/oauth2-credential/callback`
-4. In n8n: **Credentials → DocuSign OAuth2 API** → paste Client ID + Secret → click **Sign in with DocuSign**
-
-| Field | Where to find it |
-|-------|-----------------|
-| Client ID | DocuSign Admin → Apps and Keys → Integration Key |
-| Client Secret | DocuSign Admin → Apps and Keys → Secret Keys → Add Secret Key |
-| Redirect URI | n8n generates this — copy from the credential form and add to DocuSign app |
-
-### JWT (Server-to-server)
-
-1. Same app setup as OAuth2, but also **Generate RSA** keypair under Service Integration
-2. Grant consent once: `https://account-d.docusign.com/oauth/auth?response_type=code&scope=signature%20impersonation&client_id=YOUR_KEY&redirect_uri=https://www.docusign.com`
-3. In n8n: **Credentials → DocuSign JWT API** → paste Integration Key, User ID, RSA Private Key, Account ID
-
-| Field | Where to find it |
-|-------|-----------------|
-| Integration Key | DocuSign Admin → Apps and Keys |
-| User ID | DocuSign Admin → Apps and Keys → User ID (GUID) |
-| RSA Private Key | Generated via "Generate RSA" button → save the private key |
-| Account ID | DocuSign Admin → Apps and Keys → API Account ID |
-
-## Architecture
-
-```
-credentials/
-  DocuSignOAuth2Api.credentials.ts    # OAuth2 Authorization Code flow
-  DocuSignJwtApi.credentials.ts       # JWT Grant flow
+credentials/                 OAuth2 and JWT credential types
 nodes/DocuSign/
-  DocuSign.node.ts                    # Main action node (80 resources)
-  DocuSignTrigger.node.ts             # DocuSign Connect webhook trigger
-  transport.ts                        # HTTP client, retry, pagination, CRUD factory
-  utils/
-    descriptions.ts                   # Shared field definitions, category/resource maps
-    validators.ts                     # Input validation (email, date, Base64, file size)
-    binaryHelpers.ts                  # Document/image upload/download helpers
-  resources/
-    envelope/                         # operations.ts, fields.ts, handler.ts
-    template/                         # (same 3-file pattern x 80 resources)
-    ...
-tests/
-  transport.test.ts                   # Transport layer tests
-  transport-runtime.test.ts           # Runtime function tests (mock context)
-  validators.test.ts                  # Validator tests
-  security.test.ts                    # 72 security tests
-  error-handling.test.ts              # 106 error handling tests
-  compliance.test.ts                  # 47 compliance tests
-  branch-coverage.test.ts             # Exhaustive branch coverage
-  phase[1-9]-handlers.test.ts         # Per-phase handler tests
+  DocuSign.node.ts           action node, routes resources to handlers
+  DocuSignTrigger.node.ts    Connect webhook trigger
+  transport.ts               HTTP client, retry with backoff, error mapping
+  utils/                     shared fields, validators, binary helpers
+  resources/<resource>/      operations.ts, fields.ts, handler.ts per resource
+tests/                       Jest suites with a mocked n8n context
 ```
 
-Each resource follows: `operations.ts` (dropdown options) → `fields.ts` (UI inputs) → `handler.ts` (API calls).
+### Build, test, lint
 
-## Resources (80)
-
-| Category | Resources | Ops |
-|----------|-----------|-----|
-| **Envelopes** | Envelope, Recipient, Recipient Tab, Document, View, Custom Field, Form Data, Lock, Attachment, Template, Document Tab, Document Field, Email Setting, Document Visibility, Workflow, Transfer Rule, Consumer Disclosure, HTML Definition, Comment, Document Generation, Publish, Tabs Blob, Responsive HTML Preview | ~140 |
-| **Templates** | Template, Document, Recipient, Recipient Tab, Custom Field, Document Field, Document Tab, Document Visibility, Lock, View, HTML Definition | ~55 |
-| **Account** | Account, Brand, Permission Profile, Custom Field, Tab Setting, Consumer Disclosure, Password Rule, Watermark, Signature, Seal Provider, Signature Provider, eNote Config, Favorite Template, Identity Verification | ~82 |
-| **Users & Groups** | User, Profile, Custom Setting, Signature, Group, Group User, Group Brand, Contact, Authorization | ~48 |
-| **Signing Groups** | Signing Group, Signing Group User, Custom Tab | ~14 |
-| **Connect** | Connect Configuration | ~10 |
-| **PowerForms** | PowerForm, PowerForm Data | ~8 |
-| **Folders** | Folder | ~4 |
-| **Workspaces** | Workspace, Workspace Item | ~11 |
-| **Billing** | Billing Plan, Invoice, Payment, Payment Gateway | ~13 |
-| **Bulk Ops** | Bulk Envelope, Chunked Upload | ~11 |
-| **Cloud Storage** | Cloud Storage | ~4 |
-| **Diagnostics** | Request Log, Diagnostic Resource, Diagnostic Service | ~7 |
-| **Compliance** | BCC Email Archive | ~4 |
-| **Notary** | Notary, Jurisdiction, Journal | ~9 |
-
-## Security
-
-| Feature | Detail |
-|---------|--------|
-| SSRF | Fixed base URLs (demo/production only) |
-| ID Injection | `assertSafeId()` — alphanumeric + hyphens only, no raw values in errors |
-| Endpoint Sanitization | `sanitizeEndpoint()` — URL-decoded traversal blocked |
-| Prototype Pollution | Allowlist validation on recipient types, tab types, logo types, scope |
-| Webhook HMAC | SHA-256 + `timingSafeEqual()` |
-| Retry | Exponential backoff + jitter, 429/502/503/504 only |
-| Errors | `NodeApiError`, 1000-char truncation, no PII leakage |
-
-## Tests
+Use Node 22 or 24.
 
 ```bash
-npm test              # 884 tests, 0 failures
-npm run test:coverage # 100% functions, 100% lines per handler
+npm ci
+npm run build          # tsc plus icon copy into dist
+npx tsc --noEmit       # type check
+npm test               # Jest
+npx @n8n/scan-community-package n8n-nodes-docusigns   # n8n verification scan of the published version
 ```
 
-| Suite | Tests | Coverage |
-|-------|-------|----------|
-| Transport | 120 | 100% lines |
-| Phase 1-9 Handlers | 609 | 100% lines per handler |
-| Security | 72 | ID injection, prototype pollution, SSRF, credential leakage |
-| Error Handling | 106 | All error codes, retry, JSON parse, missing credentials |
-| Compliance | 47 | GDPR, OWASP, n8n standards, input validation |
-| Branch Coverage | ~50 | || fallback paths, conditional branches |
+### Release flow
 
-## Development
+1. Bump `version` in package.json and add a CHANGELOG entry on a branch.
+2. Open a pull request, wait for CI, squash merge.
+3. Tag the merge commit `vX.Y.Z` and push the tag.
+4. The Publish workflow builds, tests and runs `npm publish --provenance`, so every version on npm links back to the exact commit that produced it.
 
-```bash
-npm install          # Install dependencies
-npm run dev          # Watch mode
-npm run build        # Production build (tsc + gulp icons)
-npm test             # Run all tests
-npm run test:coverage # Coverage report
-npm run lint         # Lint
-```
+## Support
 
-## Publishing
-
-```bash
-npm run prepublishOnly  # Swaps README → npm version, builds
-npm publish             # Publishes to npm
-npm run postpublish     # Restores dev README
-```
+- Email support@next8n.com
+- Bugs and feature requests on [GitHub issues](https://github.com/mjmirza/n8n-docusign/issues)
 
 ## License
 
-[FUCL (Fair Use Code License)](LICENSE)
+[MIT](LICENSE). DocuSign is a trademark of DocuSign, Inc. This is an independent integration, see [docs/TRADEMARKS.md](docs/TRADEMARKS.md).

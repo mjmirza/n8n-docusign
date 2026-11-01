@@ -1,5 +1,5 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
-import { applyDeliveryMethod } from '../../utils/recipientDelivery';
+import { applyDeliveryMethod, buildRecipientEmailNotification } from '../../utils/recipientDelivery';
 import { docuSignRequest, assertSafeId, envelopePath } from '../../transport';
 
 /** Allowlist of valid DocuSign recipient types — prevents prototype pollution */
@@ -82,13 +82,8 @@ export async function handleRecipient(
 			applyDeliveryMethod(recipient, additionalFields.deliveryMethod, additionalFields.phoneNumber);
 
 			// Per-recipient email notification
-			if (additionalFields.emailNotificationSubject || additionalFields.emailNotificationBody) {
-				recipient.emailNotification = {
-					emailSubject: additionalFields.emailNotificationSubject || '',
-					emailBody: additionalFields.emailNotificationBody || '',
-					supportedLanguage: additionalFields.supportedLanguage || '',
-				};
-			}
+			const emailNotification = buildRecipientEmailNotification(additionalFields);
+			if (emailNotification) recipient.emailNotification = emailNotification;
 
 			return docuSignRequest(ctx, 'POST', basePath, {
 				[recipientType]: [recipient],

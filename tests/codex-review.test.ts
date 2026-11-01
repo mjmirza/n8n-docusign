@@ -660,6 +660,7 @@ describe('round 3: Connect HMAC key lives in a credential', () => {
 				},
 				getRequestObject: () => ({ rawBody: raw }),
 				getResponseObject: () => ({ status: (c: number) => (status(c), { json: jest.fn() }) }),
+				getWorkflowStaticData: () => ({}),
 				helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
 			} as unknown as IWebhookFunctions,
 		};
@@ -968,10 +969,10 @@ describe('round 4: envelope operations are in the picker', () => {
 });
 
 describe('round 4: node versions keep saved workflows stable', () => {
-	it('the node offers versions 1 and 2, new nodes get 2', () => {
+	it('the node offers versions 1, 2 and 3, new nodes get 3; saved versions stay', () => {
 		const d = new DocuSign().description;
-		expect(d.version).toEqual([1, 2]);
-		expect(d.defaultVersion).toBe(2);
+		expect(d.version).toEqual([1, 2, 3]);
+		expect(d.defaultVersion).toBe(3);
 	});
 
 	it('version 1 Attachment Get keeps the binary output 2.1.0 shipped', async () => {
@@ -1075,13 +1076,18 @@ describe('round 5: template notification settings', () => {
 		return getRecordedRequests(ctx)[0].options.body as IDataObject;
 	};
 
-	it('sends an expiration period set on its own', async () => {
-		expect(await run({ expireAfter: 10 })).toEqual({ expirations: { expireAfter: '10' } });
+	it('sends an expiration period set on its own, enabled so DocuSign applies it', async () => {
+		// expireAfter only takes effect when expireEnabled is true (v2.1 spec, expirations.expireAfter).
+		expect(await run({ expireAfter: 10 })).toEqual({ expirations: { expireAfter: '10', expireEnabled: 'true' } });
 	});
 
 	it('keeps 0 as 0 instead of replacing it with a default', async () => {
 		expect(await run({ expireEnabled: 'true', expireWarn: 0 })).toEqual({ expirations: { expireEnabled: 'true', expireWarn: '0' } });
-		expect(await run({ reminderEnabled: 'true', reminderDelay: 0 })).toEqual({ reminders: { reminderEnabled: 'true', reminderDelay: '0' } });
+		// A reminders-only request also carries expireEnabled false, the account default, never expiry 0.
+		expect(await run({ reminderEnabled: 'true', reminderDelay: 0 })).toEqual({
+			reminders: { reminderEnabled: 'true', reminderDelay: '0' },
+			expirations: { expireEnabled: 'false' },
+		});
 	});
 });
 
@@ -1294,8 +1300,9 @@ describe('round 6: query parameters match the spec', () => {
 	it('Connect event log filters Status after DocuSign returns the logs', async () => {
 		const ctx = createMockContext({
 			credentials: C,
-			parameters: params({ accountId: 'acct-1', filters: { status: 'failed' } }),
-			httpResponses: [{ logs: [{ logId: '1', status: 'Failed' }, { logId: '2', status: 'Sent' }] }],
+			parameters: params({ accountId: 'acct-1', filters: { status: 'completed' } }),
+			// connectLog.status is the envelope status (Sent, Completed, ...), never Failed.
+			httpResponses: [{ logs: [{ logId: '1', status: 'Completed' }, { logId: '2', status: 'Sent' }] }],
 		});
 		const out = (await handleConnectConfiguration(ctx, 'getEventLog', 0)) as { logs: IDataObject[] };
 		expect(out.logs.map((l) => l.logId)).toEqual(['1']);
@@ -1307,5 +1314,122 @@ describe('round 6: the package carries the trademark notice', () => {
 	it('files includes docs/TRADEMARKS.md', () => {
 		const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { files: string[] };
 		expect(pkg.files).toContain('docs/TRADEMARKS.md');
+	});
+});
+
+// Round 7: findings from the Codex review of 3.2.0.
+
+describe('round 7: a reminders-only request never expires the envelope next day', () => {
+	const createParams = (additionalFields: IDataObject) => ({
+		accountId: 'acct-1',
+		emailSubject: 'Sign',
+		status: 'created',
+		templateName: 'T',
+		name: 'T',
+		description: '',
+		additionalFields,
+		signers: {},
+		recipients: {},
+		documents: { document: [] },
+	});
+
+	it.each([
+		['envelope', handleEnvelope],
+		['template', handleTemplate],
+	])('%s create with only Reminder Delay sends expireEnabled false', async (_k, handler) => {
+		const ctx = createMockContext({ credentials: C, parameters: params(createParams({ reminderDelay: 3 })), httpResponses: [{}] });
+		await (handler as (c: IExecuteFunctions, o: string, i: number) => Promise<unknown>)(ctx, 'create', 0);
+		const notification = (getRecordedRequests(ctx)[0].options.body as { notification: IDataObject }).notification;
+		expect(notification.expirations).toEqual({ expireEnabled: 'false' });
+		expect(notification.reminders).toMatchObject({ reminderEnabled: 'true', reminderDelay: '3' });
+	});
+});
+
+describe('round 7: a signed event must belong to this subscription', () => {
+	const trigger = new DocuSignTrigger();
+	const run = async (body: IDataObject, connectId: string | undefined) => {
+		const raw = Buffer.from(JSON.stringify(body));
+		const status = jest.fn();
+		const ctx = {
+			getBodyData: () => body,
+			getHeaderData: () => ({ 'x-docusign-signature-1': createHmac('sha256', 'k').update(raw).digest('base64') }),
+			getNodeParameter: (name: string, fallback?: unknown) => (name === 'events' ? ['envelope-completed'] : name === 'options' ? { hmacSecret: 'k' } : fallback),
+			getCredentials: async () => {
+				throw new Error('not set');
+			},
+			getRequestObject: () => ({ rawBody: raw }),
+			getResponseObject: () => ({ status: (c: number) => (status(c), { json: jest.fn() }) }),
+			getWorkflowStaticData: () => (connectId ? { connectId } : {}),
+			helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
+		} as unknown as IWebhookFunctions;
+		return { result: await trigger.webhook.call(ctx), status };
+	};
+
+	it('ignores an event this trigger did not subscribe to', async () => {
+		const { result, status } = await run({ event: 'envelope-sent', configurationId: 7 }, '7');
+		expect(result.workflowData).toBeUndefined();
+		expect(status).toHaveBeenCalledWith(200);
+	});
+
+	it('ignores an event from another Connect configuration', async () => {
+		const { result } = await run({ event: 'envelope-completed', configurationId: 8 }, '7');
+		expect(result.workflowData).toBeUndefined();
+	});
+
+	it('runs on a subscribed event from its own configuration', async () => {
+		const { result } = await run({ event: 'envelope-completed', configurationId: 7 }, '7');
+		expect(result.workflowData).toBeDefined();
+	});
+});
+
+describe('round 7: an empty list outputs no items from node version 3', () => {
+	const runList = async (typeVersion: number) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ resource: 'group', operation: 'list', accountId: 'acct-1', returnAll: true, groupFilters: {} }),
+			httpResponses: [{ groups: [], resultSetSize: '0', totalSetSize: '0' }],
+			typeVersion,
+		});
+		return new DocuSign().execute.call(ctx);
+	};
+
+	it('version 3 returns no items, so downstream nodes do not run', async () => {
+		expect((await runList(3))[0]).toEqual([]);
+	});
+
+	it('versions 1 and 2 keep the count item saved workflows rely on', async () => {
+		expect((await runList(2))[0]).toEqual([{ json: { success: true, count: 0 }, pairedItem: { item: 0 } }]);
+	});
+});
+
+describe('round 7: email language is sent on its own', () => {
+	it('envelope create signer sends supportedLanguage without a subject or body', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', emailSubject: 'Sign', status: 'created', additionalFields: {}, documents: { document: [] }, signers: { signer: [{ email: 'a@example.com', name: 'A', supportedLanguage: 'de' }] } }),
+			httpResponses: [{}],
+		});
+		await handleEnvelope(ctx, 'create', 0);
+		const body = getRecordedRequests(ctx)[0].options.body as { recipients: { signers: IDataObject[] } };
+		expect(body.recipients.signers[0].emailNotification).toEqual({ supportedLanguage: 'de' });
+	});
+
+	it('recipient add sends supportedLanguage without a subject or body', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientType: 'signers', recipientEmail: 'a@example.com', recipientName: 'A', recipientId: '1', additionalFields: { supportedLanguage: 'de' } }),
+			httpResponses: [{}],
+		});
+		await handleRecipient(ctx, 'add', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0].emailNotification).toEqual({ supportedLanguage: 'de' });
+	});
+});
+
+describe('round 7: the Connect log Status filter names envelope statuses', () => {
+	it('does not suggest Failed, which is not a connectLog status', () => {
+		const field = new DocuSign().description.properties.find((p) => p.name === 'filters' && (p.displayOptions?.show?.resource as string[]).includes('connectConfiguration'));
+		const status = (field as { options: Array<{ name: string; description: string }> }).options.find((o) => o.name === 'status');
+		expect(status?.description).not.toContain('Failed');
+		expect(status?.description).toContain('Get Event Failures');
 	});
 });

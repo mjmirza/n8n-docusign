@@ -38,3 +38,12 @@ export function applyDeliveryMethod(target: IDataObject, method: unknown, phone:
 	target.deliveryMethod = method === 'sms' ? 'SMS' : method;
 	if (phone) target.phoneNumber = toRecipientPhone(String(phone));
 }
+
+/** recipientEmailNotification from the subject, body and language fields; only the ones set are sent. */
+export function buildRecipientEmailNotification(fields: IDataObject): IDataObject | undefined {
+	const out: IDataObject = {};
+	if (fields.emailNotificationSubject) out.emailSubject = fields.emailNotificationSubject;
+	if (fields.emailNotificationBody) out.emailBody = fields.emailNotificationBody;
+	if (fields.supportedLanguage) out.supportedLanguage = fields.supportedLanguage;
+	return Object.keys(out).length > 0 ? out : undefined;
+}

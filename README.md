@@ -159,6 +159,15 @@ The **DocuSign Trigger** registers a DocuSign Connect configuration for the work
 
 Create a **DocuSign Connect HMAC API** credential with a key from DocuSign Admin, **Connect**, **Connect Keys**, and attach it to the trigger. The credential is encrypted and not included in workflow exports. The older Options > HMAC Secret field still works when no credential is attached, but it is stored in the workflow, so move the key to the credential. DocuSign signs every event with its active keys, and the trigger accepts a call only when one signature header matches one of your keys (constant time comparison). Separate two keys with a comma while you rotate. Calls without a valid signature get HTTP 401, and the trigger will not activate without a key.
 
+## Upgrading to 3.3
+
+| Change | What to do |
+|---|---|
+| New DocuSign nodes use version 3: a list with no results outputs no items | Nothing for saved nodes, which stay on version 1 or 2 and keep the count item. In new nodes, turn on Always Output Data if a later step must run on an empty list |
+| Envelope and template Create with only reminders also send the account-default expiration | Nothing. Before, such envelopes expired the next day |
+| The trigger runs only for events it subscribed to and from its own Connect configuration | Nothing |
+| A recipient's Email Language is sent without a custom subject or body | Nothing |
+
 ## Upgrading to 3.2
 
 | Change | What to do |

@@ -17,6 +17,7 @@ import {
 	DocuSignTrigger,
 	verifyDocuSignSignature,
 	parseHmacSecrets,
+	matchesSubscription,
 } from '../nodes/DocuSign/DocuSignTrigger.node';
 import { DocuSignJwtApi, buildDocuSignJwtAssertion } from '../credentials/DocuSignJwtApi.credentials';
 import { handleRecipient } from '../nodes/DocuSign/resources/recipient/recipient.handler';
@@ -499,7 +500,7 @@ describe('round 2: trigger Connect lookup and documents', () => {
 		}) as unknown as IHookFunctions;
 
 	it('recognises an existing configuration in the configurations array', async () => {
-		const ctx = hook([{ configurations: [{ connectId: 'c-1', urlToPublishTo: 'https://n8n.example.com/webhook/abc' }] }]);
+		const ctx = hook([{ configurations: [{ connectId: 'c-1', urlToPublishTo: 'https://n8n.example.com/webhook/abc', events: ['envelope-completed'] }] }]);
 		await expect(methods.checkExists.call(ctx)).resolves.toBe(true);
 	});
 
@@ -1821,5 +1822,89 @@ describe('round 9d: whole-word matching defaults to DocuSign', () => {
 describe('round 9d: the quick start names the template role', () => {
 	it('step 4 mentions the Role Name', () => {
 		expect(readFileSync('README.md', 'utf8')).toMatch(/4\. Pick your account, paste a template ID, add a template role with the Role Name/);
+	});
+});
+
+// Round 9e: fourth branch review.
+
+describe('round 9e: an existing subscription must match the requested settings', () => {
+	const methods = new DocuSignTrigger().webhookMethods.default;
+	const hook = (config: IDataObject, staticData: IDataObject) =>
+		Object.assign(createMockContext({ credentials: C, httpResponses: [{ configurations: [config] }, {}] }), {
+			getWorkflowStaticData: () => staticData,
+			getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/abc',
+			getNodeParameter: (name: string, fallback?: unknown) =>
+				(({ accountId: 'acct-1', events: ['envelope-completed'], options: { hmacSecret: 'k' } }) as IDataObject)[name] ?? fallback,
+			logger: { warn: jest.fn() },
+		}) as unknown as IHookFunctions;
+
+	it('re-registers a subscription listening to other events', async () => {
+		const staticData: IDataObject = { connectId: 'c-1' };
+		const ctx = hook({ urlToPublishTo: 'https://n8n.example.com/webhook/abc', events: ['envelope-sent'] }, staticData);
+		await expect(methods.checkExists.call(ctx)).resolves.toBe(false);
+		expect(getRecordedRequests(ctx as unknown as IExecuteFunctions).map((r) => r.options.method)).toEqual(['GET', 'DELETE']);
+		expect(staticData.connectId).toBeUndefined();
+	});
+
+	it('keeps a subscription with the same events, JSON SIM delivery and HMAC', () => {
+		expect(matchesSubscription({ events: ['envelope-completed'], eventData: { format: 'json' }, deliveryMode: 'SIM', includeHMAC: 'true' }, ['envelope-completed'])).toBe(true);
+		expect(matchesSubscription({ events: ['envelope-completed'], eventData: { format: 'xml' } }, ['envelope-completed'])).toBe(false);
+		expect(matchesSubscription({ events: ['envelope-completed'], includeHMAC: 'false' }, ['envelope-completed'])).toBe(false);
+		expect(matchesSubscription({ events: ['envelope-completed'], deliveryMode: 'Aggregate' }, ['envelope-completed'])).toBe(false);
+	});
+});
+
+describe('round 9e: Phone Auth sends phoneAuthentication', () => {
+	it('envelope create signer with sender numbers', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', emailSubject: 'Sign', status: 'created', additionalFields: {}, documents: { document: [] }, signers: { signer: [{ email: 'a@example.com', name: 'A', idCheckConfigurationName: 'Phone Auth $', phoneAuthNumbers: '+14155550100, +14155550101' }] } }),
+			httpResponses: [{}],
+		});
+		await handleEnvelope(ctx, 'create', 0);
+		const signer = (getRecordedRequests(ctx)[0].options.body as { recipients: { signers: IDataObject[] } }).recipients.signers[0];
+		expect(signer.phoneAuthentication).toEqual({ recipMayProvideNumber: 'false', senderProvidedNumbers: ['+14155550100', '+14155550101'] });
+	});
+
+	it('recipient add without numbers lets the recipient supply one', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientType: 'signers', recipientEmail: 'a@example.com', recipientName: 'A', recipientId: '1', additionalFields: { idCheckConfigurationName: 'Phone Auth $' } }),
+			httpResponses: [{}],
+		});
+		await handleRecipient(ctx, 'add', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0].phoneAuthentication).toEqual({ recipMayProvideNumber: 'true', senderProvidedNumbers: [] });
+	});
+});
+
+describe('round 9e: font size', () => {
+	const run = async (fontSize: string) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [{ placementMethod: 'anchor', anchorString: '/s/', fontSize }] } }),
+			httpResponses: [{}],
+		});
+		await handleEnvelopeRecipientTab(ctx, 'create', 0);
+		return (getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0];
+	};
+
+	it('sends a chosen Size 12', async () => {
+		expect((await run('size12')).fontSize).toBe('size12');
+	});
+
+	it('Account Default, the default, leaves fontSize out as earlier versions did', async () => {
+		expect(await run('')).not.toHaveProperty('fontSize');
+		for (const tabs of new DocuSign().description.properties.filter((p) => p.name === 'tabs')) {
+			const values = (tabs.options as Array<{ values: Array<{ name: string; default: unknown }> }>)[0].values;
+			expect(values.find((v) => v.name === 'fontSize')?.default).toBe('');
+		}
+	});
+});
+
+describe('round 9e: README describes the version 4 list rule', () => {
+	it('does not tell users the object-list rule is on version 3', () => {
+		const readme = readFileSync('README.md', 'utf8');
+		expect(readme).not.toContain('| Version 3 nodes output no items for list responses whose result arrays are empty');
+		expect(readme).toContain('that rule moved to version 4');
 	});
 });

@@ -47,3 +47,10 @@ export function buildRecipientEmailNotification(fields: IDataObject): IDataObjec
 	if (fields.supportedLanguage) out.supportedLanguage = fields.supportedLanguage;
 	return Object.keys(out).length > 0 ? out : undefined;
 }
+
+/** Phone Auth $ needs phoneAuthentication; sender numbers are offered, otherwise the recipient supplies one. */
+export function buildPhoneAuthentication(idCheck: unknown, numbers: unknown): IDataObject | undefined {
+	if (idCheck !== 'Phone Auth $') return undefined;
+	const list = String(numbers ?? '').split(',').map((n) => n.trim()).filter(Boolean);
+	return { recipMayProvideNumber: list.length > 0 ? 'false' : 'true', senderProvidedNumbers: list };
+}

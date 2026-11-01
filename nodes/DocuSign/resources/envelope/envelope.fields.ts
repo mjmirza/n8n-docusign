@@ -118,6 +118,7 @@ export const envelopeFields: INodeProperties[] = [
 					},
 					{ displayName: 'Name', name: 'name', type: 'string', default: '', required: true, description: 'The signer full name' },
 					{ displayName: 'Note', name: 'note', type: 'string', default: '', description: 'A private note for this recipient' },
+					{ displayName: 'Phone Auth Numbers', name: 'phoneAuthNumbers', type: 'string', default: '', description: 'For Phone Auth $: comma-separated numbers the recipient may use. Empty lets the recipient supply one.' },
 					{ displayName: 'Phone Number (for SMS)', name: 'phoneNumber', type: 'string', default: '', description: 'Required when delivery method is SMS. Country code, a space, then the number, e.g. +1 4155550100.' },
 					{ displayName: 'Recipient ID', name: 'recipientId', type: 'string', default: '1', description: 'Unique ID for this recipient within the envelope' },
 					{ displayName: 'Require ID Lookup', name: 'requireIdLookup', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false', description: 'Require knowledge-based authentication (KBA). Turned on automatically when an ID Check Config Name is set.' },

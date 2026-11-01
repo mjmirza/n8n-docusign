@@ -1,5 +1,5 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
-import { applyDeliveryMethod, buildRecipientEmailNotification } from '../../utils/recipientDelivery';
+import { applyDeliveryMethod, buildPhoneAuthentication, buildRecipientEmailNotification } from '../../utils/recipientDelivery';
 import { docuSignRequest, assertSafeId, envelopePath } from '../../transport';
 
 /** Allowlist of valid DocuSign recipient types — prevents prototype pollution */
@@ -79,6 +79,8 @@ export async function handleRecipient(
 			}
 			// An ID check only applies with requireIdLookup true, so choosing one turns it on.
 			if (recipient.idCheckConfigurationName) recipient.requireIdLookup = 'true';
+			const phoneAuthentication = buildPhoneAuthentication(recipient.idCheckConfigurationName, additionalFields.phoneAuthNumbers);
+			if (phoneAuthentication) recipient.phoneAuthentication = phoneAuthentication;
 
 			// Delivery method + phone
 			applyDeliveryMethod(recipient, additionalFields.deliveryMethod, additionalFields.phoneNumber);

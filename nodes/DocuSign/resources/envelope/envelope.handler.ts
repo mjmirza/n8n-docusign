@@ -1,6 +1,6 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-import { applyDeliveryMethod, buildRecipientEmailNotification } from '../../utils/recipientDelivery';
+import { applyDeliveryMethod, buildPhoneAuthentication, buildRecipientEmailNotification } from '../../utils/recipientDelivery';
 import {
 	docuSignRequest,
 	docuSignGetAll,
@@ -115,6 +115,8 @@ export async function handleEnvelope(
 				if (s.idCheckConfigurationName) signer.idCheckConfigurationName = s.idCheckConfigurationName;
 				// An ID check only applies with requireIdLookup true, so choosing one turns it on.
 				if (s.requireIdLookup === 'true' || s.idCheckConfigurationName) signer.requireIdLookup = 'true';
+				const phoneAuthentication = buildPhoneAuthentication(s.idCheckConfigurationName, s.phoneAuthNumbers);
+				if (phoneAuthentication) signer.phoneAuthentication = phoneAuthentication;
 				if (s.requireSignOnPaper === 'true') signer.requireSignOnPaper = 'true';
 				if (s.embeddedRecipientStartURL) signer.embeddedRecipientStartURL = s.embeddedRecipientStartURL;
 				// Per-recipient email notification override; a language alone is enough to send it.

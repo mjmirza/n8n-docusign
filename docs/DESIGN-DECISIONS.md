@@ -135,3 +135,19 @@ Logo upload sends the raw image with `Content-Disposition: form-data; name="file
 as the spec's description shows. Resource upload is `multipart/form-data` with a `file.xml` part,
 as the spec's `consumes` and form parameter define.
 
+## An existing subscription must still match
+
+`checkExists` keeps a stored Connect configuration only when its URL, its events, JSON format,
+SIM delivery and HMAC signing all match what the trigger asks for. Any difference deletes it so
+activation registers the current settings, rather than leaving events that never arrive.
+
+## Phone authentication
+
+`Phone Auth $` needs a `phoneAuthentication` object. With Phone Auth Numbers set, those are the
+sender-provided numbers; empty lets the recipient supply one (`recipMayProvideNumber`).
+
+## Font size defaults to the account
+
+Font Size has an Account Default choice, the default, which leaves `fontSize` out as earlier
+versions did for their Size 12 default. Every chosen size is sent, including Size 12.
+

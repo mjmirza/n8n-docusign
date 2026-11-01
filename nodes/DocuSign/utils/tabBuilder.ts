@@ -74,7 +74,8 @@ export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues 
 		if (t.disableAutoSize === 'true') tab.disableAutoSize = 'true';
 
 		// Styling
-		if (t.fontSize && t.fontSize !== 'size12') tab.fontSize = t.fontSize;
+		// Empty is Account Default; any chosen size, including size12, is sent.
+		if (t.fontSize) tab.fontSize = t.fontSize;
 		if (t.bold === 'true') tab.bold = 'true';
 		if (t.italic === 'true') tab.italic = 'true';
 		if (t.underline === 'true') tab.underline = 'true';

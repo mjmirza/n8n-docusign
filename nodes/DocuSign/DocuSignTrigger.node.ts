@@ -14,6 +14,17 @@ import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workf
 import crypto from 'crypto';
 import { docuSignRequest, assertSafeId } from './transport';
 
+/** True when a stored Connect configuration still has this trigger's events, JSON SIM delivery and HMAC. */
+export function matchesSubscription(config: IDataObject, events: string[]): boolean {
+	const stored = Array.isArray(config.events) ? (config.events as string[]).map(String) : [];
+	const sameEvents = stored.length === events.length && events.every((e) => stored.includes(e));
+	const format = (config.eventData as IDataObject | undefined)?.format;
+	const json = format === undefined || String(format).toLowerCase() === 'json';
+	const sim = config.deliveryMode === undefined || config.deliveryMode === 'SIM';
+	const hmac = config.includeHMAC === undefined || String(config.includeHMAC) === 'true';
+	return sameEvents && json && sim && hmac;
+}
+
 /** Refuses activation without a Connect HMAC key; DocuSign keys cannot be created through the API. */
 async function requireHmacKey(ctx: IHookFunctions, options?: IDataObject): Promise<void> {
 	const opts = options ?? (ctx.getNodeParameter('options', {}) as IDataObject);
@@ -274,10 +285,11 @@ export class DocuSignTrigger implements INodeType {
 						const configurations = Array.isArray(config?.configurations)
 							? (config.configurations as IDataObject[])
 							: [config];
-						if (configurations.some((c) => c?.urlToPublishTo === webhookUrl)) {
+						const events = this.getNodeParameter('events', []) as string[];
+						if (configurations.some((c) => c?.urlToPublishTo === webhookUrl && matchesSubscription(c, events))) {
 							return true;
 						}
-						// The stored subscription points at an old URL; remove it so it stops receiving data.
+						// An old URL or changed settings: remove it so create() registers the current one.
 						await deleteStaleSubscription(this, accountId, connectId);
 						delete webhookData.connectId;
 					} catch (error) {

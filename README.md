@@ -164,7 +164,7 @@ Create a **DocuSign Connect HMAC API** credential with a key from DocuSign Admin
 | Change | What to do |
 |---|---|
 | The trigger runs only for a signed event that names a subscribed event and carries its own Connect configuration ID; payloads without them are ignored | Nothing for subscriptions the trigger created, which always send both |
-| Version 3 nodes output no items for list responses whose result arrays are empty, such as `{ groups: [] }` | Nothing for saved nodes on versions 1 and 2 |
+| 3.4.0 only: version 3 nodes dropped list responses whose result arrays are empty | Fixed in 3.5.0: that rule moved to version 4, so saved version 3 nodes behave as in 3.3.0 |
 | Anchored tabs send the Anchor Match Whole Word, Case Sensitive and Ignore If Not Present values you choose | Nothing |
 | Anchor Horizontal Alignment offers only Left and Right; Center is rejected with a message | Pick Left or Right. DocuSign never supported Center |
 

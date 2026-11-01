@@ -8,7 +8,7 @@ import {
 	templatePath,
 } from '../../transport';
 import { applyDeliveryMethod } from '../../utils/recipientDelivery';
-import { buildNotificationBody } from '../../utils/notification';
+import { buildNotificationBody, completeNotification } from '../../utils/notification';
 
 /**
  * Handle all Template resource operations.
@@ -137,7 +137,7 @@ export async function handleTemplate(
 						reminderFrequency: String(additionalFields.reminderFrequency || 2),
 					};
 				}
-				body.notification = notification;
+				body.notification = completeNotification(notification);
 			}
 
 			return docuSignRequest(ctx, 'POST', basePath, body);

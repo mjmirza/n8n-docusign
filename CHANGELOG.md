@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.3.0] - 2026-11-01
+
+### Fixed
+- Envelope and template Create with only reminders send `expirations.expireEnabled: false` (the account default), so DocuSign no longer sets expiry to 0, which expired the envelope the next day. Notification updates do the same, and setting a value without its enable flag turns the block on.
+- The trigger ignores signed events it did not subscribe to and events from another Connect configuration, answering 200 so DocuSign does not retry.
+- A recipient's Email Language is sent on its own, without needing a custom subject or body.
+- The Connect event log Status description lists envelope statuses and points failed deliveries to Get Event Failures.
+
+### Added
+- Node version 3, the default for new nodes: a list with no results outputs no items. Saved nodes on versions 1 and 2 keep the count item.
+
+
 ## [3.2.0] - 2026-11-01
 
 ### Fixed

@@ -87,6 +87,9 @@ export async function handleWorkspaceItem(
 				ctx.getNodeParameter('fileId', i) as string,
 				'File ID',
 			);
+			if (ctx.getNode().typeVersion >= 4) {
+				return docuSignRequest(ctx, 'PUT', `${basePath}/files/${fileId}`);
+			}
 			const uploadSource = ctx.getNodeParameter('uploadSource', i) as string;
 			let fileBase64: string;
 			let fileName = 'upload';

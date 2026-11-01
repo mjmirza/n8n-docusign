@@ -11,6 +11,7 @@
 - Revoke User Authorizations wraps the documented array in `{ authorizations: [...] }`.
 - Contact Emails sends a list of address strings.
 - Request bodies use the spec field names: `customFieldType`, `eNoteConfigured`, template `documents`, publish `envelopes`, `allowApiSequentialSigning`, `allowVaulting`, and the user profile address fields.
+- On node version 4, Workspace Update File sends DocuSign's metadata update without file content, as the spec defines; earlier versions send the request they sent.
 - Envelope attachment Replace sends the attachment ID it replaces; brand logo uploads send `Content-Disposition`, resource uploads send multipart `file.xml`.
 - On node version 4, an ID check sets `requireIdLookup` unless No was chosen; earlier versions send what 3.4.0 sent. Phone Auth sends `phoneAuthentication`; Witness For and group lists are sent in the spec shape.
 - JSON inputs accept an object as well as text everywhere.

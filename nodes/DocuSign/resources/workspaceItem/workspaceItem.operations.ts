@@ -13,7 +13,7 @@ export const workspaceItemOperations: INodeProperties[] = [
 			{ name: 'Get File', value: 'getFile', description: 'Download a file from a workspace', action: 'Download workspace file' },
 			{ name: 'List File Pages', value: 'listFilePages', description: 'List pages of a workspace file', action: 'List workspace file pages' },
 			{ name: 'List Folder Items', value: 'listFolderItems', description: 'List items in a workspace folder', action: 'List workspace folder items' },
-			{ name: 'Update File', value: 'updateFile', description: 'Update a workspace file. DocuSign documents this endpoint as a metadata update; it does not guarantee replacing the file content.', action: 'Update workspace file' },
+			{ name: 'Update File', value: 'updateFile', description: 'Update a workspace file\'s metadata as documented by DocuSign. On node version 4 and above, no file content is sent.', action: 'Update workspace file' },
 		],
 		default: 'listFolderItems',
 	},

@@ -2152,3 +2152,39 @@ describe('round 9i: envelope signer Require ID Lookup', () => {
 		expect((await run('true', v)).requireIdLookup).toBe('true');
 	});
 });
+
+describe('round 9j: workspace Update File matches the spec', () => {
+	it('version 4 sends PUT without a body or reading upload parameters', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', workspaceId: 'w-1', folderId: 'f-1', fileId: 'file-1' }),
+			httpResponses: [{}],
+			typeVersion: 4,
+		});
+		const getNodeParameter = jest.spyOn(ctx, 'getNodeParameter');
+		await handleWorkspaceItem(ctx, 'updateFile', 0);
+		const requests = getRecordedRequests(ctx);
+		expect(requests).toHaveLength(1);
+		expect(requests[0].options.method).toBe('PUT');
+		expect(requests[0].options.url).toBe(`${DEMO}/accounts/acct-1/workspaces/w-1/folders/f-1/files/file-1`);
+		expect(requests[0].options.body ?? {}).toEqual({});
+		for (const name of ['uploadSource', 'inputBinaryPropertyName', 'base64Content']) {
+			expect(getNodeParameter.mock.calls.some(([parameter]) => parameter === name)).toBe(false);
+		}
+	});
+
+	it('version 3 keeps sending fileBase64 and name', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', workspaceId: 'w-1', folderId: 'f-1', fileId: 'file-1', uploadSource: 'base64', base64Content: 'cGRm' }),
+			httpResponses: [{}],
+			typeVersion: 3,
+		});
+		await handleWorkspaceItem(ctx, 'updateFile', 0);
+		const requests = getRecordedRequests(ctx);
+		expect(requests).toHaveLength(1);
+		expect(requests[0].options.method).toBe('PUT');
+		expect(requests[0].options.url).toBe(`${DEMO}/accounts/acct-1/workspaces/w-1/folders/f-1/files/file-1`);
+		expect(requests[0].options.body).toEqual({ fileBase64: 'cGRm', name: 'upload' });
+	});
+});

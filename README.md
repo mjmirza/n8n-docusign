@@ -169,6 +169,7 @@ Create a **DocuSign Connect HMAC API** credential with a key from DocuSign Admin
 | Revoke User Authorizations accepts a JSON array of `{ "authorizationId" }` objects or IDs and sends DocuSign's `{ "authorizations": [...] }` body | Nothing. A full body still works |
 | Contact Emails is a list of addresses, such as `["user@example.com"]`; the older `[{ "email": ... }]` form is converted | Nothing |
 | Access code fields are masked in the editor | Nothing |
+| Workspace Update File on node version 4 updates metadata only; DocuSign defines no request to replace file content | To change content, upload a new file with Create File |
 | Several fields use the spec names DocuSign accepts (custom field type, eNote configuration, template documents, publish envelopes, permission profile and address settings) | Nothing |
 | Folder List Items Count, folder Search Text and the Auto Stamp and Confirm Initial Envelope Send tab settings are removed; DocuSign does not define them | Remove them from saved workflows if you set them; they were never applied |
 

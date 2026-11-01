@@ -48,10 +48,15 @@ export async function handleEnvelopeTemplate(
 				ctx.getNodeParameter('templateId', i) as string,
 				'Template ID',
 			);
+			const documentId = assertSafeId(
+				ctx.getNodeParameter('documentId', i) as string,
+				'Document ID',
+			);
+			// Templates are removed per document: DELETE .../documents/{documentId}/templates/{templateId}.
 			return docuSignRequest(
 				ctx,
 				'DELETE',
-				`${envPath}/templates/${templateId}`,
+				`${envPath}/documents/${documentId}/templates/${templateId}`,
 			);
 		}
 

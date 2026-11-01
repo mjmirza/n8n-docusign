@@ -19,11 +19,10 @@ export async function handleAccountPasswordRule(
 		}
 
 		case 'getForUser': {
-			const userId = assertSafeId(
-				ctx.getNodeParameter('userId', i) as string,
-				'User ID',
-			);
-			return docuSignRequest(ctx, 'GET', `${basePath}/${userId}`);
+			// DocuSign only exposes per-user rules for the signed-in user: GET /current_user/password_rules.
+			// The User ID field is kept for saved workflows and only validated.
+			assertSafeId(ctx.getNodeParameter('userId', i) as string, 'User ID');
+			return docuSignRequest(ctx, 'GET', 'current_user/password_rules');
 		}
 
 		case 'update': {

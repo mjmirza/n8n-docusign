@@ -9,7 +9,7 @@ export const accountPasswordRuleOperations: INodeProperties[] = [
 		displayOptions: { show: { resource: ['accountPasswordRule'] } },
 		options: [
 			{ name: 'Get', value: 'get', description: 'Get account password rules', action: 'Get account password rules' },
-			{ name: 'Get for User', value: 'getForUser', description: 'Get password rules for a specific user', action: 'Get password rules for user' },
+			{ name: 'Get for User', value: 'getForUser', description: 'Get the password rules that apply to the signed-in user', action: 'Get password rules for user' },
 			{ name: 'Update', value: 'update', description: 'Update account password rules', action: 'Update account password rules' },
 		],
 		default: 'get',

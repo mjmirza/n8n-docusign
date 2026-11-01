@@ -28,7 +28,8 @@ export async function handleWorkspaceItem(
 			if (filters.count !== undefined) qs.count = filters.count;
 			if (filters.start_position !== undefined) qs.start_position = filters.start_position;
 			if (filters.type) qs.type = filters.type;
-			return docuSignRequest(ctx, 'GET', `${basePath}/items`, undefined, qs);
+			// GET .../workspaces/{workspaceId}/folders/{folderId} lists the folder's items.
+			return docuSignRequest(ctx, 'GET', basePath, undefined, qs);
 		}
 
 		case 'getFile': {
@@ -132,7 +133,8 @@ export async function handleWorkspaceItem(
 				}
 			}
 
-			return docuSignRequest(ctx, 'DELETE', `${basePath}/items`, {
+			// DELETE on the folder URL with a workspaceItemList body.
+			return docuSignRequest(ctx, 'DELETE', basePath, {
 				items,
 			} as unknown as IDataObject);
 		}

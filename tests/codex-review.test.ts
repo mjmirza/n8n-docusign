@@ -26,6 +26,20 @@ import { handleEnvelopePublish } from '../nodes/DocuSign/resources/envelopePubli
 import { handleUserContact } from '../nodes/DocuSign/resources/userContact/userContact.handler';
 import { handleEnvelopeLock } from '../nodes/DocuSign/resources/envelopeLock/envelopeLock.handler';
 import { handleTemplateLock } from '../nodes/DocuSign/resources/templateLock/templateLock.handler';
+import { handleFolder } from '../nodes/DocuSign/resources/folder/folder.handler';
+import { handleWorkspaceItem } from '../nodes/DocuSign/resources/workspaceItem/workspaceItem.handler';
+import { handleUser } from '../nodes/DocuSign/resources/user/user.handler';
+import { handleEnvelopeTemplate } from '../nodes/DocuSign/resources/envelopeTemplate/envelopeTemplate.handler';
+import { handleEnvelopeComment } from '../nodes/DocuSign/resources/envelopeComment/envelopeComment.handler';
+import { handleAccountPasswordRule } from '../nodes/DocuSign/resources/accountPasswordRule/accountPasswordRule.handler';
+import { handleDiagnosticService } from '../nodes/DocuSign/resources/diagnosticService/diagnosticService.handler';
+import { handleDiagnosticResource } from '../nodes/DocuSign/resources/diagnosticResource/diagnosticResource.handler';
+import { DocuSignConnectHmacApi } from '../credentials/DocuSignConnectHmacApi.credentials';
+
+// Some tests assert inside catch; an unexpected success must fail them.
+beforeEach(() => {
+	expect.hasAssertions();
+});
 
 const C = { docuSignOAuth2Api: { environment: 'demo' } };
 const DEMO = 'https://demo.docusign.net/restapi/v2.1';
@@ -576,5 +590,237 @@ describe('round 2: routes and bodies from the v2.1 spec', () => {
 			expect(JSON.parse(req.headers['X-DocuSign-Edit']).LockToken).toBe('tok-9');
 			expect(req.body ?? {}).not.toHaveProperty('lockToken');
 		}
+	});
+});
+
+describe('round 3: envelope update sends every offered field', () => {
+	const run = (updateFields: IDataObject) =>
+		createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'env-1', updateFields }),
+			httpResponses: [{}],
+		});
+
+	it('maps purge state, status, void reason, locks and brand', async () => {
+		const ctx = run({
+			purgeState: 'documents_queued',
+			status: 'voided',
+			voidedReason: 'Wrong file',
+			messageLock: 'true',
+			recipientsLock: 'false',
+			brandId: 'b-1',
+			emailSubject: 'S',
+		});
+		await handleEnvelope(ctx, 'update', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({
+			emailSubject: 'S',
+			brandId: 'b-1',
+			purgeState: 'documents_queued',
+			status: 'voided',
+			voidedReason: 'Wrong file',
+			messageLock: 'true',
+			recipientsLock: 'false',
+		});
+	});
+
+	it('requires a void reason before voiding', async () => {
+		const ctx = run({ status: 'voided' });
+		await expect(handleEnvelope(ctx, 'update', 0)).rejects.toThrow('Voided Reason is required');
+		expect(getRecordedRequests(ctx)).toHaveLength(0);
+	});
+});
+
+describe('round 3: Connect HMAC key lives in a credential', () => {
+	const raw = Buffer.from('{"event":"envelope-sent"}');
+	const sign = (key: string) => createHmac('sha256', key).update(raw).digest('base64');
+	const trigger = new DocuSignTrigger();
+
+	function ctxWith(credentialKey: string | undefined, optionKey: string | undefined, signature: string) {
+		const status = jest.fn();
+		return {
+			status,
+			ctx: {
+				getBodyData: () => JSON.parse(raw.toString()),
+				getHeaderData: () => ({ 'x-docusign-signature-1': signature }),
+				getNodeParameter: () => (optionKey ? { hmacSecret: optionKey } : {}),
+				getCredentials: async (type: string) => {
+					if (type === 'docuSignConnectHmacApi' && credentialKey) return { hmacSecret: credentialKey };
+					throw new Error('not set');
+				},
+				getRequestObject: () => ({ rawBody: raw }),
+				getResponseObject: () => ({ status: (c: number) => (status(c), { json: jest.fn() }) }),
+				helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
+			} as unknown as IWebhookFunctions,
+		};
+	}
+
+	it('the credential exists as an encrypted password field', () => {
+		const cred = new DocuSignConnectHmacApi();
+		expect(cred.name).toBe('docuSignConnectHmacApi');
+		expect(cred.properties[0]).toMatchObject({ name: 'hmacSecret', typeOptions: { password: true } });
+		const node = new DocuSignTrigger().description;
+		expect(node.credentials?.find((c) => c.name === 'docuSignConnectHmacApi')).toBeDefined();
+		expect(node.properties.find((p) => p.name === 'options')).toBeDefined();
+	});
+
+	it('verifies with the credential key, which wins over the old option', async () => {
+		const { ctx } = ctxWith('cred-key', 'old-key', sign('cred-key'));
+		expect((await trigger.webhook.call(ctx)).workflowData).toBeDefined();
+		const { ctx: ctx2, status } = ctxWith('cred-key', 'old-key', sign('old-key'));
+		await trigger.webhook.call(ctx2);
+		expect(status).toHaveBeenCalledWith(401);
+	});
+
+	it('falls back to the deprecated option for existing workflows', async () => {
+		const { ctx } = ctxWith(undefined, 'old-key', sign('old-key'));
+		expect((await trigger.webhook.call(ctx)).workflowData).toBeDefined();
+	});
+});
+
+describe('round 3: trigger keeps track of its subscription', () => {
+	const methods = new DocuSignTrigger().webhookMethods.default;
+	const hook = (responses: unknown[], staticData: IDataObject) =>
+		Object.assign(createMockContext({ credentials: C, httpResponses: responses }), {
+			getWorkflowStaticData: () => staticData,
+			getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/abc',
+			getNodeParameter: () => 'acct-1',
+			logger: { warn: jest.fn() },
+		}) as unknown as IHookFunctions;
+
+	it('raises a transient lookup failure instead of reporting the subscription missing', async () => {
+		await expect(methods.checkExists.call(hook([createHttpError(500)], { connectId: 'c-1' }))).rejects.toThrow();
+	});
+
+	it('keeps the stored ID when delete fails for a reason other than 404', async () => {
+		const staticData: IDataObject = { connectId: 'c-1' };
+		await expect(methods.delete.call(hook([createHttpError(500)], staticData))).resolves.toBe(false);
+		expect(staticData.connectId).toBe('c-1');
+	});
+});
+
+describe('round 3: writes are not repeated after a 5xx', () => {
+	it('does not retry a PUT that may already have added an attachment', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			httpResponses: [createHttpError(502, {}, 'bad gateway', { 'retry-after': '1' }), { ok: true }],
+		});
+		await expect(docuSignRequest(ctx, 'PUT', 'accounts/a/envelopes/e/attachments', { a: 1 })).rejects.toThrow('[502]');
+		expect(getRecordedRequests(ctx)).toHaveLength(1);
+	});
+});
+
+describe('round 3: routes from the v2.1 spec', () => {
+	const urlOf = (ctx: IExecuteFunctions) => getRecordedRequests(ctx)[0].options.url;
+
+	it('folder list items is GET folders/{folderId}', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', folderId: 'f-1', filters: {} }), httpResponses: [{}] });
+		await handleFolder(ctx, 'listItems', 0);
+		expect(urlOf(ctx)).toBe(`${DEMO}/accounts/acct-1/folders/f-1`);
+	});
+
+	it('workspace folder list and delete use the folder URL', async () => {
+		const base = { accountId: 'acct-1', workspaceId: 'w-1', folderId: 'f-1' };
+		const list = createMockContext({ credentials: C, parameters: params({ ...base, filters: {} }), httpResponses: [{}] });
+		await handleWorkspaceItem(list, 'listFolderItems', 0);
+		expect(urlOf(list)).toBe(`${DEMO}/accounts/acct-1/workspaces/w-1/folders/f-1`);
+		const del = createMockContext({ credentials: C, parameters: params({ ...base, itemsJson: '[{"itemId":"i-1"}]' }), httpResponses: [{}] });
+		await handleWorkspaceItem(del, 'deleteFolderItems', 0);
+		expect(urlOf(del)).toBe(`${DEMO}/accounts/acct-1/workspaces/w-1/folders/f-1`);
+		expect(getRecordedRequests(del)[0].options.body).toEqual({ items: [{ itemId: 'i-1' }] });
+	});
+
+	it('user profile image uses users/{id}/profile/image', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', userId: 'u-1' }), httpResponses: [{}] });
+		await handleUser(ctx, 'deleteProfileImage', 0);
+		expect(urlOf(ctx)).toBe(`${DEMO}/accounts/acct-1/users/u-1/profile/image`);
+	});
+
+	it('attachment delete sends the ID list to .../attachments', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', attachmentId: 'a-1' }), httpResponses: [{}] });
+		await handleEnvelopeAttachment(ctx, 'delete', 0);
+		expect(urlOf(ctx)).toBe(`${DEMO}/accounts/acct-1/envelopes/e-1/attachments`);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ attachments: [{ attachmentId: 'a-1' }] });
+	});
+
+	it('attachment get returns the file as binary', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', attachmentId: 'a-1' }),
+			httpResponses: [Uint8Array.from([1, 2, 3]).buffer],
+		});
+		const out = (await handleEnvelopeAttachment(ctx, 'get', 0)) as { binary: { data: { data: string } } };
+		expect(getRecordedRequests(ctx)[0].options.encoding).toBe('arraybuffer');
+		expect(Buffer.from(out.binary.data.data, 'base64')).toEqual(Buffer.from([1, 2, 3]));
+	});
+
+	it('envelope template delete is scoped to the document', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', templateId: 't-1', documentId: '2' }), httpResponses: [{}] });
+		await handleEnvelopeTemplate(ctx, 'delete', 0);
+		expect(urlOf(ctx)).toBe(`${DEMO}/accounts/acct-1/envelopes/e-1/documents/2/templates/t-1`);
+		const field = new DocuSign().description.properties.find(
+			(p) => p.name === 'documentId' && (p.displayOptions?.show?.resource as string[] | undefined)?.includes('envelopeTemplate'),
+		);
+		expect(field?.displayOptions?.show?.operation).toContain('delete');
+	});
+
+	it('envelope comments come from the PDF transcript', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', envelopeId: 'e-1' }), httpResponses: [Buffer.from('%PDF')] });
+		const out = (await handleEnvelopeComment(ctx, 'get', 0)) as { binary: { data: { mimeType: string } } };
+		expect(urlOf(ctx)).toBe(`${DEMO}/accounts/acct-1/envelopes/e-1/comments/transcript`);
+		expect(out.binary.data.mimeType).toBe('application/pdf');
+	});
+
+	it('password rules for a user use current_user/password_rules', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', userId: 'u-1' }), httpResponses: [{}] });
+		await handleAccountPasswordRule(ctx, 'getForUser', 0);
+		expect(urlOf(ctx)).toBe(`${DEMO}/current_user/password_rules`);
+	});
+
+	it('diagnostics call /restapi/service_information and /restapi/v2.1', async () => {
+		const svc = createMockContext({ credentials: C, httpResponses: [{}] });
+		await handleDiagnosticService(svc, 'get', 0);
+		expect(urlOf(svc)).toBe('https://demo.docusign.net/restapi/service_information');
+		const res = createMockContext({ credentials: C, httpResponses: [{}] });
+		await handleDiagnosticResource(res, 'get', 0);
+		expect(urlOf(res)).toBe(DEMO);
+	});
+});
+
+describe('round 3: notification and delivery shapes', () => {
+	it('notification update nests expirations and reminders', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({
+				accountId: 'acct-1',
+				envelopeId: 'e-1',
+				notificationSettings: { expireAfter: 30, expireEnabled: 'true', reminderDelay: 2, reminderEnabled: 'true', reminderFrequency: 3 },
+			}),
+			httpResponses: [{}],
+		});
+		await handleEnvelope(ctx, 'updateNotificationSettings', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({
+			expirations: { expireAfter: '30', expireEnabled: 'true' },
+			reminders: { reminderDelay: '2', reminderEnabled: 'true', reminderFrequency: '3' },
+		});
+	});
+
+	it('an explicit Email delivery switches an SMS recipient back', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientType: 'signers', recipientId: '1', updateFields: { deliveryMethod: 'email' } }),
+			httpResponses: [{}],
+		});
+		await handleRecipient(ctx, 'update', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0].deliveryMethod).toBe('email');
+	});
+});
+
+describe('round 3: HMAC credential test', () => {
+	it('accepts a key and rejects an empty one', async () => {
+		const test = new DocuSignTrigger().methods.credentialTest.docuSignConnectHmacTest;
+		const ok = await test.call({} as never, { data: { hmacSecret: 'a,b' } } as never);
+		expect(ok.status).toBe('OK');
+		const bad = await test.call({} as never, { data: { hmacSecret: '' } } as never);
+		expect(bad.status).toBe('Error');
 	});
 });

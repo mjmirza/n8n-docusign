@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { applyDeliveryMethod } from '../../utils/recipientDelivery';
 import {
 	docuSignRequest,
@@ -381,11 +382,12 @@ export async function handleEnvelope(
 				{},
 			) as IDataObject;
 
-			const body: IDataObject = {};
-			if (updateFields.emailSubject)
-				body.emailSubject = updateFields.emailSubject;
-			if (updateFields.emailBlurb)
-				body.emailBlurb = updateFields.emailBlurb;
+			const body = buildEnvelopeUpdateBody(updateFields);
+			if (body.status === 'voided' && !body.voidedReason) {
+				throw new NodeOperationError(ctx.getNode(), 'Voided Reason is required when Status is Voided', {
+					itemIndex: i,
+				});
+			}
 
 			return docuSignRequest(
 				ctx,
@@ -571,7 +573,7 @@ export async function handleEnvelope(
 				accountId,
 				ctx.getNodeParameter('envelopeId', i) as string,
 			);
-			const body = ctx.getNodeParameter(
+			const settings = ctx.getNodeParameter(
 				'notificationSettings',
 				i,
 				{},
@@ -580,7 +582,7 @@ export async function handleEnvelope(
 				ctx,
 				'PUT',
 				`${envPath}/notification`,
-				body,
+				buildNotificationBody(settings),
 			);
 		}
 
@@ -608,4 +610,33 @@ export function buildTemplateRole(r: IDataObject): IDataObject {
 	}
 	applyDeliveryMethod(role, r.deliveryMethod, r.phoneNumber);
 	return role;
+}
+
+/** Envelope Update fields as the v2.1 envelope model names them; unset options are left out. */
+export function buildEnvelopeUpdateBody(fields: IDataObject): IDataObject {
+	const body: IDataObject = {};
+	for (const key of ['emailSubject', 'emailBlurb', 'brandId', 'purgeState', 'status', 'voidedReason']) {
+		if (fields[key] !== undefined && fields[key] !== '') body[key] = fields[key];
+	}
+	for (const key of ['messageLock', 'recipientsLock']) {
+		if (fields[key] !== undefined && fields[key] !== '') body[key] = String(fields[key]);
+	}
+	return body;
+}
+
+/** envelopeNotificationRequest nests the flat UI fields under expirations and reminders. */
+export function buildNotificationBody(settings: IDataObject): IDataObject {
+	const pick = (keys: string[]): IDataObject | undefined => {
+		const out: IDataObject = {};
+		for (const key of keys) {
+			if (settings[key] !== undefined && settings[key] !== '') out[key] = String(settings[key]);
+		}
+		return Object.keys(out).length > 0 ? out : undefined;
+	};
+	const body: IDataObject = {};
+	const expirations = pick(['expireAfter', 'expireEnabled', 'expireWarn']);
+	const reminders = pick(['reminderDelay', 'reminderEnabled', 'reminderFrequency']);
+	if (expirations) body.expirations = expirations;
+	if (reminders) body.reminders = reminders;
+	return body;
 }

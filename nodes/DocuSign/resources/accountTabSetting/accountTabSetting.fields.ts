@@ -30,28 +30,6 @@ export const accountTabSettingFields: INodeProperties[] = [
 				description: 'Whether to allow tab ordering',
 			},
 			{
-				displayName: 'Confirm Initial Envelope Send',
-				name: 'confirmInitialEnvelopeSend',
-				type: 'options',
-				options: [
-					{ name: 'Yes', value: 'true' },
-					{ name: 'No', value: 'false' },
-				],
-				default: 'false',
-				description: 'Whether to confirm initial envelope send',
-			},
-			{
-				displayName: 'Enable Auto Stamp',
-				name: 'enableAutoStamp',
-				type: 'options',
-				options: [
-					{ name: 'Yes', value: 'true' },
-					{ name: 'No', value: 'false' },
-				],
-				default: 'true',
-				description: 'Whether automatic stamping is enabled',
-			},
-			{
 				displayName: 'Tab Locking Enabled',
 				name: 'tabLockingEnabled',
 				type: 'options',

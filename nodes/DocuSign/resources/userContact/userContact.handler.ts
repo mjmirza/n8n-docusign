@@ -1,5 +1,6 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all User Contact operations.
@@ -29,11 +30,15 @@ export async function handleUserContact(
 			const contact: IDataObject = { name };
 			if (additionalFields.contactId) contact.contactId = additionalFields.contactId;
 			if (additionalFields.emails) {
-				contact.emails = JSON.parse(additionalFields.emails as string);
+				// Contact.emails is a list of strings; the older [{ email }] form is converted.
+				const emails: unknown = parseJsonInput(additionalFields.emails as string);
+				contact.emails = (Array.isArray(emails) ? emails : [emails]).map((e) =>
+					e && typeof e === 'object' ? String((e as IDataObject).email ?? '') : String(e),
+				);
 			}
 			if (additionalFields.organization) contact.organization = additionalFields.organization;
 			if (additionalFields.contactPhoneNumbers) {
-				contact.contactPhoneNumbers = JSON.parse(additionalFields.contactPhoneNumbers as string);
+				contact.contactPhoneNumbers = parseJsonInput(additionalFields.contactPhoneNumbers as string);
 			}
 			if (additionalFields.signingGroup) contact.signingGroup = additionalFields.signingGroup;
 			if (additionalFields.signingGroupName) contact.signingGroupName = additionalFields.signingGroupName;
@@ -43,7 +48,7 @@ export async function handleUserContact(
 		}
 
 		case 'update': {
-			const contacts = JSON.parse(
+			const contacts = parseJsonInput(
 				ctx.getNodeParameter('contactsBody', i) as string,
 			);
 			// contactModRequest takes contactList; accept a bare array or an object that already has it.

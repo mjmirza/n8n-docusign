@@ -43,10 +43,16 @@ function parseTabArray(ctx: IExecuteFunctions, i: number, raw: unknown, field: s
 }
 
 export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues = false): IDataObject[] {
+	const v4 = ctx.getNode().typeVersion >= 4;
 	const tabsData = ctx.getNodeParameter('tabs', i, {}) as IDataObject;
 	const tabEntries = (tabsData.tab || []) as IDataObject[];
 
-	return tabEntries.map((t) => {
+	return tabEntries.map((entry) => {
+		// Required and Locked defaulted to No before version 4; a value n8n fills in as '' keeps that.
+		const t: IDataObject = v4 ? entry : { ...entry };
+		for (const key of ['required', 'locked']) {
+			if (!v4 && t[key] === '') t[key] = 'false';
+		}
 		const tab: IDataObject = {
 			documentId: t.documentId || '1',
 			pageNumber: t.pageNumber || '1',
@@ -74,7 +80,8 @@ export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues 
 		if (t.disableAutoSize === 'true') tab.disableAutoSize = 'true';
 
 		// Styling
-		if (t.fontSize && t.fontSize !== 'size12') tab.fontSize = t.fontSize;
+		// Version 4: empty is Account Default and any size is sent. Earlier versions keep 3.3.0's rule.
+		if (v4 ? t.fontSize : t.fontSize && t.fontSize !== 'size12') tab.fontSize = t.fontSize;
 		if (t.bold === 'true') tab.bold = 'true';
 		if (t.italic === 'true') tab.italic = 'true';
 		if (t.underline === 'true') tab.underline = 'true';
@@ -99,15 +106,17 @@ export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues 
 
 		// Anchor options go out exactly as chosen whenever the tab is anchored, so No is never left
 		// to whatever default DocuSign applies. The v2.1 spec allows only left or right alignment.
-		if (tab.anchorString) {
-			for (const key of ['anchorIgnoreIfNotPresent', 'anchorCaseSensitive', 'anchorMatchWholeWord']) {
-				if (t[key] === 'true' || t[key] === 'false') tab[key] = t[key];
-			}
+		// Saved values include defaults, so earlier node versions keep 3.3.0's send-Yes-only rule.
+		for (const key of ['anchorIgnoreIfNotPresent', 'anchorCaseSensitive', 'anchorMatchWholeWord']) {
+			if (t[key] === 'true' || (v4 && tab.anchorString && t[key] === 'false')) tab[key] = t[key];
 		}
 		if (t.anchorHorizontalAlignment === 'center') {
 			throw new NodeOperationError(ctx.getNode(), 'DocuSign anchors align only Left or Right', { itemIndex: i });
 		}
-		if (t.anchorHorizontalAlignment === 'right') tab.anchorHorizontalAlignment = 'right';
+		const alignment = t.anchorHorizontalAlignment;
+		if (alignment === 'right' || (v4 && alignment === 'left' && (tab.anchorString || sendEmptyValues))) {
+			tab.anchorHorizontalAlignment = alignment;
+		}
 
 		// References
 		if (t.customTabId) tab.customTabId = t.customTabId;
@@ -127,6 +136,13 @@ export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues 
 		if (t.formula) tab.formula = t.formula;
 
 		if (sendEmptyValues) applyExplicitValues(tab, t);
+		if (v4) {
+			for (const key of ['required', 'locked']) {
+				const value = typeof t[key] === 'boolean' ? String(t[key]) : t[key];
+				if (value === 'true' || value === 'false') tab[key] = value;
+				else delete tab[key];
+			}
+		}
 		return tab;
 	});
 }

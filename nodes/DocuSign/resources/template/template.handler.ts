@@ -74,7 +74,11 @@ export async function handleTemplate(
 				if (s.email) signer.email = s.email;
 				if (s.name) signer.name = s.name;
 				if (s.accessCode) signer.accessCode = s.accessCode;
-				if (s.idCheckConfigurationName) signer.idCheckConfigurationName = s.idCheckConfigurationName;
+				// Version 4: an ID check turns requireIdLookup on. Earlier versions send the check alone.
+				if (s.idCheckConfigurationName) {
+					signer.idCheckConfigurationName = s.idCheckConfigurationName;
+					if (ctx.getNode().typeVersion >= 4) signer.requireIdLookup = 'true';
+				}
 				if (s.deliveryMethod && s.deliveryMethod !== 'email') {
 					applyDeliveryMethod(signer, s.deliveryMethod, s.phoneNumber);
 				}
@@ -125,15 +129,16 @@ export async function handleTemplate(
 			}
 
 			// Notification
-			if (additionalFields.expireAfter || additionalFields.reminderDelay) {
+			if (additionalFields.expireAfter || additionalFields.reminderDelay || additionalFields.reminderFrequency) {
 				const notification: IDataObject = {};
 				if (additionalFields.expireAfter) {
 					notification.expirations = { expireEnabled: 'true', expireAfter: String(additionalFields.expireAfter) };
 				}
-				if (additionalFields.reminderDelay) {
+				// Either value turns reminders on; an unset one keeps its earlier default.
+				if (additionalFields.reminderDelay || additionalFields.reminderFrequency) {
 					notification.reminders = {
 						reminderEnabled: 'true',
-						reminderDelay: String(additionalFields.reminderDelay),
+						reminderDelay: String(additionalFields.reminderDelay || 3),
 						reminderFrequency: String(additionalFields.reminderFrequency || 2),
 					};
 				}

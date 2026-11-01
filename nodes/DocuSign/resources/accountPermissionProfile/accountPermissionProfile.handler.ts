@@ -32,7 +32,7 @@ export async function handleAccountPermissionProfile(
 			};
 			const settings = ctx.getNodeParameter('settings', i, {}) as IDataObject;
 			if (Object.keys(settings).length > 0) {
-				body.settings = settings;
+				body.settings = toRoleSettings(settings);
 			}
 			return docuSignRequest(ctx, 'POST', basePath, body);
 		}
@@ -45,7 +45,7 @@ export async function handleAccountPermissionProfile(
 			const body: IDataObject = {};
 			const settings = ctx.getNodeParameter('settings', i, {}) as IDataObject;
 			if (Object.keys(settings).length > 0) {
-				body.settings = settings;
+				body.settings = toRoleSettings(settings);
 			}
 			return docuSignRequest(ctx, 'PUT', `${basePath}/${profileId}`, body);
 		}
@@ -61,4 +61,14 @@ export async function handleAccountPermissionProfile(
 		default:
 			throw new Error(`Unsupported account permission profile operation: ${operation}`);
 	}
+}
+
+/** accountRoleSettings spells two of the picker's settings differently. */
+const ROLE_SETTING_NAMES: Record<string, string> = {
+	enableSequentialSigningAPI: 'allowApiSequentialSigning',
+	enableVaulting: 'allowVaulting',
+};
+
+function toRoleSettings(settings: IDataObject): IDataObject {
+	return Object.fromEntries(Object.entries(settings).map(([k, v]) => [ROLE_SETTING_NAMES[k] ?? k, v]));
 }

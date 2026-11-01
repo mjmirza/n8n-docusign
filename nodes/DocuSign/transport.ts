@@ -418,10 +418,12 @@ export async function docuSignRequest(
 				parsed || err.message || 'Unknown DocuSign API error';
 
 			// Every DocuSignContext member (execute, hook, load-options) exposes getNode.
-			throw new NodeApiError(ctx.getNode(), err as JsonObject, {
+			const apiError = new NodeApiError(ctx.getNode(), err as JsonObject, {
 				message: `DocuSign API error [${status || 'unknown'}]`,
 				description: msg.slice(0, MAX_ERROR_LENGTH),
 			});
+			apiError.description = (apiError.description ?? msg).slice(0, MAX_ERROR_LENGTH);
+			throw apiError;
 		}
 	}
 

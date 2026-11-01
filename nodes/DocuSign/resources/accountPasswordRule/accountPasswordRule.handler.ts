@@ -1,5 +1,6 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all Account Password Rule operations.
@@ -26,7 +27,7 @@ export async function handleAccountPasswordRule(
 		}
 
 		case 'update': {
-			const body = JSON.parse(
+			const body = parseJsonInput(
 				ctx.getNodeParameter('passwordRules', i) as string,
 			) as IDataObject;
 			return docuSignRequest(ctx, 'PUT', basePath, body);

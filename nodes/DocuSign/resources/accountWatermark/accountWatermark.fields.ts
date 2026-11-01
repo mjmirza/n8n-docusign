@@ -22,8 +22,8 @@ export const accountWatermarkFields: INodeProperties[] = [
 				displayName: 'Display Angle',
 				name: 'displayAngle',
 				type: 'string',
-				default: '-45',
-				description: 'The angle of the watermark display in degrees',
+				default: '45',
+				description: 'The watermark display angle in degrees: 0, 45, 90',
 			},
 			{
 				displayName: 'Enabled',
@@ -40,8 +40,8 @@ export const accountWatermarkFields: INodeProperties[] = [
 				displayName: 'Font',
 				name: 'font',
 				type: 'string',
-				default: 'Arial',
-				description: 'The font used for the watermark text',
+				default: 'helvetica',
+				description: 'The watermark font: courier, helvetica, timesnewroman',
 			},
 			{
 				displayName: 'Font Color',
@@ -84,7 +84,7 @@ export const accountWatermarkFields: INodeProperties[] = [
 				name: 'transparency',
 				type: 'string',
 				default: '',
-				description: 'The transparency of the watermark (e.g., "0.5")',
+				description: 'The watermark transparency: 5, 10, 15, 20, 25, 30, 35, 40, 45',
 			},
 			{
 				displayName: 'Watermark Text',

@@ -75,7 +75,7 @@ export const workspaceItemFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['workspaceItem'],
-				operation: ['createFile', 'updateFile'],
+				operation: ['createFile'],
 			},
 		},
 	},
@@ -88,7 +88,7 @@ export const workspaceItemFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['workspaceItem'],
-				operation: ['createFile', 'updateFile'],
+				operation: ['createFile'],
 				uploadSource: ['binary'],
 			},
 		},
@@ -102,8 +102,56 @@ export const workspaceItemFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['workspaceItem'],
-				operation: ['createFile', 'updateFile'],
+				operation: ['createFile'],
 				uploadSource: ['base64'],
+			},
+		},
+	},
+	{
+		displayName: 'Upload Source',
+		name: 'uploadSource',
+		type: 'options',
+		options: [
+			{ name: 'Binary Data', value: 'binary' },
+			{ name: 'Base64 String', value: 'base64' },
+		],
+		default: 'binary',
+		description: 'Source of the file to upload',
+		displayOptions: {
+			show: {
+				resource: ['workspaceItem'],
+				operation: ['updateFile'],
+				'@version': [{ _cnd: { lt: 4 } }],
+			},
+		},
+	},
+	{
+		displayName: 'Input Binary Property',
+		name: 'inputBinaryPropertyName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property containing the file to upload',
+		displayOptions: {
+			show: {
+				resource: ['workspaceItem'],
+				operation: ['updateFile'],
+				uploadSource: ['binary'],
+				'@version': [{ _cnd: { lt: 4 } }],
+			},
+		},
+	},
+	{
+		displayName: 'Base64 Content',
+		name: 'base64Content',
+		type: 'string',
+		default: '',
+		description: 'Base64-encoded file content',
+		displayOptions: {
+			show: {
+				resource: ['workspaceItem'],
+				operation: ['updateFile'],
+				uploadSource: ['base64'],
+				'@version': [{ _cnd: { lt: 4 } }],
 			},
 		},
 	},

@@ -50,8 +50,9 @@ function buildCustomFieldBody(ctx: IExecuteFunctions, i: number): IDataObject {
 	const name = ctx.getNodeParameter('name', i) as string;
 	const additionalFields = ctx.getNodeParameter('additionalFields', i, {}) as IDataObject;
 
+	// The spec's customField names the type customFieldType (text or list).
 	const body: IDataObject = {
-		fieldType,
+		customFieldType: fieldType,
 		name,
 	};
 

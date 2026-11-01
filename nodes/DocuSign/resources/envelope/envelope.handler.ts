@@ -1,6 +1,6 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-import { applyDeliveryMethod, buildRecipientEmailNotification } from '../../utils/recipientDelivery';
+import { applyDeliveryMethod, buildPhoneAuthentication, buildRecipientEmailNotification } from '../../utils/recipientDelivery';
 import {
 	docuSignRequest,
 	docuSignGetAll,
@@ -113,7 +113,11 @@ export async function handleEnvelope(
 				if (s.note) signer.note = s.note;
 				applyDeliveryMethod(signer, s.deliveryMethod, s.phoneNumber);
 				if (s.idCheckConfigurationName) signer.idCheckConfigurationName = s.idCheckConfigurationName;
-				if (s.requireIdLookup === 'true') signer.requireIdLookup = 'true';
+				// Version 4 with Automatic: an ID check turns requireIdLookup on. A chosen No is never overridden.
+				const autoIdLookup = ctx.getNode().typeVersion >= 4 && !s.requireIdLookup && s.idCheckConfigurationName;
+				if (s.requireIdLookup === 'true' || autoIdLookup) signer.requireIdLookup = 'true';
+				const phoneAuthentication = buildPhoneAuthentication(s.idCheckConfigurationName, s.phoneAuthNumbers);
+				if (phoneAuthentication) signer.phoneAuthentication = phoneAuthentication;
 				if (s.requireSignOnPaper === 'true') signer.requireSignOnPaper = 'true';
 				if (s.embeddedRecipientStartURL) signer.embeddedRecipientStartURL = s.embeddedRecipientStartURL;
 				// Per-recipient email notification override; a language alone is enough to send it.
@@ -226,7 +230,7 @@ export async function handleEnvelope(
 			}
 
 			// Notification settings
-			if (additionalFields.expireAfter || additionalFields.reminderDelay) {
+			if (additionalFields.expireAfter || additionalFields.reminderDelay || additionalFields.reminderFrequency) {
 				const notification: IDataObject = {};
 				if (additionalFields.expireAfter) {
 					notification.expirations = {
@@ -234,10 +238,11 @@ export async function handleEnvelope(
 						expireAfter: String(additionalFields.expireAfter),
 					};
 				}
-				if (additionalFields.reminderDelay) {
+				// Either value turns reminders on; an unset one keeps its earlier default.
+				if (additionalFields.reminderDelay || additionalFields.reminderFrequency) {
 					notification.reminders = {
 						reminderEnabled: 'true',
-						reminderDelay: String(additionalFields.reminderDelay),
+						reminderDelay: String(additionalFields.reminderDelay || 3),
 						reminderFrequency: String(additionalFields.reminderFrequency || 2),
 					};
 				}

@@ -93,13 +93,6 @@ export const folderFields: INodeProperties[] = [
 		},
 		options: [
 			{
-				displayName: 'Count',
-				name: 'count',
-				type: 'number',
-				default: 100,
-				description: 'Number of items to return',
-			},
-			{
 				displayName: 'From Date',
 				name: 'from_date',
 				type: 'string',
@@ -191,13 +184,6 @@ export const folderFields: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Field to sort by',
-			},
-			{
-				displayName: 'Search Text',
-				name: 'search_text',
-				type: 'string',
-				default: '',
-				description: 'Text to search for',
 			},
 			{
 				displayName: 'Start Position',

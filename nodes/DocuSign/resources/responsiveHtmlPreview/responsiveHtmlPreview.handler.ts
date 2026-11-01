@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, envelopePath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all Responsive HTML Preview operations.
@@ -18,7 +19,7 @@ export async function handleResponsiveHtmlPreview(
 	const raw = ctx.getNodeParameter('requestBody', i) as string;
 	let body: IDataObject;
 	try {
-		body = JSON.parse(raw) as IDataObject;
+		body = parseJsonInput(raw) as IDataObject;
 	} catch {
 		throw new NodeOperationError(ctx.getNode(), 'Request body must be valid JSON');
 	}

@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all Signing Group operations.
@@ -30,7 +31,7 @@ export async function handleSigningGroup(
 		case 'create': {
 			let groups: unknown;
 			try {
-				groups = JSON.parse(
+				groups = parseJsonInput(
 					ctx.getNodeParameter('requestBody', i) as string,
 				);
 			} catch {
@@ -42,7 +43,7 @@ export async function handleSigningGroup(
 		case 'update': {
 			let groups: unknown;
 			try {
-				groups = JSON.parse(
+				groups = parseJsonInput(
 					ctx.getNodeParameter('requestBody', i) as string,
 				);
 			} catch {
@@ -54,7 +55,7 @@ export async function handleSigningGroup(
 		case 'updateList': {
 			let groups: unknown;
 			try {
-				groups = JSON.parse(
+				groups = parseJsonInput(
 					ctx.getNodeParameter('requestBody', i) as string,
 				);
 			} catch {
@@ -66,7 +67,7 @@ export async function handleSigningGroup(
 		case 'delete': {
 			let groups: unknown;
 			try {
-				groups = JSON.parse(
+				groups = parseJsonInput(
 					ctx.getNodeParameter('requestBody', i) as string,
 				);
 			} catch {

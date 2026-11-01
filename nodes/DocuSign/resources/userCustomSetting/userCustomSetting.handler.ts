@@ -1,5 +1,6 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all User Custom Setting operations.
@@ -23,14 +24,14 @@ export async function handleUserCustomSetting(
 		}
 
 		case 'update': {
-			const body = JSON.parse(
+			const body = parseJsonInput(
 				ctx.getNodeParameter('customSettings', i) as string,
 			) as IDataObject;
 			return docuSignRequest(ctx, 'PUT', basePath, body);
 		}
 
 		case 'delete': {
-			const body = JSON.parse(
+			const body = parseJsonInput(
 				ctx.getNodeParameter('customSettings', i) as string,
 			) as IDataObject;
 			return docuSignRequest(ctx, 'DELETE', basePath, body);

@@ -1,5 +1,5 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
-import { applyDeliveryMethod, buildRecipientEmailNotification } from '../../utils/recipientDelivery';
+import { applyDeliveryMethod, buildPhoneAuthentication, buildRecipientEmailNotification } from '../../utils/recipientDelivery';
 import { docuSignRequest, assertSafeId, envelopePath } from '../../transport';
 
 /** Allowlist of valid DocuSign recipient types — prevents prototype pollution */
@@ -69,7 +69,7 @@ export async function handleRecipient(
 			const directFields = [
 				'clientUserId', 'accessCode', 'note', 'roleName',
 				'requireSignOnPaper', 'embeddedRecipientStartURL',
-				'idCheckConfigurationName', 'requireIdLookup', 'signingGroupId',
+				'idCheckConfigurationName', 'requireIdLookup', 'signingGroupId', 'witnessFor',
 				'hostEmail', 'hostName', 'signerName',
 			];
 			for (const field of directFields) {
@@ -77,6 +77,12 @@ export async function handleRecipient(
 					recipient[field] = additionalFields[field];
 				}
 			}
+			// Version 4: an ID check turns requireIdLookup on unless No was chosen. Earlier versions send it as set.
+			if (ctx.getNode().typeVersion >= 4 && recipient.idCheckConfigurationName && additionalFields.requireIdLookup === undefined) {
+				recipient.requireIdLookup = 'true';
+			}
+			const phoneAuthentication = buildPhoneAuthentication(recipient.idCheckConfigurationName, additionalFields.phoneAuthNumbers);
+			if (phoneAuthentication) recipient.phoneAuthentication = phoneAuthentication;
 
 			// Delivery method + phone
 			applyDeliveryMethod(recipient, additionalFields.deliveryMethod, additionalFields.phoneNumber);

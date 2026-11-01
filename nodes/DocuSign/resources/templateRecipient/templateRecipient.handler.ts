@@ -39,13 +39,17 @@ export async function handleTemplateRecipient(
 
 			const directFields = [
 				'email', 'name', 'recipientId', 'accessCode', 'note',
-				'idCheckConfigurationName', 'templateLocked', 'templateRequired',
+				'idCheckConfigurationName', 'requireIdLookup', 'templateLocked', 'templateRequired', 'witnessFor',
 				'hostEmail', 'hostName', 'signerName',
 			];
 			for (const field of directFields) {
 				if (additionalFields[field] !== undefined && additionalFields[field] !== '') {
 					recipient[field] = additionalFields[field];
 				}
+			}
+			// Version 4: an ID check turns requireIdLookup on unless a value was chosen.
+			if (ctx.getNode().typeVersion >= 4 && recipient.idCheckConfigurationName && recipient.requireIdLookup === undefined) {
+				recipient.requireIdLookup = 'true';
 			}
 
 			applyDeliveryMethod(recipient, additionalFields.deliveryMethod, additionalFields.phoneNumber);

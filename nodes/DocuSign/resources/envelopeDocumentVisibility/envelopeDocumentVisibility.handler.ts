@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, envelopePath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 export async function handleEnvelopeDocumentVisibility(
 	ctx: IExecuteFunctions,
@@ -33,7 +34,7 @@ export async function handleEnvelopeDocumentVisibility(
 			const visibility = ctx.getNodeParameter('documentVisibility', i, '[]') as string;
 			let parsed: unknown[];
 			try {
-				parsed = JSON.parse(visibility);
+				parsed = parseJsonInput(visibility);
 			} catch {
 				throw new NodeOperationError(ctx.getNode(), 'Document visibility must be valid JSON');
 			}
@@ -49,7 +50,7 @@ export async function handleEnvelopeDocumentVisibility(
 			const visibility = ctx.getNodeParameter('documentVisibility', i, '[]') as string;
 			let parsed: unknown[];
 			try {
-				parsed = JSON.parse(visibility);
+				parsed = parseJsonInput(visibility);
 			} catch {
 				throw new NodeOperationError(ctx.getNode(), 'Document visibility must be valid JSON');
 			}

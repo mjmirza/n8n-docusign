@@ -19,7 +19,10 @@ export async function handleAccountTabSetting(
 		}
 
 		case 'update': {
-			const tabSettings = ctx.getNodeParameter('tabSettings', i, {}) as IDataObject;
+			// tabAccountSettings has no confirmInitialEnvelopeSend or enableAutoStamp; older saved values are left out.
+			const { confirmInitialEnvelopeSend, enableAutoStamp, ...tabSettings } = ctx.getNodeParameter('tabSettings', i, {}) as IDataObject;
+			void confirmInitialEnvelopeSend;
+			void enableAutoStamp;
 			return docuSignRequest(ctx, 'PUT', basePath, tabSettings);
 		}
 

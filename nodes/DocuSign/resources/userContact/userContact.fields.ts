@@ -55,7 +55,7 @@ export const userContactFields: INodeProperties[] = [
 				name: 'emails',
 				type: 'json',
 				default: '[]',
-				description: 'Array of email objects, e.g. [{"email": "user@example.com"}]',
+				description: 'JSON array of email addresses, e.g. ["user@example.com"]',
 			},
 			{
 				displayName: 'Organization',

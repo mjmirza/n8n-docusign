@@ -392,7 +392,9 @@ function buildResourceOptions(): Array<{
 export function isEmptyListResponse(operation: string, obj: Record<string, unknown>): boolean {
 	if (!/^(list|getAll|getMany)/i.test(operation)) return false;
 	const arrays = Object.values(obj).filter((v) => Array.isArray(v)) as unknown[][];
-	return arrays.length > 0 && arrays.every((a) => a.length === 0);
+	if (arrays.length === 0 || arrays.some((a) => a.length > 0)) return false;
+	// Any other field must be paging or identifier metadata, never real data such as settings.
+	return Object.entries(obj).every(([k, v]) => Array.isArray(v) || /(Size|Position|Uri|Id)$/.test(k));
 }
 
 export class DocuSign implements INodeType {
@@ -401,9 +403,10 @@ export class DocuSign implements INodeType {
 		name: 'docuSign',
 		icon: { light: 'file:docusign.light.svg', dark: 'file:docusign.dark.svg' },
 		group: ['transform'],
-		// Version 3: a list with no results outputs no items. Versions 1 and 2 keep one count item.
-		version: [1, 2, 3],
-		defaultVersion: 3,
+		// Version 3: an empty array outputs no items. Version 4 also drops list responses whose
+		// result arrays are all empty. Versions 1 and 2 keep one count item.
+		version: [1, 2, 3, 4],
+		defaultVersion: 4,
 		subtitle:
 			'={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description:
@@ -648,8 +651,8 @@ export class DocuSign implements INodeType {
 								});
 							}
 						}
-					} else if (emptyMeansNoItems && isEmptyListResponse(operation, obj)) {
-						// Version 3: a list operation whose result arrays are all empty outputs no items.
+					} else if (this.getNode().typeVersion >= 4 && isEmptyListResponse(operation, obj)) {
+						// Version 4: a list operation whose result arrays are all empty outputs no items.
 					} else {
 						returnData.push({ json: result as IDataObject, pairedItem: { item: i } });
 					}

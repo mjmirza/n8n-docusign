@@ -99,8 +99,110 @@ listed by Get Event Failures, so the Status description points there instead of 
 
 ## Anchor options are sent as chosen
 
-The v2.1 spec gives `anchorMatchWholeWord` and `anchorCaseSensitive` a default of false, and
-SDK model docs have been read as saying otherwise. Either way, an anchored tab now sends the Yes
-or No the user picked, so No never depends on DocuSign's default. Sending false where false is
-the default changes nothing for existing workflows. `anchorHorizontalAlignment` allows only
-`left` and `right` in the spec, so Center is gone from the picker and is rejected with a message.
+The v2.1 spec gives `anchorMatchWholeWord` a default of false, while DocuSign's SDK model docs
+describe true. Because the sources disagree, Anchor Match Whole Word has a DocuSign Default choice,
+the default, which leaves the field out as every release before 3.4.0 did; Yes and No are sent as
+chosen. Anchor Case Sensitive and Ignore If Not Present are sent as chosen on anchored tabs, where
+both sources agree false is the default. `anchorHorizontalAlignment` allows only `left` and
+`right`, so Center is rejected; Left is sent on anchored tabs and Send Empty updates.
+
+## JSON parameters accept objects
+
+An n8n expression can resolve to an object instead of text. Every JSON parameter goes through
+`parseJsonInput`, which uses an object or array as-is and parses text, so `={{ $json.body }}` works.
+
+## Minimum n8n version is documented, not enforced
+
+The nodes use `NodeConnectionTypes.Main`, which n8n's verification scanner requires
+(`node-connection-type-literal` rejects the `'main'` literal). `n8n-workflow` first exports it in
+1.84.0, which ships with n8n 1.86.0, so the README states n8n 1.86.0 or later. The scanner also
+requires `peerDependencies["n8n-workflow"]` to be `"*"`, so the range cannot be narrowed there.
+
+## ID checks turn on requireIdLookup
+
+An `idCheckConfigurationName` only takes effect with `requireIdLookup: "true"`, so choosing an
+ID check sends both. Template recipient Create keeps an explicit `requireIdLookup` value.
+
+## Connect registration sets its type and delivery mode
+
+The v2.1 spec marks `configurationType` and `deliveryMode` required. The trigger creates a
+`custom` account-level configuration in `SIM` mode, the one-message-per-event JSON delivery its
+receiver verifies, with `enableLog` on for troubleshooting.
+
+## Brand uploads
+
+Logo upload sends the raw image with `Content-Disposition: form-data; name="file"; filename=...`,
+as the spec's description shows. Resource upload is `multipart/form-data` with a `file.xml` part,
+as the spec's `consumes` and form parameter define.
+
+## An existing subscription must still match
+
+`checkExists` keeps a stored Connect configuration only when its URL, its events, JSON format,
+SIM delivery and HMAC signing all match what the trigger asks for. Any difference deletes it so
+activation registers the current settings, rather than leaving events that never arrive.
+
+## Phone authentication
+
+`Phone Auth $` needs a `phoneAuthentication` object. With Phone Auth Numbers set, those are the
+sender-provided numbers; empty lets the recipient supply one (`recipMayProvideNumber`).
+
+## Two 3.4.0-only behaviours are reverted for saved nodes
+
+Maintainer decision: node versions 1 to 3 keep the 3.3.0 behaviour (one item for an empty list,
+no No anchor options sent) because it is what every release before 3.4.0 did; tradeoff and
+evidence below.
+
+3.4.0 changed two outputs of saved nodes without a new node version: version 3 list operations
+dropped responses whose result arrays were empty, and saved tabs sent a No anchor option. 3.3.0 and
+every earlier release did neither. A saved node does not record which release last ran it, so one
+version number cannot match both 3.3.0 and 3.4.0. 3.5.0 restores the long-standing behaviour for
+node versions 1 to 3 and moves both 3.4.0 changes to node version 4, the default for new nodes.
+3.4.0 was the latest release for about three hours. Workflows built on it that need its behaviour
+replace the node with a new one, which is version 4. This is listed in the README upgrade table.
+
+## Identity checks keep their saved request until version 4
+
+3.4.0 sent `requireIdLookup` only as the user set it. On node version 4, choosing an ID Check
+Config Name turns `requireIdLookup` on unless No was chosen, because DocuSign applies the check only
+when it is true. Saved nodes on versions 1 to 3 send exactly what 3.4.0 sent.
+
+## Saved tab values keep their request until version 4
+
+n8n stores a fixedCollection's values with their defaults, so a tab saved in 3.3.0 carries
+`anchorMatchWholeWord: 'false'`, `fontSize: 'size12'` and `alignment: 'left'` even when nobody
+chose them. 3.3.0 sent none of those. Sending them now would change where saved anchors match, so
+the chosen No, Size 12 and Left are sent only on node version 4. Versions 1 to 3 keep 3.3.0's rule:
+Yes values, Right alignment and sizes other than Size 12.
+
+## An attached HMAC credential is the only key source
+
+When the trigger has a Connect HMAC credential attached and it cannot be loaded, the trigger has no
+key and rejects calls. It does not fall back to the deprecated HMAC Secret option, which may hold a
+key that was rotated out. The option is read only when no credential is attached.
+
+## Font size defaults to the account
+
+Font Size has an Account Default choice, the default, which leaves `fontSize` out as earlier
+versions did for their Size 12 default. Every chosen size is sent, including Size 12.
+
+## Parameters the spec does not define are not sent
+
+Folder List Items has no `count` parameter and folder Search has no `search_text`, so those two
+filters left the picker and are no longer sent. Account Tab Settings drops `enableAutoStamp` and
+`confirmInitialEnvelopeSend`, which `tabAccountSettings` does not define; older saved values are
+left out of the request. Permission profile settings `enableSequentialSigningAPI` and
+`enableVaulting` are sent as the spec's `allowApiSequentialSigning` and `allowVaulting`, and user
+profile address fields as `address1`, `address2`, `stateOrProvince` and `postalCode`.
+
+## Folder List Items includes the items from version 4
+
+The spec's `include_items` defaults to false, so List Items returned only folder details unless
+Include Items was added. Node version 4 sends `include_items=true` by default; saved nodes on
+earlier versions keep the request they sent.
+
+## Empty-list detection keeps real data
+
+A version 4 list response counts as empty only when its arrays are all empty and every other field
+is paging or identifier metadata (names ending in Size, Position, Uri or Id). A response with
+settings or other data beside an empty array is output as before.
+

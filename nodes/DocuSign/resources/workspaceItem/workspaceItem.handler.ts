@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all Workspace Item operations.
@@ -86,6 +87,9 @@ export async function handleWorkspaceItem(
 				ctx.getNodeParameter('fileId', i) as string,
 				'File ID',
 			);
+			if (ctx.getNode().typeVersion >= 4) {
+				return docuSignRequest(ctx, 'PUT', `${basePath}/files/${fileId}`);
+			}
 			const uploadSource = ctx.getNodeParameter('uploadSource', i) as string;
 			let fileBase64: string;
 			let fileName = 'upload';
@@ -120,7 +124,7 @@ export async function handleWorkspaceItem(
 		case 'deleteFolderItems': {
 			let items: unknown;
 			try {
-				items = JSON.parse(
+				items = parseJsonInput(
 					ctx.getNodeParameter('itemsJson', i) as string,
 				);
 			} catch {

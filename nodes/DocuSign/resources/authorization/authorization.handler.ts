@@ -1,5 +1,6 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all Authorization operations.
@@ -40,7 +41,7 @@ export async function handleAuthorization(
 		}
 
 		case 'createUserAuthorizations': {
-			const authorizations = JSON.parse(
+			const authorizations = parseJsonInput(
 				ctx.getNodeParameter('authorizationsBody', i) as string,
 			);
 			return docuSignRequest(ctx, 'POST', `${basePath}/authorizations`, { authorizations } as unknown as IDataObject);
@@ -55,10 +56,12 @@ export async function handleAuthorization(
 		}
 
 		case 'deleteUserAuthorizations': {
-			const body = JSON.parse(
-				ctx.getNodeParameter('deleteAuthorizationsBody', i) as string,
-			) as IDataObject;
-			return docuSignRequest(ctx, 'DELETE', `${basePath}/authorizations`, body);
+			const input: unknown = parseJsonInput(ctx.getNodeParameter('deleteAuthorizationsBody', i) as string);
+			// The spec body is { authorizations: [{ authorizationId }] }; a bare array or ID list is wrapped.
+			const body = Array.isArray(input)
+				? { authorizations: input.map((a) => (typeof a === 'string' ? { authorizationId: a } : a)) }
+				: (input as IDataObject);
+			return docuSignRequest(ctx, 'DELETE', `${basePath}/authorizations`, body as IDataObject);
 		}
 
 		case 'getAgentUserAuthorizations': {
@@ -84,7 +87,7 @@ export async function handleAuthorization(
 				ctx.getNodeParameter('authorizationId', i) as string,
 				'Authorization ID',
 			);
-			const body = JSON.parse(
+			const body = parseJsonInput(
 				ctx.getNodeParameter('updateBody', i) as string,
 			) as IDataObject;
 			return docuSignRequest(ctx, 'PUT', `${basePath}/authorization/${authorizationId}`, body);

@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all Connect Configuration operations.
@@ -30,7 +31,7 @@ export async function handleConnectConfiguration(
 		case 'create': {
 			let body: IDataObject;
 			try {
-				body = JSON.parse(
+				body = parseJsonInput(
 					ctx.getNodeParameter('requestBody', i) as string,
 				) as IDataObject;
 			} catch {
@@ -46,7 +47,7 @@ export async function handleConnectConfiguration(
 			);
 			let body: IDataObject;
 			try {
-				body = JSON.parse(
+				body = parseJsonInput(
 					ctx.getNodeParameter('requestBody', i) as string,
 				) as IDataObject;
 			} catch {
@@ -104,11 +105,16 @@ export async function handleConnectConfiguration(
 		case 'publishToConnect': {
 			let body: IDataObject;
 			try {
-				body = JSON.parse(
+				body = parseJsonInput(
 					ctx.getNodeParameter('requestBody', i) as string,
 				) as IDataObject;
 			} catch {
 				throw new NodeOperationError(ctx.getNode(), 'Invalid JSON in request body');
+			}
+			// The spec body is { config, envelopes: [{ envelopeId }] }; an older envelopeIds list is converted.
+			if (Array.isArray(body.envelopeIds) && body.envelopes === undefined) {
+				const { envelopeIds, ...rest } = body;
+				body = { ...rest, envelopes: (envelopeIds as unknown[]).map((envelopeId) => ({ envelopeId: String(envelopeId) })) };
 			}
 			// Historical republish is POST .../connect/envelopes/publish/historical.
 			return docuSignRequest(

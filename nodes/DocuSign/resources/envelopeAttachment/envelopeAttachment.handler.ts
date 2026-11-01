@@ -76,6 +76,13 @@ export async function handleEnvelopeAttachment(
 			if (label) attachment.label = label;
 			if (remoteUrl) attachment.remoteUrl = remoteUrl;
 
+			// With an Attachment ID to Replace, PUT .../attachments/{attachmentId} updates that one.
+			const replaceId = ctx.getNodeParameter('replaceAttachmentId', i, '') as string;
+			if (replaceId) {
+				const attachmentId = assertSafeId(replaceId, 'Attachment ID');
+				return docuSignRequest(ctx, 'PUT', `${basePath}/${attachmentId}`, { ...attachment, attachmentId });
+			}
+
 			return docuSignRequest(ctx, 'PUT', basePath, {
 				attachments: [attachment],
 			});

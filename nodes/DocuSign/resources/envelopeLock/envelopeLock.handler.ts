@@ -1,5 +1,5 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
-import { docuSignRequest, envelopePath } from '../../transport';
+import { docuSignRequest, envelopePath, lockEditOptions } from '../../transport';
 
 export async function handleEnvelopeLock(
 	ctx: IExecuteFunctions,
@@ -33,15 +33,13 @@ export async function handleEnvelopeLock(
 			const duration = ctx.getNodeParameter('lockDurationInSeconds', i, 300) as number;
 			const lockToken = ctx.getNodeParameter('lockToken', i, '') as string;
 			const body: IDataObject = { lockDurationInSeconds: String(duration) };
-			if (lockToken) body.lockToken = lockToken;
-			return docuSignRequest(ctx, 'PUT', basePath, body);
+			return docuSignRequest(ctx, 'PUT', basePath, body, undefined, lockEditOptions(lockToken, duration));
 		}
 
 		case 'delete': {
 			const lockToken = ctx.getNodeParameter('lockToken', i, '') as string;
 			const body: IDataObject = {};
-			if (lockToken) body.lockToken = lockToken;
-			return docuSignRequest(ctx, 'DELETE', basePath, body);
+			return docuSignRequest(ctx, 'DELETE', basePath, body, undefined, lockEditOptions(lockToken));
 		}
 
 		default:

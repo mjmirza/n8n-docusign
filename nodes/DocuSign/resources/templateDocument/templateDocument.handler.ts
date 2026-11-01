@@ -33,7 +33,8 @@ export async function handleTemplateDocument(
 
 		case 'delete': {
 			const documentId = assertSafeId(ctx.getNodeParameter('documentId', i) as string, 'Document ID');
-			return docuSignRequest(ctx, 'DELETE', `${basePath}/${documentId}`);
+			// Template documents are deleted as a list: DELETE .../documents with the IDs in the body.
+			return docuSignRequest(ctx, 'DELETE', basePath, { documents: [{ documentId }] });
 		}
 
 		case 'update': {

@@ -10,8 +10,13 @@
  * - Retry exhaustion
  * - Network errors
  */
-import { describe, it, expect } from '@jest/globals';
-import { createMockContext, createHttpError } from './helpers/mockContext';
+import { describe, it, expect, beforeEach } from '@jest/globals';
+
+// Several tests assert inside catch; this makes an unexpected success fail them.
+beforeEach(() => {
+	expect.hasAssertions();
+});
+import { createMockContext, createHttpError, getRecordedRequests } from './helpers/mockContext';
 import { docuSignRequest } from '../nodes/DocuSign/transport';
 
 import { handleEnvelope } from '../nodes/DocuSign/resources/envelope/envelope.handler';
@@ -218,6 +223,7 @@ describe('Error Handling: JSON Parse Failures', () => {
 				httpResponses: [{}],
 			});
 			await handler(ctx, operation, 0);
+			expect(getRecordedRequests(ctx)[0].options.body).toEqual({ key: 'value' });
 		});
 	}
 });

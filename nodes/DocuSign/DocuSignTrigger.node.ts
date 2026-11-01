@@ -219,7 +219,11 @@ export class DocuSignTrigger implements INodeType {
 							`/accounts/${accountId}/connect/${connectId}`,
 						)) as IDataObject;
 
-						if (config && (config.urlToPublishTo as string) === webhookUrl) {
+						// GET connect/{connectId} returns connectConfigResults: { configurations: [...] }.
+						const configurations = Array.isArray(config?.configurations)
+							? (config.configurations as IDataObject[])
+							: [config];
+						if (configurations.some((c) => c?.urlToPublishTo === webhookUrl)) {
 							return true;
 						}
 					} catch (error) {
@@ -273,7 +277,13 @@ export class DocuSignTrigger implements INodeType {
 					eventData: {
 						version: 'restv2.1',
 						format: 'json',
-						includeData: ['tabs', 'recipients', 'custom_fields'],
+						includeData: [
+							'tabs',
+							'recipients',
+							'custom_fields',
+							// JSON notifications only carry PDFs when listed here.
+							...(options.includeDocuments ? ['documents'] : []),
+						],
 					},
 				};
 

@@ -23,7 +23,7 @@ export async function handleEnvelopePublish(
 			} catch {
 				throw new NodeOperationError(ctx.getNode(), 'Request body must be valid JSON');
 			}
-			return docuSignRequest(ctx, 'POST', `${basePath}/envelopes/historical`, body);
+			return docuSignRequest(ctx, 'POST', `${basePath}/connect/envelopes/publish/historical`, body);
 		}
 
 		default:

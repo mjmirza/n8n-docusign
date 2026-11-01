@@ -11,6 +11,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { assertSafeId, sanitizeEndpoint, getBaseUrl, docuSignRequest } from '../nodes/DocuSign/transport';
 import { createMockContext, createHttpError, getRecordedRequests } from './helpers/mockContext';
+import { DocuSign } from '../nodes/DocuSign/DocuSign.node';
 import {
 	assertValidEmail,
 	assertValidDate,
@@ -25,10 +26,8 @@ import {
 // ==================================================================
 describe('Compliance: GDPR', () => {
 	it('envelope purge state field exists for data erasure', () => {
-		// The updateFields in envelope.fields.ts must include purgeState
-		// for GDPR right-to-erasure (verified by existence of the operation)
-		// This is a structural test — the field exists in the code
-		expect(true).toBe(true); // Placeholder — verified via fields audit
+		const purge = JSON.stringify(new DocuSign().description.properties).includes('"purgeState"');
+		expect(purge).toBe(true);
 	});
 
 	it('error messages do not contain PII', () => {
@@ -157,9 +156,9 @@ describe('Compliance: OWASP Top 10', () => {
 	});
 
 	// A07:2021 — Identification and Authentication Failures
-	it('A07: Empty credentials throw descriptive error', () => {
-		// Covered by error-handling.test.ts "Missing Credentials"
-		expect(true).toBe(true);
+	it('A07: Empty credentials throw descriptive error', async () => {
+		const ctx = createMockContext({ httpResponses: [{ ok: true }] });
+		await expect(docuSignRequest(ctx, 'GET', 'accounts/a')).rejects.toThrow('No DocuSign credentials configured');
 	});
 
 	// A08:2021 — Software and Data Integrity Failures

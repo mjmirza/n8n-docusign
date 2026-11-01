@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
+import { applyDeliveryMethod } from '../../utils/recipientDelivery';
 import {
 	docuSignRequest,
 	docuSignGetAll,
@@ -108,12 +109,7 @@ export async function handleEnvelope(
 				if (s.accessCode) signer.accessCode = s.accessCode;
 				if (s.roleName) signer.roleName = s.roleName;
 				if (s.note) signer.note = s.note;
-				if (s.deliveryMethod && s.deliveryMethod !== 'email') {
-					signer.deliveryMethod = s.deliveryMethod;
-					if (s.phoneNumber) {
-						signer.phoneNumber = { phoneNumber: s.phoneNumber };
-					}
-				}
+				applyDeliveryMethod(signer, s.deliveryMethod, s.phoneNumber);
 				if (s.idCheckConfigurationName) signer.idCheckConfigurationName = s.idCheckConfigurationName;
 				if (s.requireIdLookup === 'true') signer.requireIdLookup = 'true';
 				if (s.requireSignOnPaper === 'true') signer.requireSignOnPaper = 'true';
@@ -595,16 +591,6 @@ export async function handleEnvelope(
 	}
 }
 
-/** Parses "+49 1701234567" into DocuSign's phone shape; without a space it is all number. */
-export function toRecipientPhone(value: string): IDataObject {
-	const trimmed = value.trim();
-	const match = /^\+?(\d{1,4})[\s-]+(.+)$/.exec(trimmed);
-	if (match) {
-		return { countryCode: match[1], number: match[2].replace(/\D/g, '') };
-	}
-	return { number: trimmed.replace(/\D/g, '') };
-}
-
 /** Maps one Template Role entry to the DocuSign templateRole shape, keeping every set field. */
 export function buildTemplateRole(r: IDataObject): IDataObject {
 	const role: IDataObject = {
@@ -620,9 +606,6 @@ export function buildTemplateRole(r: IDataObject): IDataObject {
 		if (r.emailNotificationBody) emailNotification.emailBody = r.emailNotificationBody;
 		role.emailNotification = emailNotification;
 	}
-	if (r.deliveryMethod === 'sms') {
-		role.deliveryMethod = 'SMS';
-		if (r.phoneNumber) role.phoneNumber = toRecipientPhone(String(r.phoneNumber));
-	}
+	applyDeliveryMethod(role, r.deliveryMethod, r.phoneNumber);
 	return role;
 }

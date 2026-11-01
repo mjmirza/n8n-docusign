@@ -19,6 +19,13 @@ import {
 	parseHmacSecrets,
 } from '../nodes/DocuSign/DocuSignTrigger.node';
 import { DocuSignJwtApi, buildDocuSignJwtAssertion } from '../credentials/DocuSignJwtApi.credentials';
+import { handleRecipient } from '../nodes/DocuSign/resources/recipient/recipient.handler';
+import { handleTemplateDocument } from '../nodes/DocuSign/resources/templateDocument/templateDocument.handler';
+import { handleTemplateRecipient } from '../nodes/DocuSign/resources/templateRecipient/templateRecipient.handler';
+import { handleEnvelopePublish } from '../nodes/DocuSign/resources/envelopePublish/envelopePublish.handler';
+import { handleUserContact } from '../nodes/DocuSign/resources/userContact/userContact.handler';
+import { handleEnvelopeLock } from '../nodes/DocuSign/resources/envelopeLock/envelopeLock.handler';
+import { handleTemplateLock } from '../nodes/DocuSign/resources/templateLock/templateLock.handler';
 
 const C = { docuSignOAuth2Api: { environment: 'demo' } };
 const DEMO = 'https://demo.docusign.net/restapi/v2.1';
@@ -441,5 +448,133 @@ describe('errors keep their item index (L16)', () => {
 		expect(error).toBeInstanceOf(NodeApiError);
 		expect(error.context.itemIndex).toBe(1);
 		expect(error.message).toBe('DocuSign API error [404]');
+	});
+});
+
+// Round 2: findings from the Codex re-review of 2.0.0.
+
+describe('round 2: trigger Connect lookup and documents', () => {
+	const methods = new DocuSignTrigger().webhookMethods.default;
+	const hook = (responses: unknown[], options: IDataObject = { hmacSecret: 'k' }) =>
+		Object.assign(createMockContext({ credentials: C, httpResponses: responses }), {
+			getWorkflowStaticData: () => ({ connectId: 'c-1' }),
+			getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/abc',
+			getNodeParameter: (name: string, fallback?: unknown) =>
+				(({ accountId: 'acct-1', events: ['envelope-completed'], options }) as IDataObject)[name] ?? fallback,
+			logger: { warn: jest.fn() },
+		}) as unknown as IHookFunctions;
+
+	it('recognises an existing configuration in the configurations array', async () => {
+		const ctx = hook([{ configurations: [{ connectId: 'c-1', urlToPublishTo: 'https://n8n.example.com/webhook/abc' }] }]);
+		await expect(methods.checkExists.call(ctx)).resolves.toBe(true);
+	});
+
+	it('asks for documents in eventData when Include Documents is on', async () => {
+		const ctx = hook([{ connectId: 'c-2' }], { hmacSecret: 'k', includeDocuments: true });
+		await methods.create.call(ctx);
+		const body = getRecordedRequests(ctx)[0].options.body as { eventData: { includeData: string[] } };
+		expect(body.eventData.includeData).toContain('documents');
+	});
+});
+
+describe('round 2: recipients and SMS', () => {
+	it('recipient update sends access code, client user id, SMS and notification', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({
+				accountId: 'acct-1',
+				envelopeId: 'env-1',
+				recipientType: 'signers',
+				recipientId: '1',
+				updateFields: { accessCode: '1234', clientUserId: 'cu', deliveryMethod: 'sms', emailNotificationSubject: 'Hi' },
+			}),
+			httpResponses: [{}],
+		});
+		await handleRecipient(ctx, 'update', 0);
+		const body = getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] };
+		expect(body.signers[0]).toEqual({
+			recipientId: '1',
+			accessCode: '1234',
+			clientUserId: 'cu',
+			deliveryMethod: 'SMS',
+			emailNotification: { emailSubject: 'Hi' },
+		});
+	});
+
+	it('envelope signers send the DocuSign phone shape', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({
+				accountId: 'acct-1',
+				emailSubject: 'S',
+				status: 'sent',
+				additionalFields: {},
+				documents: {},
+				signers: { signer: [{ email: 'a@example.com', name: 'A', deliveryMethod: 'sms', phoneNumber: '+1 415 555 0100' }] },
+			}),
+			httpResponses: [{}],
+		});
+		await handleEnvelope(ctx, 'create', 0);
+		const body = getRecordedRequests(ctx)[0].options.body as { recipients: { signers: IDataObject[] } };
+		expect(body.recipients.signers[0]).toMatchObject({
+			deliveryMethod: 'SMS',
+			phoneNumber: { countryCode: '1', number: '4155550100' },
+		});
+	});
+});
+
+describe('round 2: routes and bodies from the v2.1 spec', () => {
+	it('template document delete sends the ID list to .../documents', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', templateId: 't-1', documentId: '3' }), httpResponses: [{}] });
+		await handleTemplateDocument(ctx, 'delete', 0);
+		const req = getRecordedRequests(ctx)[0].options;
+		expect(req.url).toBe(`${DEMO}/accounts/acct-1/templates/t-1/documents`);
+		expect(req.body).toEqual({ documents: [{ documentId: '3' }] });
+	});
+
+	it('template recipient preview posts to the template views', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', templateId: 't-1', returnUrl: 'https://x.example.com' }), httpResponses: [{}] });
+		await handleTemplateRecipient(ctx, 'createPreview', 0);
+		expect(getRecordedRequests(ctx)[0].options.url).toBe(`${DEMO}/accounts/acct-1/templates/t-1/views/recipient_preview`);
+	});
+
+	it('historical publish posts to connect/envelopes/publish/historical', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', requestBody: '{"envelopes":[]}' }), httpResponses: [{}] });
+		await handleEnvelopePublish(ctx, 'createHistorical', 0);
+		expect(getRecordedRequests(ctx)[0].options.url).toBe(`${DEMO}/accounts/acct-1/connect/envelopes/publish/historical`);
+	});
+
+	it('contact create and update use contactList', async () => {
+		const create = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', contactName: 'A', name: 'A', additionalFields: {} }),
+			httpResponses: [{}],
+		});
+		await handleUserContact(create, 'create', 0);
+		expect(Object.keys(getRecordedRequests(create)[0].options.body as IDataObject)).toEqual(['contactList']);
+		const update = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', contactsBody: '[{"contactId":"c-1","name":"B"}]' }),
+			httpResponses: [{}],
+		});
+		await handleUserContact(update, 'update', 0);
+		expect(getRecordedRequests(update)[0].options.body).toEqual({ contactList: [{ contactId: 'c-1', name: 'B' }] });
+	});
+
+	it.each([
+		['envelope', handleEnvelopeLock, { envelopeId: 'env-1' }],
+		['template', handleTemplateLock, { templateId: 't-1' }],
+	])('%s lock update and release send X-DocuSign-Edit', async (_kind, handler, ids) => {
+		for (const op of ['update', 'delete']) {
+			const ctx = createMockContext({
+				credentials: C,
+				parameters: params({ accountId: 'acct-1', ...ids, lockToken: 'tok-9', lockDurationInSeconds: 600 }),
+				httpResponses: [{}],
+			});
+			await (handler as (c: IExecuteFunctions, o: string, i: number) => Promise<unknown>)(ctx, op, 0);
+			const req = getRecordedRequests(ctx)[0].options as { headers: Record<string, string>; body?: IDataObject };
+			expect(JSON.parse(req.headers['X-DocuSign-Edit']).LockToken).toBe('tok-9');
+			expect(req.body ?? {}).not.toHaveProperty('lockToken');
+		}
 	});
 });

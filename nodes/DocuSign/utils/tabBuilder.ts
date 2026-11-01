@@ -97,13 +97,17 @@ export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues 
 		if (t.conditionalParentLabel) tab.conditionalParentLabel = t.conditionalParentLabel;
 		if (t.conditionalParentValue) tab.conditionalParentValue = t.conditionalParentValue;
 
-		// Anchor advanced options
-		if (t.anchorIgnoreIfNotPresent === 'true') tab.anchorIgnoreIfNotPresent = 'true';
-		if (t.anchorCaseSensitive === 'true') tab.anchorCaseSensitive = 'true';
-		if (t.anchorMatchWholeWord === 'true') tab.anchorMatchWholeWord = 'true';
-		if (t.anchorHorizontalAlignment && t.anchorHorizontalAlignment !== 'left') {
-			tab.anchorHorizontalAlignment = t.anchorHorizontalAlignment;
+		// Anchor options go out exactly as chosen whenever the tab is anchored, so No is never left
+		// to whatever default DocuSign applies. The v2.1 spec allows only left or right alignment.
+		if (tab.anchorString) {
+			for (const key of ['anchorIgnoreIfNotPresent', 'anchorCaseSensitive', 'anchorMatchWholeWord']) {
+				if (t[key] === 'true' || t[key] === 'false') tab[key] = t[key];
+			}
 		}
+		if (t.anchorHorizontalAlignment === 'center') {
+			throw new NodeOperationError(ctx.getNode(), 'DocuSign anchors align only Left or Right', { itemIndex: i });
+		}
+		if (t.anchorHorizontalAlignment === 'right') tab.anchorHorizontalAlignment = 'right';
 
 		// References
 		if (t.customTabId) tab.customTabId = t.customTabId;

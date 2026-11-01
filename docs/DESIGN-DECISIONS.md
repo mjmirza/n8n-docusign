@@ -80,16 +80,27 @@ reminder values only apply when their block is enabled, so setting one without t
 
 DocuSign signs every Connect configuration's events with the account's HMAC keys. After the
 signature check the trigger also requires the event name to be one it subscribed to and the
-payload's `configurationId` to match its own subscription. Other events get HTTP 200 and do not
-run the workflow, so DocuSign does not retry them.
+payload's `configurationId` to match its own subscription. Both must be present: the trigger
+creates a JSON SIM subscription, whose messages always carry them, so a payload without either
+(legacy XML, or a replay from another configuration) is ignored. Ignored events get HTTP 200 and
+do not run the workflow, so DocuSign does not retry them.
 
 ## Node version 3: an empty list outputs no items
 
 Versions 1 and 2 output one `{ success: true, count: 0 }` item for an empty list, and saved
 workflows keep that. From version 3 an empty list outputs no items, so downstream nodes do not
-run on nothing. New nodes use version 3.
+run on nothing. That covers both a bare array and a list operation (list, getAll, getMany) whose
+response holds result arrays that are all empty, such as `{ groups: [] }`. New nodes use version 3.
 
 ## Connect log Status is the envelope status
 
 `connectLog.status` is the envelope status (Sent, Completed, Voided, ...). Failed deliveries are
 listed by Get Event Failures, so the Status description points there instead of suggesting Failed.
+
+## Anchor options are sent as chosen
+
+The v2.1 spec gives `anchorMatchWholeWord` and `anchorCaseSensitive` a default of false, and
+SDK model docs have been read as saying otherwise. Either way, an anchored tab now sends the Yes
+or No the user picked, so No never depends on DocuSign's default. Sending false where false is
+the default changes nothing for existing workflows. `anchorHorizontalAlignment` allows only
+`left` and `right` in the spec, so Center is gone from the picker and is rejected with a message.

@@ -21,6 +21,9 @@ import {
 import { DocuSignJwtApi, buildDocuSignJwtAssertion } from '../credentials/DocuSignJwtApi.credentials';
 import { handleRecipient } from '../nodes/DocuSign/resources/recipient/recipient.handler';
 import { handleTemplateDocument } from '../nodes/DocuSign/resources/templateDocument/templateDocument.handler';
+import { handleBulkEnvelope } from '../nodes/DocuSign/resources/bulkEnvelope/bulkEnvelope.handler';
+import { handleEnvelopeWorkflow } from '../nodes/DocuSign/resources/envelopeWorkflow/envelopeWorkflow.handler';
+import { parseJsonInput } from '../nodes/DocuSign/utils/jsonInput';
 import { handlePowerForm } from '../nodes/DocuSign/resources/powerForm/powerForm.handler';
 import { handleAccountCustomField } from '../nodes/DocuSign/resources/accountCustomField/accountCustomField.handler';
 import { handleENoteConfiguration } from '../nodes/DocuSign/resources/eNoteConfiguration/eNoteConfiguration.handler';
@@ -50,7 +53,7 @@ import { handleTemplateCustomField } from '../nodes/DocuSign/resources/templateC
 import { handleAccount } from '../nodes/DocuSign/resources/account/account.handler';
 import { matchSpecRoute, unknownBodyKeys, unknownQueryParams } from './setup/spec-routes';
 import { toRecipientPhone } from '../nodes/DocuSign/utils/recipientDelivery';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 
 // Some tests assert inside catch; an unexpected success must fail them.
 beforeEach(() => {
@@ -1741,5 +1744,82 @@ describe('round 9c: attachment replace and tab alignment', () => {
 		});
 		await handleEnvelopeRecipientTab(ctx, sendEmptyValues ? 'update' : 'create', 0);
 		expect((getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0].anchorHorizontalAlignment).toBe('left');
+	});
+});
+
+// Round 9d: third branch review.
+
+describe('round 9d: JSON parameters accept an expression that is already an object', () => {
+	it('parseJsonInput passes objects and arrays through and parses text', () => {
+		expect(parseJsonInput({ a: 1 })).toEqual({ a: 1 });
+		expect(parseJsonInput([1])).toEqual([1]);
+		expect(parseJsonInput('{"a":1}')).toEqual({ a: 1 });
+		expect(() => parseJsonInput('{bad')).toThrow();
+	});
+
+	it('bulk send list create sends an object expression as the body', async () => {
+		const list = { name: 'L', bulkCopies: [] };
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', requestBody: list }), httpResponses: [{}] });
+		await handleBulkEnvelope(ctx, 'createBulkSendList', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual(list);
+	});
+
+	it('envelope workflow update sends an object expression as the body', async () => {
+		const workflow = { workflowStatus: 'paused' };
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', scope: 'envelope', envelopeId: 'e-1', requestBody: workflow }), httpResponses: [{}] });
+		await handleEnvelopeWorkflow(ctx, 'updateEnvelopeWorkflow', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual(workflow);
+	});
+
+	it('no handler parses a parameter with a bare JSON.parse', () => {
+		const dir = 'nodes/DocuSign/resources';
+		const offenders = readdirSync(dir)
+			.flatMap((r) => readdirSync(`${dir}/${r}`).filter((f) => f.endsWith('.handler.ts')).map((f) => `${dir}/${r}/${f}`))
+			.filter((f) => !f.endsWith('envelopeAttachment.handler.ts') && readFileSync(f, 'utf8').includes('JSON.parse('));
+		expect(offenders).toEqual([]);
+	});
+});
+
+describe('round 9d: witnesses name the signer they witness', () => {
+	it('envelope recipient add sends witnessFor', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientType: 'witnesses', recipientEmail: 'w@example.com', recipientName: 'W', recipientId: '2', additionalFields: { witnessFor: '1' } }),
+			httpResponses: [{}],
+		});
+		await handleRecipient(ctx, 'add', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { witnesses: IDataObject[] }).witnesses[0].witnessFor).toBe('1');
+	});
+
+	it('template recipient create sends witnessFor', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', templateId: 'tp-1', recipientType: 'witnesses', roleName: 'W', routingOrder: '1', additionalFields: { witnessFor: '1' } }),
+			httpResponses: [{}],
+		});
+		await handleTemplateRecipient(ctx, 'create', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { witnesses: IDataObject[] }).witnesses[0].witnessFor).toBe('1');
+	});
+});
+
+describe('round 9d: whole-word matching defaults to DocuSign', () => {
+	it('the default leaves anchorMatchWholeWord out, as releases before 3.4.0 did', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [{ placementMethod: 'anchor', anchorString: '/s/', anchorMatchWholeWord: '' }] } }),
+			httpResponses: [{}],
+		});
+		await handleEnvelopeRecipientTab(ctx, 'create', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0]).not.toHaveProperty('anchorMatchWholeWord');
+		for (const tabs of new DocuSign().description.properties.filter((p) => p.name === 'tabs')) {
+			const values = (tabs.options as Array<{ values: Array<{ name: string; default: unknown }> }>)[0].values;
+			expect(values.find((v) => v.name === 'anchorMatchWholeWord')?.default).toBe('');
+		}
+	});
+});
+
+describe('round 9d: the quick start names the template role', () => {
+	it('step 4 mentions the Role Name', () => {
+		expect(readFileSync('README.md', 'utf8')).toMatch(/4\. Pick your account, paste a template ID, add a template role with the Role Name/);
 	});
 });

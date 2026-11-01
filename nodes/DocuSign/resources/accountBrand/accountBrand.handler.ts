@@ -1,5 +1,6 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 const VALID_LOGO_TYPES = new Set(['primary', 'secondary', 'email']);
 const VALID_RESOURCE_TYPES = new Set(['sending', 'signing', 'email', 'signing_captive']);
@@ -58,10 +59,10 @@ export async function handleAccountBrand(
 				body.brandCompany = additionalFields.brandCompany;
 			}
 			if (additionalFields.colors) {
-				body.colors = JSON.parse(additionalFields.colors as string);
+				body.colors = parseJsonInput(additionalFields.colors as string);
 			}
 			if (additionalFields.logos) {
-				body.logos = JSON.parse(additionalFields.logos as string);
+				body.logos = parseJsonInput(additionalFields.logos as string);
 			}
 			return docuSignRequest(ctx, 'POST', basePath, body);
 		}
@@ -77,10 +78,10 @@ export async function handleAccountBrand(
 				body.brandCompany = additionalFields.brandCompany;
 			}
 			if (additionalFields.colors) {
-				body.colors = JSON.parse(additionalFields.colors as string);
+				body.colors = parseJsonInput(additionalFields.colors as string);
 			}
 			if (additionalFields.logos) {
-				body.logos = JSON.parse(additionalFields.logos as string);
+				body.logos = parseJsonInput(additionalFields.logos as string);
 			}
 			return docuSignRequest(ctx, 'PUT', `${basePath}/${brandId}`, body);
 		}

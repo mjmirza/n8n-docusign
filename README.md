@@ -26,7 +26,7 @@ Send, track and manage DocuSign envelopes from any n8n workflow, without writing
 1. In n8n open **Settings**, then **Community Nodes**, choose **Install**, enter `n8n-nodes-docusigns` and confirm.
 2. Create a **DocuSign OAuth2 API** credential (steps below), pick **Demo / Sandbox** for a first test and click **Sign in with DocuSign**.
 3. Add the **DocuSign** node, set **Category** to Envelopes, **Resource** to Envelope and **Operation** to Create From Template.
-4. Pick your account, paste a template ID, map one signer email and name, and run the node.
+4. Pick your account, paste a template ID, add a template role with the Role Name from your template plus the signer's email and name, and run the node.
 5. The output holds the new `envelopeId` and status `sent`, and the signer receives the email from DocuSign.
 
 Add a **DocuSign Trigger** with the event Envelope Completed to continue the workflow once everyone has signed.

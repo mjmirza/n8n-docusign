@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all Envelope Publish operations.
@@ -19,7 +20,7 @@ export async function handleEnvelopePublish(
 			const raw = ctx.getNodeParameter('requestBody', i) as string;
 			let body: IDataObject;
 			try {
-				body = JSON.parse(raw) as IDataObject;
+				body = parseJsonInput(raw) as IDataObject;
 			} catch {
 				throw new NodeOperationError(ctx.getNode(), 'Request body must be valid JSON');
 			}

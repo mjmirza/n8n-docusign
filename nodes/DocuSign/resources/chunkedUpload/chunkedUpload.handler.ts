@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all Chunked Upload operations.
@@ -18,7 +19,7 @@ export async function handleChunkedUpload(
 		case 'create': {
 			let body: IDataObject;
 			try {
-				body = JSON.parse(
+				body = parseJsonInput(
 					ctx.getNodeParameter('requestBody', i) as string,
 				) as IDataObject;
 			} catch {

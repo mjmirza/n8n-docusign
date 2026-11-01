@@ -63,6 +63,7 @@ export const templateRecipientFields: INodeProperties[] = [
 			{ displayName: 'Signer Name (In-Person)', name: 'signerName', type: 'string', default: '' },
 			{ displayName: 'Template Locked', name: 'templateLocked', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false' },
 			{ displayName: 'Template Required', name: 'templateRequired', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false' },
+			{ displayName: 'Witness For (Recipient ID)', name: 'witnessFor', type: 'string', default: '', description: 'For a Witness, the recipient ID of the signer being witnessed' },
 		],
 	},
 	{

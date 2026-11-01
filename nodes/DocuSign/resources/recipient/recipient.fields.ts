@@ -123,6 +123,7 @@ export const recipientFields: INodeProperties[] = [
 			{ displayName: 'Role Name', name: 'roleName', type: 'string', default: '', description: 'Role name for template-based flows' },
 			{ displayName: 'Signer Name (In-Person)', name: 'signerName', type: 'string', default: '', description: 'Actual signer name for in-person signers' },
 			{ displayName: 'Signing Group ID', name: 'signingGroupId', type: 'string', default: '', description: 'Assign to a signing group' },
+			{ displayName: 'Witness For (Recipient ID)', name: 'witnessFor', type: 'string', default: '', description: 'For a Witness, the recipient ID of the signer being witnessed' },
 		],
 	},
 

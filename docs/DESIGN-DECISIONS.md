@@ -99,11 +99,17 @@ listed by Get Event Failures, so the Status description points there instead of 
 
 ## Anchor options are sent as chosen
 
-The v2.1 spec gives `anchorMatchWholeWord` and `anchorCaseSensitive` a default of false, and
-SDK model docs have been read as saying otherwise. Either way, an anchored tab now sends the Yes
-or No the user picked, so No never depends on DocuSign's default. Sending false where false is
-the default changes nothing for existing workflows. `anchorHorizontalAlignment` allows only
-`left` and `right` in the spec, so Center is gone from the picker and is rejected with a message.
+The v2.1 spec gives `anchorMatchWholeWord` a default of false, while DocuSign's SDK model docs
+describe true. Because the sources disagree, Anchor Match Whole Word has a DocuSign Default choice,
+the default, which leaves the field out as every release before 3.4.0 did; Yes and No are sent as
+chosen. Anchor Case Sensitive and Ignore If Not Present are sent as chosen on anchored tabs, where
+both sources agree false is the default. `anchorHorizontalAlignment` allows only `left` and
+`right`, so Center is rejected; Left is sent on anchored tabs and Send Empty updates.
+
+## JSON parameters accept objects
+
+An n8n expression can resolve to an object instead of text. Every JSON parameter goes through
+`parseJsonInput`, which uses an object or array as-is and parses text, so `={{ $json.body }}` works.
 
 ## Minimum n8n version is documented, not enforced
 

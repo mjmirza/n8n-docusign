@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, envelopePath, templatePath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 const VALID_SCOPES = ['envelope', 'template'] as const;
 
@@ -21,7 +22,7 @@ function buildBasePath(ctx: IExecuteFunctions, i: number): string {
 function parseBody(ctx: IExecuteFunctions, i: number): IDataObject {
 	const raw = ctx.getNodeParameter('requestBody', i) as string;
 	try {
-		return JSON.parse(raw) as IDataObject;
+		return parseJsonInput(raw) as IDataObject;
 	} catch {
 		throw new NodeOperationError(ctx.getNode(), 'Request body must be valid JSON');
 	}

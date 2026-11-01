@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, templatePath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 export async function handleTemplateDocument(
 	ctx: IExecuteFunctions,
@@ -72,7 +73,7 @@ export async function handleTemplateDocument(
 		case 'updateList': {
 			const docsJson = ctx.getNodeParameter('documentsJson', i, '[]') as string;
 			let parsed: unknown;
-			try { parsed = JSON.parse(docsJson); } catch { throw new NodeOperationError(ctx.getNode(), 'Documents must be valid JSON'); }
+			try { parsed = parseJsonInput(docsJson); } catch { throw new NodeOperationError(ctx.getNode(), 'Documents must be valid JSON'); }
 			return docuSignRequest(ctx, 'PUT', basePath, { documents: parsed } as IDataObject);
 		}
 

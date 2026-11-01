@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all Workspace Item operations.
@@ -120,7 +121,7 @@ export async function handleWorkspaceItem(
 		case 'deleteFolderItems': {
 			let items: unknown;
 			try {
-				items = JSON.parse(
+				items = parseJsonInput(
 					ctx.getNodeParameter('itemsJson', i) as string,
 				);
 			} catch {

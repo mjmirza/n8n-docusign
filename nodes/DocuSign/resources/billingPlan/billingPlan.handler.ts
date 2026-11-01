@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all Billing Plan operations.
@@ -52,7 +53,7 @@ export async function handleBillingPlan(
 			);
 			let body: IDataObject;
 			try {
-				body = JSON.parse(
+				body = parseJsonInput(
 					ctx.getNodeParameter('requestBody', i) as string,
 				) as IDataObject;
 			} catch {
@@ -72,7 +73,7 @@ export async function handleBillingPlan(
 			);
 			let body: IDataObject;
 			try {
-				body = JSON.parse(
+				body = parseJsonInput(
 					ctx.getNodeParameter('updateBody', i) as string,
 				) as IDataObject;
 			} catch {
@@ -87,7 +88,7 @@ export async function handleBillingPlan(
 			);
 			let body: IDataObject;
 			try {
-				body = JSON.parse(
+				body = parseJsonInput(
 					ctx.getNodeParameter('downgradeBody', i) as string,
 				) as IDataObject;
 			} catch {

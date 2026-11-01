@@ -69,7 +69,7 @@ export async function handleRecipient(
 			const directFields = [
 				'clientUserId', 'accessCode', 'note', 'roleName',
 				'requireSignOnPaper', 'embeddedRecipientStartURL',
-				'idCheckConfigurationName', 'requireIdLookup', 'signingGroupId',
+				'idCheckConfigurationName', 'requireIdLookup', 'signingGroupId', 'witnessFor',
 				'hostEmail', 'hostName', 'signerName',
 			];
 			for (const field of directFields) {

@@ -1,5 +1,6 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all User Profile operations.
@@ -45,7 +46,7 @@ export async function handleUserProfile(
 			if (additionalFields.company) body.companyName = additionalFields.company;
 			if (additionalFields.title) body.title = additionalFields.title;
 			if (additionalFields.userDetails) {
-				body.userDetails = JSON.parse(additionalFields.userDetails as string);
+				body.userDetails = parseJsonInput(additionalFields.userDetails as string);
 			}
 
 			return docuSignRequest(ctx, 'PUT', basePath, body);

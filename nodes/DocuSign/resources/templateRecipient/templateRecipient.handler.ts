@@ -39,7 +39,7 @@ export async function handleTemplateRecipient(
 
 			const directFields = [
 				'email', 'name', 'recipientId', 'accessCode', 'note',
-				'idCheckConfigurationName', 'requireIdLookup', 'templateLocked', 'templateRequired',
+				'idCheckConfigurationName', 'requireIdLookup', 'templateLocked', 'templateRequired', 'witnessFor',
 				'hostEmail', 'hostName', 'signerName',
 			];
 			for (const field of directFields) {

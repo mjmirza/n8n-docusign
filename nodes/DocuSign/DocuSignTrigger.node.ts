@@ -467,12 +467,13 @@ export async function resolveHmacSecrets(
 	ctx: IHookFunctions | IWebhookFunctions,
 	options: IDataObject,
 ): Promise<string[]> {
-	try {
-		const credential = await ctx.getCredentials('docuSignConnectHmacApi');
-		const fromCredential = parseHmacSecrets(credential?.hmacSecret);
-		if (fromCredential.length > 0) return fromCredential;
-	} catch {
-		// No HMAC credential attached to this node.
+	// An attached credential is the only source: if it fails to load, no key, so calls are rejected.
+	if (ctx.getNode().credentials?.docuSignConnectHmacApi) {
+		try {
+			return parseHmacSecrets((await ctx.getCredentials('docuSignConnectHmacApi'))?.hmacSecret);
+		} catch {
+			return [];
+		}
 	}
 	return parseHmacSecrets(options.hmacSecret);
 }

@@ -30,7 +30,11 @@ export async function handleUserContact(
 			const contact: IDataObject = { name };
 			if (additionalFields.contactId) contact.contactId = additionalFields.contactId;
 			if (additionalFields.emails) {
-				contact.emails = parseJsonInput(additionalFields.emails as string);
+				// Contact.emails is a list of strings; the older [{ email }] form is converted.
+				const emails: unknown = parseJsonInput(additionalFields.emails as string);
+				contact.emails = (Array.isArray(emails) ? emails : [emails]).map((e) =>
+					e && typeof e === 'object' ? String((e as IDataObject).email ?? '') : String(e),
+				);
 			}
 			if (additionalFields.organization) contact.organization = additionalFields.organization;
 			if (additionalFields.contactPhoneNumbers) {

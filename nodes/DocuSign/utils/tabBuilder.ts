@@ -43,6 +43,7 @@ function parseTabArray(ctx: IExecuteFunctions, i: number, raw: unknown, field: s
 }
 
 export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues = false): IDataObject[] {
+	const v4 = ctx.getNode().typeVersion >= 4;
 	const tabsData = ctx.getNodeParameter('tabs', i, {}) as IDataObject;
 	const tabEntries = (tabsData.tab || []) as IDataObject[];
 
@@ -74,8 +75,8 @@ export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues 
 		if (t.disableAutoSize === 'true') tab.disableAutoSize = 'true';
 
 		// Styling
-		// Empty is Account Default; any chosen size, including size12, is sent.
-		if (t.fontSize) tab.fontSize = t.fontSize;
+		// Version 4: empty is Account Default and any size is sent. Earlier versions keep 3.3.0's rule.
+		if (v4 ? t.fontSize : t.fontSize && t.fontSize !== 'size12') tab.fontSize = t.fontSize;
 		if (t.bold === 'true') tab.bold = 'true';
 		if (t.italic === 'true') tab.italic = 'true';
 		if (t.underline === 'true') tab.underline = 'true';
@@ -100,16 +101,15 @@ export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues 
 
 		// Anchor options go out exactly as chosen whenever the tab is anchored, so No is never left
 		// to whatever default DocuSign applies. The v2.1 spec allows only left or right alignment.
-		if (tab.anchorString) {
-			for (const key of ['anchorIgnoreIfNotPresent', 'anchorCaseSensitive', 'anchorMatchWholeWord']) {
-				if (t[key] === 'true' || t[key] === 'false') tab[key] = t[key];
-			}
+		// Saved values include defaults, so earlier node versions keep 3.3.0's send-Yes-only rule.
+		for (const key of ['anchorIgnoreIfNotPresent', 'anchorCaseSensitive', 'anchorMatchWholeWord']) {
+			if (t[key] === 'true' || (v4 && tab.anchorString && t[key] === 'false')) tab[key] = t[key];
 		}
 		if (t.anchorHorizontalAlignment === 'center') {
 			throw new NodeOperationError(ctx.getNode(), 'DocuSign anchors align only Left or Right', { itemIndex: i });
 		}
 		const alignment = t.anchorHorizontalAlignment;
-		if (alignment === 'right' || (alignment === 'left' && (tab.anchorString || sendEmptyValues))) {
+		if (alignment === 'right' || (v4 && alignment === 'left' && (tab.anchorString || sendEmptyValues))) {
 			tab.anchorHorizontalAlignment = alignment;
 		}
 

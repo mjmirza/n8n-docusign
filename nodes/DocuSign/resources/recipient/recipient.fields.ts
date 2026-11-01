@@ -106,7 +106,7 @@ export const recipientFields: INodeProperties[] = [
 			show: { resource: ['recipient', 'envelopeRecipient'], operation: ['add'] },
 		},
 		options: [
-			{ displayName: 'Access Code', name: 'accessCode', type: 'string', default: '', description: 'Access code for recipient authentication' },
+			{ displayName: 'Access Code', name: 'accessCode', type: 'string', typeOptions: { password: true }, default: '', description: 'Access code for recipient authentication' },
 			{ displayName: 'Client User ID', name: 'clientUserId', type: 'string', default: '', description: 'Set this for embedded signing' },
 			{ displayName: 'Delivery Method', name: 'deliveryMethod', type: 'options', options: [{ name: 'Email', value: 'email' }, { name: 'SMS', value: 'sms' }], default: 'email' },
 			{ displayName: 'Email Notification Body', name: 'emailNotificationBody', type: 'string', default: '', description: 'Override email body for this recipient' },
@@ -152,7 +152,7 @@ export const recipientFields: INodeProperties[] = [
 			show: { resource: ['recipient', 'envelopeRecipient'], operation: ['update'] },
 		},
 		options: [
-			{ displayName: 'Access Code', name: 'accessCode', type: 'string', default: '' },
+			{ displayName: 'Access Code', name: 'accessCode', type: 'string', typeOptions: { password: true }, default: '' },
 			{ displayName: 'Client User ID', name: 'clientUserId', type: 'string', default: '' },
 			{ displayName: 'Delivery Method', name: 'deliveryMethod', type: 'options', options: [{ name: 'Email', value: 'email' }, { name: 'SMS', value: 'sms' }], default: 'email' },
 			{ displayName: 'Email', name: 'email', type: 'string', placeholder: 'name@email.com', default: '' },

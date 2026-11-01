@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-docusigns",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "description": "DocuSign eSignature for n8n. 80 resources, 349 operations and envelope event triggers.",
   "license": "MIT",
   "repository": {

@@ -159,13 +159,25 @@ The **DocuSign Trigger** registers a DocuSign Connect configuration for the work
 
 Create a **DocuSign Connect HMAC API** credential with a key from DocuSign Admin, **Connect**, **Connect Keys**, and attach it to the trigger. The credential is encrypted and not included in workflow exports. The older Options > HMAC Secret field still works when no credential is attached, but it is stored in the workflow, so move the key to the credential. DocuSign signs every event with its active keys, and the trigger accepts a call only when one signature header matches one of your keys (constant time comparison). Separate two keys with a comma while you rotate. Calls without a valid signature get HTTP 401, and the trigger will not activate without a key.
 
+## Upgrading to 3.5
+
+| Change | What to do |
+|---|---|
+| Node version 4, the default for new nodes: a list with only empty result arrays and paging fields outputs no items, Folder List Items includes the items, and tabs send a chosen No, Left alignment and Size 12 | Nothing. Saved nodes keep their version and the output they had in 3.3.0 |
+| An attached Connect HMAC credential that cannot be loaded no longer falls back to the old Options > HMAC Secret | Fix or reattach the credential if events start getting HTTP 401 |
+| Revoke User Authorizations accepts a JSON array of `{ "authorizationId" }` objects or IDs and sends DocuSign's `{ "authorizations": [...] }` body | Nothing. A full body still works |
+| Contact Emails is a list of addresses, such as `["user@example.com"]`; the older `[{ "email": ... }]` form is converted | Nothing |
+| Access code fields are masked in the editor | Nothing |
+| Several fields use the spec names DocuSign accepts (custom field type, eNote configuration, template documents, publish envelopes, permission profile and address settings) | Nothing |
+| Folder List Items Count, folder Search Text and the Auto Stamp and Confirm Initial Envelope Send tab settings are removed; DocuSign does not define them | Remove them from saved workflows if you set them; they were never applied |
+
 ## Upgrading to 3.4
 
 | Change | What to do |
 |---|---|
 | The trigger runs only for a signed event that names a subscribed event and carries its own Connect configuration ID; payloads without them are ignored | Nothing for subscriptions the trigger created, which always send both |
 | 3.4.0 only: version 3 nodes dropped list responses whose result arrays are empty | Fixed in 3.5.0: that rule moved to version 4, so saved version 3 nodes behave as in 3.3.0 |
-| Anchored tabs send the Anchor Match Whole Word, Case Sensitive and Ignore If Not Present values you choose | Nothing |
+| Anchored tabs send the Anchor Match Whole Word, Case Sensitive and Ignore If Not Present values you choose | From 3.5.0 this applies to version 4 nodes only; saved nodes on versions 1 to 3 send Yes values only, as in 3.3.0 |
 | Anchor Horizontal Alignment offers only Left and Right; Center is rejected with a message | Pick Left or Right. DocuSign never supported Center |
 
 ## Upgrading to 3.3

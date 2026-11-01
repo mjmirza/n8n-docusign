@@ -110,7 +110,7 @@ export const authorizationFields: INodeProperties[] = [
 		type: 'json',
 		default: '[]',
 		required: true,
-		description: 'Array of authorization ID objects to delete as JSON',
+		description: 'JSON array of authorizations to delete, e.g. [{"authorizationId": "abc"}], or a full { "authorizations": [...] } body',
 		displayOptions: {
 			show: { resource: ['authorization'], operation: ['deleteUserAuthorizations'] },
 		},

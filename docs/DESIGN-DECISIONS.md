@@ -146,6 +146,20 @@ activation registers the current settings, rather than leaving events that never
 `Phone Auth $` needs a `phoneAuthentication` object. With Phone Auth Numbers set, those are the
 sender-provided numbers; empty lets the recipient supply one (`recipMayProvideNumber`).
 
+## Saved tab values keep their request until version 4
+
+n8n stores a fixedCollection's values with their defaults, so a tab saved in 3.3.0 carries
+`anchorMatchWholeWord: 'false'`, `fontSize: 'size12'` and `alignment: 'left'` even when nobody
+chose them. 3.3.0 sent none of those. Sending them now would change where saved anchors match, so
+the chosen No, Size 12 and Left are sent only on node version 4. Versions 1 to 3 keep 3.3.0's rule:
+Yes values, Right alignment and sizes other than Size 12.
+
+## An attached HMAC credential is the only key source
+
+When the trigger has a Connect HMAC credential attached and it cannot be loaded, the trigger has no
+key and rejects calls. It does not fall back to the deprecated HMAC Secret option, which may hold a
+key that was rotated out. The option is read only when no credential is attached.
+
 ## Font size defaults to the account
 
 Font Size has an Account Default choice, the default, which leaves `fontSize` out as earlier

@@ -1,5 +1,33 @@
 # Changelog
 
+## [3.5.0] - 2026-11-01
+
+### Fixed
+- Version 3 nodes output list responses with empty result arrays as in 3.3.0; the 3.4.0 rule now applies to version 4 only, and counts a response as empty only when everything beside the arrays is paging or ID metadata.
+- Tabs on node versions 1 to 3 send the request 3.3.0 sent: saved No anchor options, Size 12 and Left alignment are left out.
+- An attached Connect HMAC credential that fails to load rejects calls instead of falling back to the deprecated HMAC Secret option.
+- An existing Connect subscription is reused only when its events, format, delivery mode and document settings match; otherwise a new one is registered.
+- Connect registration sends `configurationType`, `deliveryMode` and `enableLog`, which DocuSign requires.
+- Revoke User Authorizations wraps the documented array in `{ authorizations: [...] }`.
+- Contact Emails sends a list of address strings.
+- Request bodies use the spec field names: `customFieldType`, `eNoteConfigured`, template `documents`, publish `envelopes`, `allowApiSequentialSigning`, `allowVaulting`, and the user profile address fields.
+- Envelope attachment Replace sends the attachment ID it replaces; brand logo uploads send `Content-Disposition`, resource uploads send multipart `file.xml`.
+- ID check sets `requireIdLookup`; Phone Auth sends `phoneAuthentication`; Witness For and group lists are sent in the spec shape.
+- JSON inputs accept an object as well as text everywhere.
+- Reminder frequency on its own turns reminders on.
+- The trigger checks for an HMAC key before reusing a subscription.
+
+### Added
+- Node version 4, the default for new nodes: empty-list output, Folder List Items includes the items, and tabs send a chosen No, Left alignment and any size.
+- Anchor Match Whole Word and Font Size offer a DocuSign or Account Default choice, the default.
+
+### Removed
+- Folder List Items Count, folder Search Text, and the Auto Stamp and Confirm Initial Envelope Send tab settings; DocuSign does not define them, so they were never applied.
+
+### Security
+- Access code fields are masked in the editor.
+
+
 ## [3.4.0] - 2026-11-01
 
 ### Fixed

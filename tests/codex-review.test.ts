@@ -264,6 +264,7 @@ describe('DocuSign Connect trigger (H5, H6, M13)', () => {
 			getRequestObject: () => ({ rawBody: rawBody ?? undefined }),
 			getResponseObject: () => res,
 			getWorkflowStaticData: () => ({ connectId: 'c-1' }),
+			getNode: () => ({ credentials: {} }),
 			helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
 		} as unknown as IWebhookFunctions;
 		return { ctx, status };
@@ -674,6 +675,7 @@ describe('round 3: Connect HMAC key lives in a credential', () => {
 				getRequestObject: () => ({ rawBody: raw }),
 				getResponseObject: () => ({ status: (c: number) => (status(c), { json: jest.fn() }) }),
 				getWorkflowStaticData: () => ({ connectId: 'c-1' }),
+				getNode: () => ({ credentials: credentialKey ? { docuSignConnectHmacApi: { id: '1', name: 'HMAC' } } : {} }),
 				helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
 			} as unknown as IWebhookFunctions,
 		};
@@ -1373,6 +1375,7 @@ describe('round 7: a signed event must belong to this subscription', () => {
 			getRequestObject: () => ({ rawBody: raw }),
 			getResponseObject: () => ({ status: (c: number) => (status(c), { json: jest.fn() }) }),
 			getWorkflowStaticData: () => (connectId ? { connectId } : {}),
+			getNode: () => ({ credentials: {} }),
 			helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
 		} as unknown as IWebhookFunctions;
 		return { result: await trigger.webhook.call(ctx), status };
@@ -1464,6 +1467,7 @@ describe('round 8: the trigger fails closed on events without subscription detai
 			getRequestObject: () => ({ rawBody: raw }),
 			getResponseObject: () => ({ status: (c: number) => (status(c), { json: jest.fn() }) }),
 			getWorkflowStaticData: () => (connectId ? { connectId } : {}),
+			getNode: () => ({ credentials: {} }),
 			helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
 		} as unknown as IWebhookFunctions;
 		return trigger.webhook.call(ctx);
@@ -1510,6 +1514,7 @@ describe('round 8: anchor options go out exactly as chosen', () => {
 			credentials: C,
 			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [tab] } }),
 			httpResponses: [{}],
+			typeVersion: 4,
 		});
 		await handleEnvelopeRecipientTab(ctx, 'create', 0);
 		return (getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0];
@@ -1744,6 +1749,7 @@ describe('round 9c: attachment replace and tab alignment', () => {
 			credentials: C,
 			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [tab] }, sendEmptyValues }),
 			httpResponses: [{}],
+			typeVersion: 4,
 		});
 		await handleEnvelopeRecipientTab(ctx, sendEmptyValues ? 'update' : 'create', 0);
 		expect((getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0].anchorHorizontalAlignment).toBe('left');
@@ -1885,6 +1891,7 @@ describe('round 9e: font size', () => {
 			credentials: C,
 			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [{ placementMethod: 'anchor', anchorString: '/s/', fontSize }] } }),
 			httpResponses: [{}],
+			typeVersion: 4,
 		});
 		await handleEnvelopeRecipientTab(ctx, 'create', 0);
 		return (getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0];
@@ -1971,5 +1978,108 @@ describe('round 9f: subscription settings must match', () => {
 		expect(matchesSubscription({ ...base, includeDocuments: 'true' }, ['envelope-completed'], { includeDocuments: true })).toBe(true);
 		expect(matchesSubscription({ ...base, requiresAcknowledgement: 'false' }, ['envelope-completed'], {})).toBe(false);
 		expect(matchesSubscription({ ...base, includeCertificateOfCompletion: 'true' }, ['envelope-completed'], {})).toBe(false);
+	});
+});
+
+describe('round 9g: saved tab values on versions 1 to 3 keep the 3.3.0 output', () => {
+	const run = async (tab: IDataObject, typeVersion: number) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [tab] } }),
+			httpResponses: [{}],
+			typeVersion,
+		});
+		await handleEnvelopeRecipientTab(ctx, 'create', 0);
+		return (getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0];
+	};
+	const saved = { placementMethod: 'anchor', anchorString: '/s/', anchorMatchWholeWord: 'false', anchorCaseSensitive: 'false', fontSize: 'size12', alignment: 'left' };
+
+	it.each([1, 2, 3])('version %i omits a saved No, Size 12 and Left', async (v) => {
+		const tab = await run(saved, v);
+		expect(tab).not.toHaveProperty('anchorMatchWholeWord');
+		expect(tab).not.toHaveProperty('anchorCaseSensitive');
+		expect(tab).not.toHaveProperty('fontSize');
+		expect(tab).not.toHaveProperty('tabLabelAlignment');
+		expect(tab).not.toHaveProperty('anchorHorizontalAlignment');
+	});
+
+	it.each([1, 2, 3])('version %i still sends a chosen Yes and Right', async (v) => {
+		const tab = await run({ ...saved, anchorMatchWholeWord: 'true', alignment: 'right', fontSize: 'size14' }, v);
+		expect(tab.anchorMatchWholeWord).toBe('true');
+		expect(tab.fontSize).toBe('size14');
+	});
+
+	it('version 4 sends the chosen No and Size 12', async () => {
+		const tab = await run(saved, 4);
+		expect(tab.anchorMatchWholeWord).toBe('false');
+		expect(tab.fontSize).toBe('size12');
+	});
+});
+
+describe('round 9g: an attached HMAC credential never falls back to the old option', () => {
+	const raw = Buffer.from('{"event":"envelope-sent","configurationId":"c-1"}');
+	const sig = createHmac('sha256', 'old-key').update(raw).digest('base64');
+	it('rejects a request signed with the old option key when the credential fails to load', async () => {
+		const status = jest.fn();
+		const ctx = {
+			getBodyData: () => JSON.parse(raw.toString()),
+			getHeaderData: () => ({ 'x-docusign-signature-1': sig }),
+			getNodeParameter: (name: string) => (name === 'events' ? ['envelope-sent'] : { hmacSecret: 'old-key' }),
+			getCredentials: async () => {
+				throw new Error('decryption failed');
+			},
+			getRequestObject: () => ({ rawBody: raw }),
+			getResponseObject: () => ({ status: (c: number) => (status(c), { json: jest.fn() }) }),
+			getWorkflowStaticData: () => ({ connectId: 'c-1' }),
+			getNode: () => ({ credentials: { docuSignConnectHmacApi: { id: '1', name: 'HMAC' } } }),
+			helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
+		} as unknown as IWebhookFunctions;
+		const result = await new DocuSignTrigger().webhook.call(ctx);
+		expect(result.workflowData).toBeUndefined();
+		expect(status).toHaveBeenCalledWith(401);
+	});
+});
+
+describe('round 9g: request bodies match the documented input', () => {
+	it.each([
+		['[{"authorizationId":"a-1"},{"authorizationId":"a-2"}]'],
+		['["a-1","a-2"]'],
+		['{"authorizations":[{"authorizationId":"a-1"},{"authorizationId":"a-2"}]}'],
+	])('batch revocation sends { authorizations } for %s', async (input) => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', userId: 'u-1', deleteAuthorizationsBody: input }), httpResponses: [{}] });
+		await handleAuthorization(ctx, 'deleteUserAuthorizations', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ authorizations: [{ authorizationId: 'a-1' }, { authorizationId: 'a-2' }] });
+	});
+
+	it.each([['["user@example.com"]'], ['[{"email":"user@example.com"}]']])('contact emails are strings for %s', async (emails) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', contactName: 'A', name: 'A', additionalFields: { emails } }),
+			httpResponses: [{}],
+		});
+		await handleUserContact(ctx, 'create', 0);
+		const body = getRecordedRequests(ctx)[0].options.body as { contactList: IDataObject[] };
+		expect(body.contactList[0].emails).toEqual(['user@example.com']);
+	});
+});
+
+describe('round 9g: access codes are masked in the editor', () => {
+	const collect = (props: unknown[], out: IDataObject[] = []): IDataObject[] => {
+		for (const p of props as IDataObject[]) {
+			if (p.name === 'accessCode' || p.name === 'activationAccessCode') out.push(p);
+			const opts = p.options as unknown[] | undefined;
+			if (Array.isArray(opts)) {
+				for (const o of opts as IDataObject[]) {
+					if (Array.isArray(o.values)) collect(o.values as unknown[], out);
+					else if (o.type) collect([o], out);
+				}
+			}
+		}
+		return out;
+	};
+	it('every access code field is a password field', () => {
+		const found = collect(new DocuSign().description.properties);
+		expect(found.length).toBeGreaterThan(3);
+		for (const p of found) expect((p.typeOptions as IDataObject)?.password).toBe(true);
 	});
 });

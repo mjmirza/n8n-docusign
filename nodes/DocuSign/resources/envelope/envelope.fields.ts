@@ -85,7 +85,7 @@ export const envelopeFields: INodeProperties[] = [
 				displayName: 'Signer',
 				name: 'signer',
 				values: [
-					{ displayName: 'Access Code', name: 'accessCode', type: 'string', default: '', description: 'Access code for recipient authentication' },
+					{ displayName: 'Access Code', name: 'accessCode', type: 'string', typeOptions: { password: true }, default: '', description: 'Access code for recipient authentication' },
 					{ displayName: 'Client User ID', name: 'clientUserId', type: 'string', default: '', description: 'Set to enable embedded signing. Any unique value works.' },
 					{
 						displayName: 'Delivery Method',
@@ -469,7 +469,7 @@ export const envelopeFields: INodeProperties[] = [
 				displayName: 'Role',
 				name: 'role',
 				values: [
-					{ displayName: 'Access Code', name: 'accessCode', type: 'string', default: '', description: 'Access code for authentication' },
+					{ displayName: 'Access Code', name: 'accessCode', type: 'string', typeOptions: { password: true }, default: '', description: 'Access code for authentication' },
 					{ displayName: 'Client User ID', name: 'clientUserId', type: 'string', default: '', description: 'Set to enable embedded signing' },
 					{ displayName: 'Delivery Method', name: 'deliveryMethod', type: 'options', options: [{ name: 'Email', value: 'email' }, { name: 'SMS', value: 'sms' }], default: 'email' },
 					{ displayName: 'Email', name: 'email', type: 'string', placeholder: 'name@email.com', default: '', required: true },

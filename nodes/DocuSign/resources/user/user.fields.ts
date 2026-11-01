@@ -95,6 +95,7 @@ export const userFields: INodeProperties[] = [
 				displayName: 'Activation Access Code',
 				name: 'activationAccessCode',
 				type: 'string',
+				typeOptions: { password: true },
 				default: '',
 				description: 'The activation access code for the new user',
 			},

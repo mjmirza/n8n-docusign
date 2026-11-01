@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/mjmirza/n8n-docusign/master/docs/images/docusign-node.png" alt="DocuSign node icon" width="96" height="96" />
+  <img src="https://raw.githubusercontent.com/mjmirza/n8n-docusign/main/docs/images/docusign-node.png" alt="DocuSign node icon" width="96" height="96" />
 </p>
 
 # n8n-nodes-docusigns
@@ -8,8 +8,8 @@ Send, track and manage DocuSign envelopes from any n8n workflow, without writing
 
 [![npm version](https://img.shields.io/npm/v/n8n-nodes-docusigns)](https://www.npmjs.com/package/n8n-nodes-docusigns)
 [![npm downloads](https://img.shields.io/npm/dm/n8n-nodes-docusigns)](https://www.npmjs.com/package/n8n-nodes-docusigns)
-[![CI](https://img.shields.io/github/actions/workflow/status/mjmirza/n8n-docusign/ci.yml?branch=master&label=CI)](https://github.com/mjmirza/n8n-docusign/actions/workflows/ci.yml)
-[![License MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/mjmirza/n8n-docusign/blob/master/LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/mjmirza/n8n-docusign/ci.yml?branch=main&label=CI)](https://github.com/mjmirza/n8n-docusign/actions/workflows/ci.yml)
+[![License MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/mjmirza/n8n-docusign/blob/main/LICENSE)
 [![npm provenance](https://img.shields.io/badge/npm-signed%20provenance-brightgreen)](https://www.npmjs.com/package/n8n-nodes-docusigns#provenance)
 
 ## What you get
@@ -219,7 +219,7 @@ Create a **DocuSign Connect HMAC API** credential with a key from DocuSign Admin
 | Cloud Storage Get File is gone from the picker | DocuSign has no endpoint for it. Use List Files. Saved workflows that use it stop with a clear message |
 | New, off by default: Group Get Many paging, Send Empty and No Values on tab updates, phone numbers on recipient updates, four more envelope operations | Nothing. Turn them on where you need them |
 
-Choices made where DocuSign's API differs from an operation's name are listed in [docs/DESIGN-DECISIONS.md](https://github.com/mjmirza/n8n-docusign/blob/master/docs/DESIGN-DECISIONS.md).
+Choices made where DocuSign's API differs from an operation's name are listed in [docs/DESIGN-DECISIONS.md](https://github.com/mjmirza/n8n-docusign/blob/main/docs/DESIGN-DECISIONS.md).
 
 ## Upgrading to 2.0
 
@@ -287,4 +287,4 @@ npx @n8n/scan-community-package n8n-nodes-docusigns   # n8n verification scan of
 
 ## License
 
-[MIT](LICENSE). DocuSign is a trademark of DocuSign, Inc. This is an independent integration, see [docs/TRADEMARKS.md](https://github.com/mjmirza/n8n-docusign/blob/master/docs/TRADEMARKS.md).
+[MIT](LICENSE). DocuSign is a trademark of DocuSign, Inc. This is an independent integration, see [docs/TRADEMARKS.md](https://github.com/mjmirza/n8n-docusign/blob/main/docs/TRADEMARKS.md).

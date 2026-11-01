@@ -30,11 +30,11 @@ export const envelopeAttachmentFields: INodeProperties[] = [
 		name: 'attachmentType',
 		type: 'options',
 		options: [
-			{ name: 'PDF', value: '.pdf' },
 			{ name: 'DOCX', value: '.docx' },
-			{ name: 'PNG', value: '.png' },
 			{ name: 'JPG', value: '.jpg' },
 			{ name: 'Other', value: 'other' },
+			{ name: 'PDF', value: '.pdf' },
+			{ name: 'PNG', value: '.png' },
 		],
 		default: '.pdf',
 		displayOptions: {

@@ -7,7 +7,7 @@ import type {
 	IDataObject,
 	JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError } from 'n8n-workflow';
+import { NodeApiError, sleep } from 'n8n-workflow';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -66,6 +66,15 @@ export function assertSafeId(value: string | number, label = 'ID'): string {
 	return s;
 }
 
+/** Decodes percent-encoding, returning undefined for malformed input instead of throwing. */
+function safeDecodeURIComponent(value: string): string | undefined {
+	try {
+		return decodeURIComponent(value);
+	} catch {
+		return undefined;
+	}
+}
+
 /**
  * Sanitise an API endpoint path to prevent path traversal attacks.
  */
@@ -74,10 +83,8 @@ export function sanitizeEndpoint(endpoint: string): string {
 
 	// M2 fix: Decode percent-encoded characters before traversal check
 	// This prevents bypasses like %2e%2e%2f (../), %2e (.), etc.
-	let decoded: string;
-	try {
-		decoded = decodeURIComponent(clean);
-	} catch {
+	const decoded = safeDecodeURIComponent(clean);
+	if (decoded === undefined) {
 		throw new Error('Invalid endpoint: contains malformed percent-encoding');
 	}
 
@@ -313,7 +320,7 @@ export async function docuSignRequest(
 				);
 				const jitter = Math.random() * baseDelay * 0.25;
 				const delay = retryAfterMs || baseDelay + jitter;
-				await new Promise((resolve) => setTimeout(resolve, delay));
+				await sleep(delay);
 				lastError = err as Error;
 				continue;
 			}
@@ -323,17 +330,11 @@ export async function docuSignRequest(
 			const msg =
 				parsed || err.message || 'Unknown DocuSign API error';
 
-			// Use NodeApiError if we have a node context (IExecuteFunctions)
-			if ('getNode' in ctx) {
-				throw new NodeApiError(ctx.getNode(), err as JsonObject, {
-					message: `DocuSign API error [${err.statusCode || 'unknown'}]`,
-					description: msg.slice(0, MAX_ERROR_LENGTH),
-				});
-			}
-
-			throw new Error(
-				`DocuSign API error [${err.statusCode || 'unknown'}]: ${msg.slice(0, MAX_ERROR_LENGTH)}`,
-			);
+			// Every DocuSignContext member (execute, hook, load-options) exposes getNode.
+			throw new NodeApiError(ctx.getNode(), err as JsonObject, {
+				message: `DocuSign API error [${err.statusCode || 'unknown'}]`,
+				description: msg.slice(0, MAX_ERROR_LENGTH),
+			});
 		}
 	}
 

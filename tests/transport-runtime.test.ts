@@ -1,3 +1,4 @@
+import { NodeApiError } from 'n8n-workflow';
 /**
  * Tests for transport.ts runtime functions (docuSignRequest, docuSignGetAll,
  * resolveCredentials, createCrudHandler) using mocked n8n context.
@@ -614,8 +615,9 @@ describe('transport runtime', () => {
 			expect(result).toEqual({ ok: true });
 		});
 
-		it('should throw plain Error when context has no getNode (non-IExecuteFunctions)', async () => {
-			// Simulate a context without getNode (e.g., ILoadOptionsFunctions)
+		// Every DocuSignContext (execute, hook, load-options) exposes getNode, so every
+		// API failure surfaces as a NodeApiError with the HTTP status and parsed reason.
+		it('should throw NodeApiError with status and parsed reason for a 400', async () => {
 			const ctx = createMockContext({
 				credentials: {
 					docuSignOAuth2Api: { environment: 'demo' },
@@ -628,17 +630,13 @@ describe('transport runtime', () => {
 				],
 			});
 
-			// Remove getNode to simulate non-IExecuteFunctions context
-			delete (ctx as unknown as Record<string, unknown>).getNode;
-
-			await expect(
-				docuSignRequest(ctx, 'GET', 'accounts/acct-1'),
-			).rejects.toThrow(
-				'DocuSign API error [400]: BAD_REQUEST: Invalid parameter',
-			);
+			const error = await docuSignRequest(ctx, 'GET', 'accounts/acct-1').catch((e: unknown) => e);
+			expect(error).toBeInstanceOf(NodeApiError);
+			expect((error as NodeApiError).message).toBe('DocuSign API error [400]');
+			expect((error as NodeApiError).description).toBe('BAD_REQUEST: Invalid parameter');
 		});
 
-		it('should throw plain Error for error without statusCode in non-node context', async () => {
+		it('should fall back to the transport message when the body has no reason', async () => {
 			const ctx = createMockContext({
 				credentials: {
 					docuSignOAuth2Api: { environment: 'demo' },
@@ -648,11 +646,10 @@ describe('transport runtime', () => {
 				],
 			});
 
-			delete (ctx as unknown as Record<string, unknown>).getNode;
-
-			await expect(
-				docuSignRequest(ctx, 'GET', 'accounts/acct-1'),
-			).rejects.toThrow('DocuSign API error [404]: Not Found');
+			const error = await docuSignRequest(ctx, 'GET', 'accounts/acct-1').catch((e: unknown) => e);
+			expect(error).toBeInstanceOf(NodeApiError);
+			expect((error as NodeApiError).message).toBe('DocuSign API error [404]');
+			expect((error as NodeApiError).description).toBe('Not Found');
 		});
 
 		it('should handle custom content type', async () => {

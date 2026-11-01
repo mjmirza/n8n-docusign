@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, templatePath, assertSafeId } from '../../transport';
 
 export async function handleTemplateDocumentVisibility(
@@ -34,7 +35,7 @@ export async function handleTemplateDocumentVisibility(
 			try {
 				parsed = JSON.parse(visibility);
 			} catch {
-				throw new Error('Document visibility must be valid JSON');
+				throw new NodeOperationError(ctx.getNode(), 'Document visibility must be valid JSON');
 			}
 			return docuSignRequest(
 				ctx,
@@ -50,7 +51,7 @@ export async function handleTemplateDocumentVisibility(
 			try {
 				parsed = JSON.parse(visibility);
 			} catch {
-				throw new Error('Document visibility must be valid JSON');
+				throw new NodeOperationError(ctx.getNode(), 'Document visibility must be valid JSON');
 			}
 			return docuSignRequest(
 				ctx,

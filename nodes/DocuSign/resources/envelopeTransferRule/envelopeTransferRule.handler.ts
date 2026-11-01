@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
 
 /**
@@ -18,7 +19,7 @@ export async function handleEnvelopeTransferRule(
 			try {
 				body = JSON.parse(raw) as IDataObject;
 			} catch {
-				throw new Error('Request body must be valid JSON');
+				throw new NodeOperationError(ctx.getNode(), 'Request body must be valid JSON');
 			}
 			return docuSignRequest(ctx, 'POST', basePath, body);
 		}
@@ -45,7 +46,7 @@ export async function handleEnvelopeTransferRule(
 			try {
 				body = JSON.parse(raw) as IDataObject;
 			} catch {
-				throw new Error('Request body must be valid JSON');
+				throw new NodeOperationError(ctx.getNode(), 'Request body must be valid JSON');
 			}
 			return docuSignRequest(ctx, 'PUT', `${basePath}/${ruleId}`, body);
 		}
@@ -56,7 +57,7 @@ export async function handleEnvelopeTransferRule(
 			try {
 				body = JSON.parse(raw) as IDataObject;
 			} catch {
-				throw new Error('Request body must be valid JSON');
+				throw new NodeOperationError(ctx.getNode(), 'Request body must be valid JSON');
 			}
 			return docuSignRequest(ctx, 'PUT', basePath, body);
 		}

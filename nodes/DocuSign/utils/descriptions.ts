@@ -322,7 +322,7 @@ export const CATEGORY_RESOURCES: Record<string, Array<{ name: string; value: str
 		{ name: 'Account Tab Setting', value: 'accountTabSetting', description: 'Tab type settings' },
 		{ name: 'Account Watermark', value: 'accountWatermark', description: 'Watermark settings' },
 		{ name: 'Authorization', value: 'authorization', description: 'User authorization delegation' },
-		{ name: 'eNote Configuration', value: 'eNoteConfiguration', description: 'eNote settings' },
+		{ name: 'eNote Configuration', value: 'eNoteConfiguration', description: 'Settings for DocuSign eNote' },
 		{ name: 'Favorite Template', value: 'favoriteTemplate', description: 'Manage favorite templates' },
 		{ name: 'Identity Verification', value: 'identityVerification', description: 'Identity verification providers' },
 	],

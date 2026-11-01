@@ -11,7 +11,7 @@ export const envelopeDocumentVisibilityFields: INodeProperties[] = [
 		name: 'documentVisibility',
 		type: 'json',
 		default: '[]',
-		description: 'Array of {documentId, visible} objects. Example: [{"documentId":"1","visible":"true"}]',
+		description: 'Array of {documentId, visible} objects. Example: [{"documentId":"1","visible":"true"}].',
 		displayOptions: {
 			show: { resource: ['envelopeDocumentVisibility'], operation: ['update', 'updateAll'] },
 		},

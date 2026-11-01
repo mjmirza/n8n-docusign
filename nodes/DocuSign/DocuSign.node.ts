@@ -4,8 +4,9 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 	IDataObject,
+	JsonObject,
 } from 'n8n-workflow';
-import { NodeConnectionTypes } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import { CATEGORIES, CATEGORY_RESOURCES } from './utils/descriptions';
 
@@ -391,7 +392,7 @@ export class DocuSign implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'DocuSign',
 		name: 'docuSign',
-		icon: 'file:docusign.png',
+		icon: { light: 'file:docusign.light.svg', dark: 'file:docusign.dark.svg' },
 		group: ['transform'],
 		version: 1,
 		subtitle:
@@ -600,7 +601,7 @@ export class DocuSign implements INodeType {
 		const handler = resourceHandlers[resource];
 
 		if (!handler) {
-			throw new Error(`Unknown resource: ${resource}`);
+			throw new NodeOperationError(this.getNode(), `Unknown resource: ${resource}`);
 		}
 
 		for (let i = 0; i < items.length; i++) {
@@ -646,7 +647,11 @@ export class DocuSign implements INodeType {
 					returnData.push({ json: { error: (error as Error).message }, pairedItem: { item: i } });
 					continue;
 				}
-				throw error;
+				// Both constructors return an existing n8n error unchanged, so API status codes survive.
+				if (error instanceof NodeApiError) {
+					throw new NodeApiError(this.getNode(), error as unknown as JsonObject, { itemIndex: i });
+				}
+				throw new NodeOperationError(this.getNode(), error as Error, { itemIndex: i });
 			}
 		}
 

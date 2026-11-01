@@ -35,6 +35,16 @@ import { handleAccountPasswordRule } from '../nodes/DocuSign/resources/accountPa
 import { handleDiagnosticService } from '../nodes/DocuSign/resources/diagnosticService/diagnosticService.handler';
 import { handleDiagnosticResource } from '../nodes/DocuSign/resources/diagnosticResource/diagnosticResource.handler';
 import { DocuSignConnectHmacApi } from '../credentials/DocuSignConnectHmacApi.credentials';
+import { handleConnectConfiguration } from '../nodes/DocuSign/resources/connectConfiguration/connectConfiguration.handler';
+import { handleEnvelopeRecipientTab } from '../nodes/DocuSign/resources/envelopeRecipientTab/envelopeRecipientTab.handler';
+import { handleTemplateRecipientTab } from '../nodes/DocuSign/resources/templateRecipientTab/templateRecipientTab.handler';
+import { handleGroup } from '../nodes/DocuSign/resources/group/group.handler';
+import { handleBillingPlan } from '../nodes/DocuSign/resources/billingPlan/billingPlan.handler';
+import { handleEnvelopeCustomField } from '../nodes/DocuSign/resources/envelopeCustomField/envelopeCustomField.handler';
+import { handleTemplateCustomField } from '../nodes/DocuSign/resources/templateCustomField/templateCustomField.handler';
+import { handleAccount } from '../nodes/DocuSign/resources/account/account.handler';
+import { matchSpecRoute } from './setup/spec-routes';
+import { readFileSync } from 'fs';
 
 // Some tests assert inside catch; an unexpected success must fail them.
 beforeEach(() => {
@@ -747,6 +757,7 @@ describe('round 3: routes from the v2.1 spec', () => {
 			credentials: C,
 			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', attachmentId: 'a-1' }),
 			httpResponses: [Uint8Array.from([1, 2, 3]).buffer],
+			typeVersion: 2,
 		});
 		const out = (await handleEnvelopeAttachment(ctx, 'get', 0)) as { binary: { data: { data: string } } };
 		expect(getRecordedRequests(ctx)[0].options.encoding).toBe('arraybuffer');
@@ -822,5 +833,231 @@ describe('round 3: HMAC credential test', () => {
 		expect(ok.status).toBe('OK');
 		const bad = await test.call({} as never, { data: { hmacSecret: '' } } as never);
 		expect(bad.status).toBe('Error');
+	});
+});
+
+describe('round 4: Connect configuration', () => {
+	it('update is PUT /connect with the connectId in the body', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', connectId: 'c-9', requestBody: '{"name":"renamed"}' }),
+			httpResponses: [{}],
+		});
+		await handleConnectConfiguration(ctx, 'update', 0);
+		const req = getRecordedRequests(ctx)[0].options;
+		expect(req.method).toBe('PUT');
+		expect(req.url).toBe(`${DEMO}/accounts/acct-1/connect`);
+		expect(req.body).toEqual({ name: 'renamed', connectId: 'c-9' });
+	});
+
+	it('publish to Connect is a POST', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', requestBody: '{"envelopes":[]}' }), httpResponses: [{}] });
+		await handleConnectConfiguration(ctx, 'publishToConnect', 0);
+		const req = getRecordedRequests(ctx)[0].options;
+		expect(req.method).toBe('POST');
+		expect(req.url).toBe(`${DEMO}/accounts/acct-1/connect/envelopes/publish/historical`);
+	});
+});
+
+describe('round 4: tab updates can clear values', () => {
+	const tab = { documentId: '1', pageNumber: '1', tabId: 't-1', value: '', locked: 'false', required: 'false', bold: 'false', tabLabel: '' };
+	it.each([
+		['envelope', handleEnvelopeRecipientTab, { envelopeId: 'e-1' }],
+		['template', handleTemplateRecipientTab, { templateId: 'tp-1' }],
+	])('%s: Send Empty and No Values sends cleared text and No flags', async (_k, handler, ids) => {
+		const run = async (sendEmptyValues: boolean) => {
+			const ctx = createMockContext({
+				credentials: C,
+				parameters: params({ accountId: 'acct-1', ...ids, recipientId: '1', tabType: 'textTabs', tabs: { tab: [tab] }, sendEmptyValues }),
+				httpResponses: [{}],
+			});
+			await (handler as (c: IExecuteFunctions, o: string, i: number) => Promise<unknown>)(ctx, 'update', 0);
+			return (getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0];
+		};
+		expect(await run(true)).toMatchObject({ tabId: 't-1', value: '', locked: 'false', required: 'false', bold: 'false', tabLabel: '' });
+		// Off (the default) keeps the earlier behaviour: only filled-in fields are sent.
+		const off = await run(false);
+		expect(off).not.toHaveProperty('locked');
+		expect(off).not.toHaveProperty('value');
+	});
+});
+
+describe('round 4: SMS on every recipient form', () => {
+	it('template recipient create and update send SMS with the phone shape', async () => {
+		for (const [op, extra] of [
+			['create', { roleName: 'R', routingOrder: '1', additionalFields: { deliveryMethod: 'sms', phoneNumber: '+44 7700900123' } }],
+			['update', { recipientId: '1', updateFields: { deliveryMethod: 'sms', phoneNumber: '+44 7700900123' } }],
+		] as const) {
+			const ctx = createMockContext({
+				credentials: C,
+				parameters: params({ accountId: 'acct-1', templateId: 'tp-1', recipientType: 'signers', ...extra }),
+				httpResponses: [{}],
+			});
+			await handleTemplateRecipient(ctx, op, 0);
+			expect((getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0]).toMatchObject({
+				deliveryMethod: 'SMS',
+				phoneNumber: { countryCode: '44', number: '7700900123' },
+			});
+		}
+	});
+
+	it('envelope recipient update accepts a phone number', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientType: 'signers', recipientId: '1', updateFields: { deliveryMethod: 'sms', phoneNumber: '+1 4155550100' } }),
+			httpResponses: [{}],
+		});
+		await handleRecipient(ctx, 'update', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0].phoneNumber).toEqual({ countryCode: '1', number: '4155550100' });
+		const field = new DocuSign().description.properties.find((p) => p.name === 'updateFields' && (p.displayOptions?.show?.resource as string[]).includes('recipient'));
+		expect(JSON.stringify(field)).toContain('"phoneNumber"');
+	});
+});
+
+describe('round 4: Group Get Many reaches every page', () => {
+	it('Return All follows start_position across pages', async () => {
+		const page = (start: number, n: number, more: boolean) => ({
+			groups: Array.from({ length: n }, (_, k) => ({ groupId: String(start + k) })),
+			resultSetSize: String(n),
+			totalSetSize: '150',
+			...(more ? { nextUri: '/next' } : {}),
+		});
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', returnAll: true, groupFilters: {} }),
+			httpResponses: [page(0, 100, true), page(100, 50, false)],
+		});
+		const groups = (await handleGroup(ctx, 'list', 0)) as IDataObject[];
+		expect(groups).toHaveLength(150);
+		expect(getRecordedRequests(ctx).map((r) => (r.options.qs as IDataObject).start_position)).toEqual(['0', '100']);
+	});
+
+	it('the default stays one request with no query', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1' }), httpResponses: [{ groups: [] }] });
+		await handleGroup(ctx, 'list', 0);
+		expect(getRecordedRequests(ctx)).toHaveLength(1);
+		expect(getRecordedRequests(ctx)[0].options.qs).toBeUndefined();
+	});
+
+	it('manual paging sends count and start_position', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', returnAll: false, groupFilters: { count: 100, startPosition: 200, groupType: 'CustomGroup' } }), httpResponses: [{}] });
+		await handleGroup(ctx, 'list', 0);
+		expect(getRecordedRequests(ctx)[0].options.qs).toEqual({ count: '100', start_position: '200', group_type: 'CustomGroup' });
+	});
+});
+
+describe('round 4: envelope operations are in the picker', () => {
+	it.each(['getNotificationSettings', 'listAuditEvents', 'listStatusChanges', 'updateNotificationSettings'])('%s is selectable', (op) => {
+		const picker = new DocuSign().description.properties.find(
+			(p) => p.name === 'operation' && (p.displayOptions?.show?.resource as string[]).includes('envelope'),
+		);
+		expect((picker?.options as Array<{ value: string }>).map((o) => o.value)).toContain(op);
+	});
+
+	it('List Status Changes maps the filters to DocuSign query names', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', filters: { fromDate: '2026-01-01T00:00:00Z', status: ['sent', 'completed'] } }),
+			httpResponses: [{}],
+		});
+		await handleEnvelope(ctx, 'listStatusChanges', 0);
+		expect(getRecordedRequests(ctx)[0].options.qs).toEqual({ from_date: '2026-01-01T00:00:00Z', status: 'sent,completed' });
+	});
+});
+
+describe('round 4: node versions keep saved workflows stable', () => {
+	it('the node offers versions 1 and 2, new nodes get 2', () => {
+		const d = new DocuSign().description;
+		expect(d.version).toEqual([1, 2]);
+		expect(d.defaultVersion).toBe(2);
+	});
+
+	it('version 1 Attachment Get returns the JSON response as before', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', attachmentId: 'a-1' }),
+			httpResponses: [{ attachmentId: 'a-1', name: 'x' }],
+		});
+		expect(await handleEnvelopeAttachment(ctx, 'get', 0)).toEqual({ attachmentId: 'a-1', name: 'x' });
+		expect(getRecordedRequests(ctx)[0].options.encoding).toBeUndefined();
+	});
+});
+
+describe('round 4: request bodies the spec defines', () => {
+	it.each([
+		['envelope', handleEnvelopeCustomField, { envelopeId: 'e-1' }, '/envelopes/e-1/custom_fields'],
+		['template', handleTemplateCustomField, { templateId: 'tp-1' }, '/templates/tp-1/custom_fields'],
+	])('%s custom field delete sends the field ID list', async (_k, handler, ids, path) => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', ...ids, customFieldId: 'f-1' }), httpResponses: [{}] });
+		await (handler as (c: IExecuteFunctions, o: string, i: number) => Promise<unknown>)(ctx, 'delete', 0);
+		const req = getRecordedRequests(ctx)[0].options;
+		expect(req.url).toBe(`${DEMO}/accounts/acct-1${path}`);
+		expect(req.body).toEqual({ textCustomFields: [{ fieldId: 'f-1' }], listCustomFields: [{ fieldId: 'f-1' }] });
+	});
+
+	it('recipient names by email use the v2 API, the only version that has it', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', email: 'a@example.com' }), httpResponses: [{}] });
+		await handleAccount(ctx, 'listRecipientNamesByEmail', 0);
+		expect(getRecordedRequests(ctx)[0].options.url).toBe('https://demo.docusign.net/restapi/v2/accounts/acct-1/recipient_names');
+	});
+
+	it('billing purchase sends the JSON body to POST billing_plan/purchased_envelopes', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', requestBody: '{"amount":"100","quantity":"50"}' }), httpResponses: [{}] });
+		await handleBillingPlan(ctx, 'purchaseEnvelopes', 0);
+		const req = getRecordedRequests(ctx)[0].options;
+		expect(matchSpecRoute(String(req.method), String(req.url))).toBe('/v2.1/accounts/{accountId}/billing_plan/purchased_envelopes');
+		expect(req.body).toEqual({ amount: '100', quantity: '50' });
+	});
+
+	it('recipient add rejects an unsafe recipient ID', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientType: 'signers', recipientEmail: 'a@example.com', recipientName: 'A', recipientId: '1/../2', additionalFields: {} }),
+			httpResponses: [{}],
+		});
+		await expect(handleRecipient(ctx, 'add', 0)).rejects.toThrow('Recipient ID contains invalid characters');
+	});
+});
+
+describe('round 4: the spec route check and the CI scanner', () => {
+	it('the route check can fail', () => {
+		expect(matchSpecRoute('PUT', `${DEMO}/accounts/a/connect/c-1`)).toBeUndefined();
+		expect(matchSpecRoute('PUT', `${DEMO}/accounts/a/connect`)).toBe('/v2.1/accounts/{accountId}/connect');
+	});
+
+	it('CI and publish run the pinned n8n scanner on source and package', () => {
+		for (const wf of ['.github/workflows/ci.yml', '.github/workflows/publish.yml']) {
+			expect(readFileSync(wf, 'utf8')).toContain('npm run lint:n8n');
+		}
+		const script = readFileSync('scripts/n8n-scan.mjs', 'utf8');
+		expect(script).toContain("'@n8n/scan-community-package@0.41.1'");
+		expect(script).toContain('analyzePackage(root, SOURCE_FILE_PATTERNS)');
+		expect(JSON.parse(readFileSync('package.json', 'utf8')).scripts['lint:n8n']).toBe('node scripts/n8n-scan.mjs');
+	});
+
+	it('the README no longer claims every ID is validated', () => {
+		const readme = readFileSync('README.md', 'utf8');
+		expect(readme).not.toMatch(/every ID is validated/i);
+	});
+});
+
+describe('README operations table matches the picker', () => {
+	const { CATEGORY_RESOURCES } = jest.requireActual<typeof import('../nodes/DocuSign/utils/descriptions')>(
+		'../nodes/DocuSign/utils/descriptions',
+	);
+	const resources = Object.values(CATEGORY_RESOURCES).flat() as Array<{ name: string; value: string }>;
+	const rows = readFileSync('README.md', 'utf8')
+		.split('\n')
+		.filter((l) => /^\| [^|]+ \| [^|]+ \| [^|]+ \|$/.test(l) && !l.includes('---'))
+		.map((l) => l.split('|').map((c) => c.trim()))
+		.map((c) => ({ resource: c[2], ops: c[3].split(', ').sort() }));
+
+	it.each(resources.map((r) => [r.name, r.value]))('%s', (name, value) => {
+		const picker = new DocuSign().description.properties.find(
+			(p) => p.name === 'operation' && (p.displayOptions?.show?.resource as string[]).includes(value),
+		);
+		const ops = ((picker?.options ?? []) as Array<{ name: string }>).map((o) => o.name).sort();
+		const row = rows.find((r) => r.resource === name);
+		expect(row?.ops).toEqual(ops);
 	});
 });

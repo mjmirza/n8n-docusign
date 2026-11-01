@@ -32,7 +32,8 @@ export async function handleAccount(
 
 		case 'listRecipientNamesByEmail': {
 			const email = ctx.getNodeParameter('email', i) as string;
-			return docuSignRequest(ctx, 'GET', `${basePath}/recipient_names`, undefined, { email });
+			// recipient_names exists only in the v2 API; the v2.1 spec dropped it.
+			return docuSignRequest(ctx, 'GET', `${basePath}/recipient_names`, undefined, { email }, { apiRoot: 'v2' });
 		}
 
 		case 'listSettings': {

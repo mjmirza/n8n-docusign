@@ -18,8 +18,8 @@ Send, track and manage DocuSign envelopes from any n8n workflow, without writing
 - **You hear the moment someone signs.** The DocuSign Trigger fires on completed, declined, voided and nine other events, so the next step starts within seconds instead of after someone checks the inbox.
 - **Signed PDFs land where they belong.** Download completed documents as n8n binary data and store them in your drive, CRM or archive in the same workflow.
 - **Templates do the heavy lifting.** Create envelopes from your existing DocuSign templates and fill the recipient roles from workflow data.
-- **Most of the eSignature API is there when you need it.** 80 resources and 349 operations cover envelopes, templates, users, groups, PowerForms, Connect, billing and more.
-- **Failures are readable.** API errors show the DocuSign status code and reason in n8n, transient errors retry with backoff, and every ID is validated before a request leaves n8n.
+- **Most of the eSignature API is there when you need it.** Over 80 resources and 350 operations cover envelopes, templates, users, groups, PowerForms, Connect, billing and more.
+- **Failures are readable.** API errors show the DocuSign status code and reason in n8n. Reads retry transient errors with backoff, and writes retry only on rate limits so nothing is created twice. Every request path is checked for path traversal and unsafe characters before it leaves n8n.
 
 ## From install to first signed envelope
 
@@ -59,7 +59,7 @@ The action node groups 80 resources into areas. Pick an area, a resource, then a
 
 | Area | Resource | Operations |
 |---|---|---|
-| Envelopes | Envelope | Create, Create From Template, Delete, Download Documents, Get, Get Embedded Signing URL, Get Many, Send, Update, Void |
+| Envelopes | Envelope | Create, Create From Template, Delete, Download Documents, Get, Get Embedded Signing URL, Get Many, Get Notification Settings, List Audit Events, List Status Changes, Send, Update, Update Notification Settings, Void |
 | Envelopes | Envelope Attachment | Create / Update, Delete, Get, Get Many |
 | Envelopes | Envelope Comment | Get |
 | Envelopes | Envelope Consumer Disclosure | Get, Get by Language |
@@ -131,7 +131,7 @@ The action node groups 80 resources into areas. Pick an area, a resource, then a
 | Workspaces | Workspace | Create, Delete, Get, Get Many, Update |
 | Workspaces | Workspace Item | Create File, Delete Folder Items, Get File, List File Pages, List Folder Items, Update File |
 | Advanced | BCC Email Archive | Create, Delete, Get, List |
-| Advanced | Cloud Storage | Get File, List Files, List Folders, List Providers |
+| Advanced | Cloud Storage | List Files, List Folders, List Providers |
 | Advanced | Custom Tab | Create, Delete, Get, Get Many, Update |
 | Advanced | Notary | Create, Get, Update |
 | Advanced | Notary Journal | List |
@@ -158,6 +158,17 @@ The **DocuSign Trigger** registers a DocuSign Connect configuration for the work
 - Recipient Sent
 
 Create a **DocuSign Connect HMAC API** credential with a key from DocuSign Admin, **Connect**, **Connect Keys**, and attach it to the trigger. The credential is encrypted and not included in workflow exports. The older Options > HMAC Secret field still works when no credential is attached, but it is stored in the workflow, so move the key to the credential. DocuSign signs every event with its active keys, and the trigger accepts a call only when one signature header matches one of your keys (constant time comparison). Separate two keys with a comma while you rotate. Calls without a valid signature get HTTP 401, and the trigger will not activate without a key.
+
+## Upgrading to 3.0
+
+| Change | What to do |
+|---|---|
+| The DocuSign node has a version 2. New nodes use it; saved nodes stay on version 1 | Nothing, unless you want the new behaviour below |
+| Version 2: Envelope Attachment Get returns the file as binary data in `data` | On version 1 it returns the JSON response again, as it did before 2.1.0. If a 2.1.0 workflow on version 1 reads the binary output, switch that node to version 2 |
+| Cloud Storage Get File is gone from the picker | DocuSign has no endpoint for it. Use List Files. Saved workflows that use it stop with a clear message |
+| New, off by default: Group Get Many paging, Send Empty and No Values on tab updates, phone numbers on recipient updates, four more envelope operations | Nothing. Turn them on where you need them |
+
+Choices made where DocuSign's API differs from an operation's name are listed in [docs/DESIGN-DECISIONS.md](https://github.com/mjmirza/n8n-docusign/blob/master/docs/DESIGN-DECISIONS.md).
 
 ## Upgrading to 2.0
 

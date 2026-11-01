@@ -51,6 +51,24 @@ export const envelopeOperations: INodeProperties[] = [
 				action: 'Get many envelopes',
 			},
 			{
+				name: 'Get Notification Settings',
+				value: 'getNotificationSettings',
+				description: 'Get the reminder and expiration settings of an envelope',
+				action: 'Get envelope notification settings',
+			},
+			{
+				name: 'List Audit Events',
+				value: 'listAuditEvents',
+				description: 'List the audit trail events of an envelope',
+				action: 'List envelope audit events',
+			},
+			{
+				name: 'List Status Changes',
+				value: 'listStatusChanges',
+				description: 'List envelopes whose status changed in a date range (one page)',
+				action: 'List envelope status changes',
+			},
+			{
 				name: 'Send',
 				value: 'send',
 				description: 'Send a draft envelope',
@@ -61,6 +79,12 @@ export const envelopeOperations: INodeProperties[] = [
 				value: 'update',
 				description: 'Update an envelope',
 				action: 'Update an envelope',
+			},
+			{
+				name: 'Update Notification Settings',
+				value: 'updateNotificationSettings',
+				description: 'Change the reminder and expiration settings of an envelope',
+				action: 'Update envelope notification settings',
 			},
 			{
 				name: 'Void',

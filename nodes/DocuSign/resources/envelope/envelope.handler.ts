@@ -338,28 +338,7 @@ export async function handleEnvelope(
 				{},
 			) as IDataObject;
 
-			const qs: IDataObject = {};
-			if (filters.fromDate) qs.from_date = filters.fromDate;
-			if (filters.toDate) qs.to_date = filters.toDate;
-			if (filters.searchText)
-				qs.search_text = filters.searchText;
-			if (filters.folderIds) qs.folder_ids = filters.folderIds;
-			if (filters.orderBy) qs.order_by = filters.orderBy;
-			if (filters.order) qs.order = filters.order;
-
-			if (
-				Array.isArray(filters.status) &&
-				filters.status.length > 0
-			) {
-				qs.status = (filters.status as string[]).join(',');
-			}
-
-			// DocuSign requires from_date — default to last 30 days
-			if (!qs.from_date) {
-				const thirtyDaysAgo = new Date();
-				thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-				qs.from_date = thirtyDaysAgo.toISOString();
-			}
+			const qs = buildEnvelopeListQuery(filters);
 
 			return docuSignGetAll(
 				ctx,
@@ -536,17 +515,13 @@ export async function handleEnvelope(
 		}
 
 		case 'listStatusChanges': {
-			const qs = ctx.getNodeParameter(
+			const filters = ctx.getNodeParameter(
 				'filters',
 				i,
 				{},
 			) as IDataObject;
-			// DocuSign requires from_date
-			if (!qs.from_date) {
-				const thirtyDaysAgo = new Date();
-				thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-				qs.from_date = thirtyDaysAgo.toISOString();
-			}
+			// Same filters as Get Many, mapped to DocuSign's query names; returns one page.
+			const qs = buildEnvelopeListQuery(filters);
 			return docuSignRequest(
 				ctx,
 				'GET',
@@ -639,4 +614,25 @@ export function buildNotificationBody(settings: IDataObject): IDataObject {
 	if (expirations) body.expirations = expirations;
 	if (reminders) body.reminders = reminders;
 	return body;
+}
+
+/** Maps the envelope Filters collection to GET /envelopes query names; from_date defaults to 30 days ago. */
+export function buildEnvelopeListQuery(filters: IDataObject): IDataObject {
+	const qs: IDataObject = {};
+	if (filters.fromDate) qs.from_date = filters.fromDate;
+	if (filters.toDate) qs.to_date = filters.toDate;
+	if (filters.searchText) qs.search_text = filters.searchText;
+	if (filters.folderIds) qs.folder_ids = filters.folderIds;
+	if (filters.orderBy) qs.order_by = filters.orderBy;
+	if (filters.order) qs.order = filters.order;
+	if (Array.isArray(filters.status) && filters.status.length > 0) {
+		qs.status = (filters.status as string[]).join(',');
+	}
+	// DocuSign requires from_date (or envelope IDs); default to the last 30 days.
+	if (!qs.from_date) {
+		const thirtyDaysAgo = new Date();
+		thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+		qs.from_date = thirtyDaysAgo.toISOString();
+	}
+	return qs;
 }

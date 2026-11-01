@@ -5,7 +5,7 @@
  * Each test targets specific uncovered lines identified by jest coverage.
  */
 import { describe, it, expect } from '@jest/globals';
-import { createMockContext } from './helpers/mockContext';
+import { createMockContext, allowOffSpecRequests } from './helpers/mockContext';
 
 import { handleEnvelopeAttachment } from '../nodes/DocuSign/resources/envelopeAttachment/envelopeAttachment.handler';
 import { handleEnvelopeCustomField } from '../nodes/DocuSign/resources/envelopeCustomField/envelopeCustomField.handler';
@@ -810,6 +810,7 @@ describe('Branch: transport parseErrorResponse', () => {
 
 describe('Branch: transport docuSignGetAll edge cases', () => {
 	it('pagination — totalSetSize=0 on first page', async () => {
+		allowOffSpecRequests(); // synthetic path, tests transport plumbing only
 		const ctx = createMockContext({
 			credentials: C,
 			httpResponses: [{
@@ -823,6 +824,7 @@ describe('Branch: transport docuSignGetAll edge cases', () => {
 	});
 
 	it('pagination — missing totalSetSize and resultSetSize (defaults to 0)', async () => {
+		allowOffSpecRequests(); // synthetic path, tests transport plumbing only
 		const ctx = createMockContext({
 			credentials: C,
 			httpResponses: [{ items: [{ id: '1' }] }],
@@ -832,6 +834,7 @@ describe('Branch: transport docuSignGetAll edge cases', () => {
 	});
 
 	it('pagination — resultSetSize matches maxResults exactly', async () => {
+		allowOffSpecRequests(); // synthetic path, tests transport plumbing only
 		const ctx = createMockContext({
 			credentials: C,
 			httpResponses: [{

@@ -394,11 +394,13 @@ export class DocuSign implements INodeType {
 		name: 'docuSign',
 		icon: { light: 'file:docusign.light.svg', dark: 'file:docusign.dark.svg' },
 		group: ['transform'],
-		version: 1,
+		// Version 2 returns Envelope Attachment Get as binary; version 1 keeps the JSON response.
+		version: [1, 2],
+		defaultVersion: 2,
 		subtitle:
 			'={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description:
-			'Interact with the DocuSign eSignature REST API v2.1 — complete enterprise coverage',
+			'Interact with the DocuSign eSignature REST API v2.1',
 		defaults: { name: 'DocuSign' },
 		usableAsTool: true,
 		inputs: [NodeConnectionTypes.Main],

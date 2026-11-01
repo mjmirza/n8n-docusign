@@ -1,4 +1,5 @@
 import type { IExecuteFunctions } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
 
 /**
@@ -52,42 +53,17 @@ export async function handleCloudStorage(
 		}
 
 		case 'getFile': {
-			const serviceId = assertSafeId(
-				ctx.getNodeParameter('serviceId', i) as string,
-				'Service ID',
+			// Validate the IDs first so bad input still gets the usual message.
+			assertSafeId(ctx.getNodeParameter('serviceId', i) as string, 'Service ID');
+			assertSafeId(ctx.getNodeParameter('folderId', i) as string, 'Folder ID');
+			assertSafeId(ctx.getNodeParameter('fileId', i) as string, 'File ID');
+			// Neither eSignature v2.1 nor v2 has a cloud storage file download endpoint, only
+			// folder listings. Kept for saved workflows; removed from the picker in 3.0.0.
+			throw new NodeOperationError(
+				ctx.getNode(),
+				'DocuSign has no API to download a cloud storage file. Use List Files to read file details.',
+				{ itemIndex: i },
 			);
-			const folderId = assertSafeId(
-				ctx.getNodeParameter('folderId', i) as string,
-				'Folder ID',
-			);
-			const fileId = assertSafeId(
-				ctx.getNodeParameter('fileId', i) as string,
-				'File ID',
-			);
-			const binaryPropertyName = ctx.getNodeParameter(
-				'binaryPropertyName',
-				i,
-				'data',
-			) as string;
-
-			const response = await docuSignRequest(
-				ctx,
-				'GET',
-				`${userCloudPath}/${serviceId}/folders/${folderId}/files/${fileId}`,
-				undefined,
-				undefined,
-				{ encoding: null, json: false },
-			);
-
-			const binaryData = await ctx.helpers.prepareBinaryData(
-				Buffer.isBuffer(response) ? response : Buffer.from(response as string),
-				`cloud_storage_file_${fileId}`,
-			);
-
-			return {
-				json: { fileId, serviceId, folderId },
-				binary: { [binaryPropertyName]: binaryData },
-			};
 		}
 
 		default:

@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { createMockContext } from './helpers/mockContext';
+import { createMockContext, getRecordedRequests } from './helpers/mockContext';
 import { handleBillingPlan } from '../nodes/DocuSign/resources/billingPlan/billingPlan.handler';
 import { handleInvoice } from '../nodes/DocuSign/resources/invoice/invoice.handler';
 import { handlePayment } from '../nodes/DocuSign/resources/payment/payment.handler';
@@ -79,9 +79,10 @@ describe('handleCloudStorage', () => {
 	it('listProviders', async () => { const ctx = createMockContext({ credentials: C, parameters: CP, httpResponses: [{}] }); await handleCloudStorage(ctx, 'listProviders', 0); });
 	it('listFolders', async () => { const ctx = createMockContext({ credentials: C, parameters: { ...CP, serviceId: { 0: 'svc-1' } }, httpResponses: [{}] }); await handleCloudStorage(ctx, 'listFolders', 0); });
 	it('listFiles', async () => { const ctx = createMockContext({ credentials: C, parameters: { ...CP, serviceId: { 0: 'svc-1' }, folderId: { 0: 'fold-1' } }, httpResponses: [{}] }); await handleCloudStorage(ctx, 'listFiles', 0); });
-	it('getFile — binary', async () => {
+	it('getFile — refuses clearly, DocuSign has no file download endpoint', async () => {
 		const ctx = createMockContext({ credentials: C, parameters: { ...CP, serviceId: { 0: 'svc-1' }, folderId: { 0: 'fold-1' }, fileId: { 0: 'file-1' }, binaryPropertyName: { 0: 'doc' } }, httpResponses: [Buffer.from('data')] });
-		const r = await handleCloudStorage(ctx, 'getFile', 0) as { binary: Record<string, unknown> }; expect(r.binary.doc).toBeDefined();
+		await expect(handleCloudStorage(ctx, 'getFile', 0)).rejects.toThrow('no API to download a cloud storage file');
+		expect(getRecordedRequests(ctx)).toHaveLength(0);
 	});
 	it('rejects invalid serviceId', async () => { const ctx = createMockContext({ credentials: C, parameters: { ...CP, serviceId: { 0: '../x' } } }); await expect(handleCloudStorage(ctx, 'listFolders', 0)).rejects.toThrow('contains invalid characters'); });
 	it('rejects invalid fileId', async () => { const ctx = createMockContext({ credentials: C, parameters: { ...CP, serviceId: { 0: 's1' }, folderId: { 0: 'f1' }, fileId: { 0: '../x' }, binaryPropertyName: { 0: 'd' } } }); await expect(handleCloudStorage(ctx, 'getFile', 0)).rejects.toThrow('contains invalid characters'); });

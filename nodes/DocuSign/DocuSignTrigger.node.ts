@@ -6,7 +6,7 @@ import type {
 	IWebhookResponseData,
 	IDataObject,
 } from 'n8n-workflow';
-import { NodeConnectionTypes } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 import crypto from 'crypto';
 import { docuSignRequest, assertSafeId } from './transport';
 
@@ -190,7 +190,7 @@ export class DocuSignTrigger implements INodeType {
 						typeOptions: { password: true },
 						default: '',
 						description:
-							'Optional HMAC secret for verifying webhook signatures. If empty, a random secret will be generated.',
+							'Required. The HMAC key from DocuSign Admin > Connect > Connect Keys. DocuSign signs every event with it and unsigned or mismatched events are rejected. Separate several keys with commas during key rotation.',
 					},
 				],
 			},
@@ -243,24 +243,17 @@ export class DocuSignTrigger implements INodeType {
 				const events = this.getNodeParameter('events') as string[];
 				const options = this.getNodeParameter('options', {}) as IDataObject;
 
-				// Split events into envelope and recipient events
-				const envelopeEvents: string[] = [];
-				const recipientEvents: string[] = [];
-
-				for (const event of events) {
-					if (event.startsWith('envelope-')) {
-						envelopeEvents.push(event);
-					} else if (event.startsWith('recipient-')) {
-						recipientEvents.push(event);
-					}
+				// Connect HMAC keys are created in DocuSign Admin and cannot be set through the API,
+				// so a secret generated here could never match. Without a key the trigger cannot
+				// verify events, so it refuses to activate instead of accepting unsigned calls.
+				if (parseHmacSecrets(options.hmacSecret).length === 0) {
+					throw new NodeOperationError(
+						this.getNode(),
+						'Add the HMAC key from DocuSign Admin > Connect > Connect Keys under Options > HMAC Secret',
+					);
 				}
 
-				// Generate or use provided HMAC secret
-				const hmacSecret =
-					(options.hmacSecret as string) || crypto.randomBytes(32).toString('hex');
-
-				// M1 fix: Include the HMAC secret in the Connect configuration
-				// so DocuSign actually generates signature headers
+				// includeHMAC makes DocuSign sign each event with the account's Connect keys.
 				const connectConfig: IDataObject = {
 					urlToPublishTo: webhookUrl,
 					name: `n8n-${this.getNode().name}-${Date.now()}`,
@@ -270,8 +263,9 @@ export class DocuSignTrigger implements INodeType {
 					requiresAcknowledgement: String(
 						options.requireAcknowledgement !== false,
 					),
-					envelopeEvents: envelopeEvents.join(','),
-					recipientEvents: recipientEvents.join(','),
+					// Modern event names (envelope-sent, recipient-completed) belong in events;
+					// envelopeEvents and recipientEvents only take legacy names like Sent.
+					events,
 					includeSenderAccountasCustomField: 'true',
 					includeTimeZoneInformation: 'true',
 					includeEnvelopeVoidReason: 'true',
@@ -303,7 +297,6 @@ export class DocuSignTrigger implements INodeType {
 
 				const webhookData = this.getWorkflowStaticData('node');
 				webhookData.connectId = response.connectId;
-				webhookData.hmacSecret = hmacSecret;
 
 				return true;
 			},
@@ -346,50 +339,60 @@ export class DocuSignTrigger implements INodeType {
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const body = this.getBodyData() as IDataObject;
 		const headers = this.getHeaderData() as IDataObject;
-		const webhookData = this.getWorkflowStaticData('node');
+		const options = this.getNodeParameter('options', {}) as IDataObject;
+		const secrets = parseHmacSecrets(options.hmacSecret);
 
-		// Verify HMAC signature if configured
-		if (webhookData.hmacSecret) {
-			const signature = headers['x-docusign-signature-1'] as string;
+		const req = this.getRequestObject();
+		const rawBody = (req as unknown as { rawBody?: Buffer }).rawBody;
 
-			// H2 fix: Reject requests missing the signature header entirely
-			if (!signature) {
-				return { webhookResponse: 'Missing signature header' };
-			}
-
-			const secret = webhookData.hmacSecret as string;
-
-			// H3 fix: Use the raw request body bytes for HMAC computation.
-			// DocuSign computes HMAC over the raw HTTP body, not re-serialized JSON.
-			// Access raw body from the underlying request if available.
-			const req = this.getRequestObject();
-			const rawBody =
-				(req as unknown as { rawBody?: Buffer }).rawBody ||
-				Buffer.from(JSON.stringify(body));
-
-			const computedHmac = crypto
-				.createHmac('sha256', secret)
-				.update(rawBody)
-				.digest('base64');
-
-			try {
-				const sigBuf = Buffer.from(signature, 'utf8');
-				const hmacBuf = Buffer.from(computedHmac, 'utf8');
-
-				const isValid =
-					sigBuf.length === hmacBuf.length &&
-					crypto.timingSafeEqual(sigBuf, hmacBuf);
-
-				if (!isValid) {
-					return { webhookResponse: 'Signature mismatch' };
-				}
-			} catch {
-				return { webhookResponse: 'Signature verification failed' };
-			}
+		// Fail closed: no key, no raw body, or no matching signature means the event is rejected.
+		if (secrets.length === 0 || !rawBody || !verifyDocuSignSignature(rawBody, headers, secrets)) {
+			const res = this.getResponseObject();
+			res.status(401).json({ message: 'Invalid or missing DocuSign HMAC signature' });
+			return { noWebhookResponse: true };
 		}
 
 		return {
 			workflowData: [this.helpers.returnJsonArray(body)],
 		};
 	}
+}
+
+/** Splits the HMAC Secret option into keys; commas allow two keys during rotation. */
+export function parseHmacSecrets(value: unknown): string[] {
+	if (typeof value !== 'string') return [];
+	return value
+		.split(',')
+		.map((v) => v.trim())
+		.filter((v) => v.length > 0);
+}
+
+/**
+ * DocuSign sends one x-docusign-signature-N header per active Connect key, each a
+ * base64 HMAC-SHA256 of the raw body. Any header matching any configured key passes.
+ */
+export function verifyDocuSignSignature(
+	rawBody: Buffer,
+	headers: IDataObject,
+	secrets: string[],
+): boolean {
+	const signatures = Object.entries(headers)
+		.filter(([name]) => /^x-docusign-signature-\d+$/i.test(name))
+		.map(([, value]) => (Array.isArray(value) ? value[0] : value))
+		.filter((value): value is string => typeof value === 'string' && value.length > 0);
+	if (signatures.length === 0) return false;
+
+	for (const secret of secrets) {
+		const expected = Buffer.from(
+			crypto.createHmac('sha256', secret).update(rawBody).digest('base64'),
+			'utf8',
+		);
+		for (const signature of signatures) {
+			const actual = Buffer.from(signature, 'utf8');
+			if (actual.length === expected.length && crypto.timingSafeEqual(actual, expected)) {
+				return true;
+			}
+		}
+	}
+	return false;
 }

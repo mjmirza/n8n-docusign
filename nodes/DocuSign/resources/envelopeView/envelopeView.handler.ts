@@ -1,5 +1,5 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
-import { docuSignRequest, envelopePath } from '../../transport';
+import { docuSignRequest, envelopePath, accountPath, assertSafeId } from '../../transport';
 
 /**
  * Handle all Envelope View operations.
@@ -71,8 +71,12 @@ export async function handleEnvelopeView(
 			const returnUrl = ctx.getNodeParameter('returnUrl', i) as string;
 			const options = ctx.getNodeParameter('viewOptions', i, {}) as IDataObject;
 			const body: IDataObject = { returnUrl };
-			if (options.envelopeId) body.envelopeId = options.envelopeId;
-			return docuSignRequest(ctx, 'POST', `${basePath}/console`, body);
+			// The starting envelope option wins; otherwise open the console on the selected envelope.
+			const startEnvelope = (options.envelopeId as string) || (ctx.getNodeParameter('envelopeId', i) as string);
+			if (startEnvelope) body.envelopeId = assertSafeId(startEnvelope, 'Envelope ID');
+			// The console view is account-level: POST /accounts/{accountId}/views/console.
+			const consolePath = `${accountPath(ctx.getNodeParameter('accountId', i) as string)}/views/console`;
+			return docuSignRequest(ctx, 'POST', consolePath, body);
 		}
 
 		case 'createSharedRecipient': {

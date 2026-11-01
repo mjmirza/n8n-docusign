@@ -44,8 +44,9 @@ export async function handleTemplateDocument(
 
 			if (doc.source === 'binary' && doc.binaryProperty) {
 				const binaryData = ctx.helpers.assertBinaryData(i, doc.binaryProperty as string);
+				const buffer = await ctx.helpers.getBinaryDataBuffer(i, doc.binaryProperty as string);
 				return docuSignRequest(ctx, 'PUT', `${basePath}/${documentId}`, {
-					documentBase64: binaryData.data,
+					documentBase64: buffer.toString('base64'),
 					name: doc.name || binaryData.fileName || '',
 					fileExtension: doc.fileExtension || 'pdf',
 					documentId,

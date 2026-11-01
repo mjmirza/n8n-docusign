@@ -9,7 +9,8 @@
  * - Operational: Rate limiting, timeout, retry policies
  */
 import { describe, it, expect } from '@jest/globals';
-import { assertSafeId, sanitizeEndpoint, getBaseUrl } from '../nodes/DocuSign/transport';
+import { assertSafeId, sanitizeEndpoint, getBaseUrl, docuSignRequest } from '../nodes/DocuSign/transport';
+import { createMockContext, createHttpError, getRecordedRequests } from './helpers/mockContext';
 import {
 	assertValidEmail,
 	assertValidDate,
@@ -260,35 +261,27 @@ describe('Compliance: Input Validation', () => {
 // 5. OPERATIONAL COMPLIANCE
 // ==================================================================
 describe('Compliance: Operational Standards', () => {
-	it('retry only on transient HTTP codes (429, 502, 503, 504)', () => {
-		// Non-retryable codes should fail immediately
-		// Retryable codes should be retried — covered in error-handling.test.ts
-		const nonRetryable = [400, 401, 403, 404, 405, 409, 422, 500];
-		const retryable = [429, 502, 503, 504];
+	const C = { docuSignOAuth2Api: { environment: 'demo' } };
+	const transient = (code: number) => createHttpError(code, {}, `HTTP ${code}`, { 'retry-after': '1' });
 
-		// Verify our understanding
-		expect(nonRetryable).not.toContain(429);
-		expect(retryable).toContain(429);
-		expect(retryable).toContain(502);
+	it('sets a 30 second timeout on every request', async () => {
+		const ctx = createMockContext({ credentials: C, httpResponses: [{ ok: true }] });
+		await docuSignRequest(ctx, 'GET', 'accounts/a');
+		expect(getRecordedRequests(ctx)[0].options.timeout).toBe(30_000);
 	});
 
-	it('timeout is set to 30 seconds', () => {
-		// The transport.ts sets timeout: 30_000
-		// This is verified structurally — reading the code
-		expect(30_000).toBe(30000);
-	});
+	it('gives up after 3 retries (4 attempts) on a persistent transient error', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			httpResponses: [transient(503), transient(503), transient(503), transient(503), { ok: true }],
+		});
+		await expect(docuSignRequest(ctx, 'GET', 'accounts/a')).rejects.toThrow('[503]');
+		expect(getRecordedRequests(ctx)).toHaveLength(4);
+	}, 15_000);
 
-	it('max retries is 3', () => {
-		// Verified structurally
-		expect(3).toBe(3);
-	});
-
-	it('retry delay caps at 10 seconds', () => {
-		// Base delay formula: min(1000 * 2^attempt, 10000)
-		expect(Math.min(1000 * Math.pow(2, 0), 10000)).toBe(1000);
-		expect(Math.min(1000 * Math.pow(2, 1), 10000)).toBe(2000);
-		expect(Math.min(1000 * Math.pow(2, 2), 10000)).toBe(4000);
-		expect(Math.min(1000 * Math.pow(2, 3), 10000)).toBe(8000);
-		expect(Math.min(1000 * Math.pow(2, 4), 10000)).toBe(10000);
+	it('fails a 500 immediately without retrying', async () => {
+		const ctx = createMockContext({ credentials: C, httpResponses: [createHttpError(500), { ok: true }] });
+		await expect(docuSignRequest(ctx, 'GET', 'accounts/a')).rejects.toThrow('[500]');
+		expect(getRecordedRequests(ctx)).toHaveLength(1);
 	});
 });

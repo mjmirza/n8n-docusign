@@ -647,9 +647,14 @@ export class DocuSign implements INodeType {
 					returnData.push({ json: { error: (error as Error).message }, pairedItem: { item: i } });
 					continue;
 				}
-				// Both constructors return an existing n8n error unchanged, so API status codes survive.
+				// The n8n error constructors return an existing n8n error unchanged and drop the
+				// itemIndex option, so tag the original error directly and keep its status code.
 				if (error instanceof NodeApiError) {
+					error.context.itemIndex = i;
 					throw new NodeApiError(this.getNode(), error as unknown as JsonObject, { itemIndex: i });
+				}
+				if (error instanceof NodeOperationError) {
+					error.context.itemIndex = i;
 				}
 				throw new NodeOperationError(this.getNode(), error as Error, { itemIndex: i });
 			}

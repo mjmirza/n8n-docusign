@@ -23,6 +23,20 @@ const DOCUSIGN_BASE_URLS: Record<string, string> = {
 	production: 'https://www.docusign.net/restapi/v2.1',
 };
 
+/** OAuth hosts that serve /oauth/userinfo, used to find each account's eSign base URI. */
+export const DOCUSIGN_OAUTH_HOSTS: Record<string, string> = {
+	demo: 'https://account-d.docusign.com',
+	production: 'https://account.docusign.com',
+};
+
+const BASE_URI_TTL_MS = 60 * 60 * 1_000;
+const baseUriCache = new Map<string, { url: string; expires: number }>();
+
+/** Clears the discovered base URI cache (used by tests). */
+export function clearBaseUriCache(): void {
+	baseUriCache.clear();
+}
+
 /** Context types that can make API requests */
 export type DocuSignContext =
 	| IExecuteFunctions
@@ -216,13 +230,80 @@ async function resolveCredentials(
 	);
 }
 
+/**
+ * Accepts a userinfo base_uri only when it is an https DocuSign eSign host,
+ * so a tampered response can never redirect authenticated calls elsewhere.
+ */
+export function toEsignBaseUrl(baseUri: unknown): string | undefined {
+	if (typeof baseUri !== 'string') return undefined;
+	let parsed: URL;
+	try {
+		parsed = new URL(baseUri);
+	} catch {
+		return undefined;
+	}
+	if (parsed.protocol !== 'https:' || !parsed.hostname.endsWith('.docusign.net')) {
+		return undefined;
+	}
+	return `https://${parsed.hostname}/restapi/v2.1`;
+}
+
+/**
+ * Finds the eSign base URL for an account via /oauth/userinfo. DocuSign accounts live on
+ * different platforms (na2, na3, eu, ...), so a fixed host cannot serve every account.
+ * Falls back to the environment default when discovery is not possible.
+ */
+async function resolveBaseUrl(
+	ctx: DocuSignContext,
+	credentialType: string,
+	environment: string,
+	accountId: string | undefined,
+): Promise<string> {
+	const fallback = getBaseUrl(environment);
+	if (!accountId) return fallback;
+
+	const key = `${environment}|${accountId}`;
+	const cached = baseUriCache.get(key);
+	if (cached && cached.expires > Date.now()) return cached.url;
+
+	let info: { accounts?: Array<Record<string, unknown>> } | undefined;
+	try {
+		info = (await ctx.helpers.httpRequestWithAuthentication.call(ctx, credentialType, {
+			method: 'GET',
+			url: `${DOCUSIGN_OAUTH_HOSTS[environment]}/oauth/userinfo`,
+			json: true,
+			timeout: 30_000,
+		})) as { accounts?: Array<Record<string, unknown>> };
+	} catch {
+		return fallback;
+	}
+
+	const account = (info?.accounts ?? []).find((a) => String(a.account_id) === accountId);
+	const url = account ? toEsignBaseUrl(account.base_uri) : undefined;
+	if (!url) return fallback;
+
+	baseUriCache.set(key, { url, expires: Date.now() + BASE_URI_TTL_MS });
+	return url;
+}
+
+/** Converts an arraybuffer response into a Buffer for prepareBinaryData. */
+function toBuffer(response: unknown): unknown {
+	if (Buffer.isBuffer(response)) return response;
+	if (response instanceof ArrayBuffer) return Buffer.from(response);
+	if (ArrayBuffer.isView(response)) {
+		return Buffer.from(response.buffer, response.byteOffset, response.byteLength);
+	}
+	return response;
+}
+
 // ---------------------------------------------------------------------------
 // Core request function
 // ---------------------------------------------------------------------------
 
 export interface DocuSignRequestOptions {
 	returnFullResponse?: boolean;
-	encoding?: null | string;
+	/** null or 'arraybuffer' returns the body as a Buffer */
+	encoding?: null | 'arraybuffer';
 	json?: boolean;
 	contentType?: string;
 }
@@ -244,21 +325,13 @@ export async function docuSignRequest(
 	options?: DocuSignRequestOptions,
 ): Promise<unknown> {
 	const { credentialType, environment } = await resolveCredentials(ctx);
-	const baseUrl = getBaseUrl(environment);
 
 	// Sanitize path
 	const cleanPath = sanitizeEndpoint(path);
-
-	// Build the full URL — paths starting with "accounts/" are already absolute
-	let fullUrl: string;
-	if (
-		cleanPath.startsWith('accounts/') ||
-		cleanPath.startsWith('oauth/')
-	) {
-		fullUrl = `${baseUrl}/${cleanPath}`;
-	} else {
-		fullUrl = `${baseUrl}/${cleanPath}`;
-	}
+	const accountMatch = /^accounts\/([a-zA-Z0-9_-]+)/.exec(cleanPath);
+	const baseUrl = await resolveBaseUrl(ctx, credentialType, environment, accountMatch?.[1]);
+	const fullUrl = `${baseUrl}/${cleanPath}`;
+	const binaryResponse = options?.encoding === null || options?.encoding === 'arraybuffer';
 
 	const requestOptions: IHttpRequestOptions = {
 		method,
@@ -271,9 +344,9 @@ export async function docuSignRequest(
 		timeout: 30_000,
 	};
 
-	if (options?.encoding !== undefined) {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		(requestOptions as any).encoding = options.encoding;
+	if (binaryResponse) {
+		// n8n's request helper only returns raw bytes for 'arraybuffer'.
+		requestOptions.encoding = 'arraybuffer';
 	}
 
 	if (options?.returnFullResponse) {
@@ -292,25 +365,30 @@ export async function docuSignRequest(
 
 	for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
 		try {
-			return await ctx.helpers.httpRequestWithAuthentication.call(
+			const response: unknown = await ctx.helpers.httpRequestWithAuthentication.call(
 				ctx,
 				credentialType,
 				requestOptions,
 			);
+			return binaryResponse && !options?.returnFullResponse ? toBuffer(response) : response;
 		} catch (error: unknown) {
 			const err = error as {
 				statusCode?: number;
+				httpCode?: string | number;
 				message?: string;
 				body?: unknown;
 				response?: { headers?: Record<string, string> };
 			};
 
-			// Retry on transient errors
-			if (
-				attempt < MAX_RETRIES &&
-				err.statusCode &&
-				RETRY_CODES.has(err.statusCode)
-			) {
+			// NodeApiError carries the status as httpCode, raw request errors as statusCode.
+			const status = Number(err.statusCode ?? err.httpCode) || undefined;
+			// POST and PATCH are not idempotent: a 5xx may already have created the
+			// envelope, so only 429 (rejected before processing) is safe to repeat.
+			const idempotent = method !== 'POST' && method !== 'PATCH';
+			const retryable =
+				status !== undefined && (idempotent ? RETRY_CODES.has(status) : status === 429);
+
+			if (attempt < MAX_RETRIES && retryable) {
 				const retryAfterMs = parseRetryAfter(
 					err.response?.headers?.['retry-after'],
 				);
@@ -332,7 +410,7 @@ export async function docuSignRequest(
 
 			// Every DocuSignContext member (execute, hook, load-options) exposes getNode.
 			throw new NodeApiError(ctx.getNode(), err as JsonObject, {
-				message: `DocuSign API error [${err.statusCode || 'unknown'}]`,
+				message: `DocuSign API error [${status || 'unknown'}]`,
 				description: msg.slice(0, MAX_ERROR_LENGTH),
 			});
 		}

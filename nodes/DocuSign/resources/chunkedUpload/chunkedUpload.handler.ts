@@ -46,22 +46,19 @@ export async function handleChunkedUpload(
 			let binaryData: Buffer;
 			if (inputDataSource === 'binaryProperty') {
 				const binaryPropertyName = ctx.getNodeParameter('binaryPropertyName', i) as string;
-				const binaryItem = ctx.helpers.assertBinaryData(i, binaryPropertyName);
+				ctx.helpers.assertBinaryData(i, binaryPropertyName);
 				binaryData = await ctx.helpers.getBinaryDataBuffer(i, binaryPropertyName);
-				void binaryItem; // ensure binary exists
 			} else {
 				const base64String = ctx.getNodeParameter('base64Data', i) as string;
 				binaryData = Buffer.from(base64String, 'base64');
 			}
 
-			return docuSignRequest(
-				ctx,
-				'PUT',
-				`${basePath}/${chunkedUploadId}/${chunkIndex}`,
-				binaryData as unknown as IDataObject,
-				undefined,
-				{ encoding: null, json: false, contentType: 'application/octet-stream' },
-			);
+			const partSeq = assertSafeId(String(chunkIndex), 'Chunk Index');
+			// The part endpoint takes a JSON chunkedUploadRequest with base64 data, not raw bytes.
+			return docuSignRequest(ctx, 'PUT', `${basePath}/${chunkedUploadId}/${partSeq}`, {
+				chunkedUploadId,
+				data: binaryData.toString('base64'),
+			});
 		}
 
 		case 'commit': {
@@ -72,7 +69,9 @@ export async function handleChunkedUpload(
 			return docuSignRequest(
 				ctx,
 				'PUT',
-				`${basePath}/${chunkedUploadId}/commit`,
+				`${basePath}/${chunkedUploadId}`,
+				undefined,
+				{ action: 'commit' },
 			);
 		}
 

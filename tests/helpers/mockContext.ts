@@ -23,7 +23,22 @@ interface MockContextOptions {
 	continueOnFail?: boolean;
 	/** Input items */
 	inputData?: INodeExecutionData[];
+	/** Custom /oauth/userinfo answer (or an Error to throw); defaults to no accounts */
+	userInfo?: unknown;
 }
+
+/** A request the mock received, in call order. Userinfo discovery calls are excluded. */
+export interface RecordedRequest {
+	credentialType?: string;
+	options: Record<string, unknown>;
+}
+
+/** Requests made through a context built by createMockContext. */
+export function getRecordedRequests(ctx: unknown): RecordedRequest[] {
+	return (ctx as { __requests: RecordedRequest[] }).__requests;
+}
+
+
 
 /**
  * Create a mock IExecuteFunctions for testing.
@@ -32,6 +47,8 @@ export function createMockContext(
 	options: MockContextOptions = {},
 ): IExecuteFunctions {
 	const httpCallIndex = { current: 0 };
+	const requests: RecordedRequest[] = [];
+
 
 	const mockNode: INode = {
 		id: 'test-node-id',
@@ -76,9 +93,16 @@ export function createMockContext(
 			httpRequestWithAuthentication: {
 				call: async (
 					_thisArg: unknown,
-					_credentialType: string,
-					requestOptions: unknown,
+					credentialType: string,
+					requestOptions: Record<string, unknown>,
 				) => {
+					const url = String(requestOptions?.url ?? '');
+					if (url.endsWith('/oauth/userinfo')) {
+						// No accounts by default, so the transport keeps the environment host.
+						if (options.userInfo instanceof Error) throw options.userInfo;
+						return options.userInfo ?? { accounts: [] };
+					}
+					requests.push({ credentialType, options: requestOptions });
 					if (
 						options.httpResponses &&
 						httpCallIndex.current < options.httpResponses.length
@@ -96,7 +120,8 @@ export function createMockContext(
 					throw new Error('No mock HTTP response configured');
 				},
 			},
-			httpRequest: async () => {
+			httpRequest: async (requestOptions: Record<string, unknown>) => {
+				requests.push({ options: requestOptions });
 				if (
 					options.httpResponses &&
 					httpCallIndex.current < options.httpResponses.length
@@ -139,6 +164,7 @@ export function createMockContext(
 					? data.map((d) => ({ json: d }))
 					: [{ json: data }],
 		},
+		__requests: requests,
 	} as unknown as IExecuteFunctions;
 
 	return ctx;

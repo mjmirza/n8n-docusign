@@ -1629,6 +1629,7 @@ describe('round 9b: choosing an ID check turns on requireIdLookup', () => {
 			credentials: C,
 			parameters: params({ accountId: 'acct-1', templateName: 'T', emailSubject: 'S', name: 'T', description: '', additionalFields: {}, documents: { document: [] }, recipients: { signer: [{ roleName: 'R', idCheckConfigurationName: 'ID Check $' }] } }),
 			httpResponses: [{}],
+			typeVersion: 4,
 		});
 		await handleTemplate(ctx, 'create', 0);
 		expect((getRecordedRequests(ctx)[0].options.body as { recipients: { signers: IDataObject[] } }).recipients.signers[0]).toMatchObject({ idCheckConfigurationName: 'ID Check $', requireIdLookup: 'true' });
@@ -1640,6 +1641,7 @@ describe('round 9b: choosing an ID check turns on requireIdLookup', () => {
 				credentials: C,
 				parameters: params({ accountId: 'acct-1', templateId: 'tp-1', recipientType: 'signers', roleName: 'R', routingOrder: '1', additionalFields: { idCheckConfigurationName: 'ID Check $', ...extra } }),
 				httpResponses: [{}],
+				typeVersion: 4,
 			});
 			await handleTemplateRecipient(ctx, 'create', 0);
 			return (getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0].requireIdLookup;
@@ -1648,14 +1650,19 @@ describe('round 9b: choosing an ID check turns on requireIdLookup', () => {
 		expect(await run({ requireIdLookup: 'false' })).toBe('false');
 	});
 
-	it('envelope recipient add', async () => {
-		const ctx = createMockContext({
-			credentials: C,
-			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientType: 'signers', recipientEmail: 'a@example.com', recipientName: 'A', recipientId: '1', additionalFields: { idCheckConfigurationName: 'ID Check $', requireIdLookup: 'false' } }),
-			httpResponses: [{}],
-		});
-		await handleRecipient(ctx, 'add', 0);
-		expect((getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0].requireIdLookup).toBe('true');
+	it('envelope recipient add fills a missing value and keeps a chosen No', async () => {
+		const run = async (extra: IDataObject) => {
+			const ctx = createMockContext({
+				credentials: C,
+				parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientType: 'signers', recipientEmail: 'a@example.com', recipientName: 'A', recipientId: '1', additionalFields: { idCheckConfigurationName: 'ID Check $', ...extra } }),
+				httpResponses: [{}],
+				typeVersion: 4,
+			});
+			await handleRecipient(ctx, 'add', 0);
+			return (getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0].requireIdLookup;
+		};
+		expect(await run({})).toBe('true');
+		expect(await run({ requireIdLookup: 'false' })).toBe('false');
 	});
 });
 
@@ -2081,5 +2088,41 @@ describe('round 9g: access codes are masked in the editor', () => {
 		const found = collect(new DocuSign().description.properties);
 		expect(found.length).toBeGreaterThan(3);
 		for (const p of found) expect((p.typeOptions as IDataObject)?.password).toBe(true);
+	});
+});
+
+describe('round 9h: ID check on versions 1 to 3 sends what 3.4.0 sent', () => {
+	it.each([1, 2, 3])('version %i: recipient add keeps a chosen No and adds nothing when unset', async (v) => {
+		const run = async (extra: IDataObject) => {
+			const ctx = createMockContext({
+				credentials: C,
+				parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientType: 'signers', recipientEmail: 'a@example.com', recipientName: 'A', recipientId: '1', additionalFields: { idCheckConfigurationName: 'ID Check $', ...extra } }),
+				httpResponses: [{}],
+				typeVersion: v,
+			});
+			await handleRecipient(ctx, 'add', 0);
+			return (getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0];
+		};
+		expect((await run({ requireIdLookup: 'false' })).requireIdLookup).toBe('false');
+		expect(await run({})).not.toHaveProperty('requireIdLookup');
+	});
+
+	it.each([1, 2, 3])('version %i: template signer and template recipient do not add requireIdLookup', async (v) => {
+		const t = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', templateName: 'T', emailSubject: 'S', name: 'T', description: '', additionalFields: {}, documents: { document: [] }, recipients: { signer: [{ roleName: 'R', idCheckConfigurationName: 'ID Check $' }] } }),
+			httpResponses: [{}],
+			typeVersion: v,
+		});
+		await handleTemplate(t, 'create', 0);
+		expect((getRecordedRequests(t)[0].options.body as { recipients: { signers: IDataObject[] } }).recipients.signers[0]).not.toHaveProperty('requireIdLookup');
+		const r = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', templateId: 'tp-1', recipientType: 'signers', roleName: 'R', routingOrder: '1', additionalFields: { idCheckConfigurationName: 'ID Check $' } }),
+			httpResponses: [{}],
+			typeVersion: v,
+		});
+		await handleTemplateRecipient(r, 'create', 0);
+		expect((getRecordedRequests(r)[0].options.body as { signers: IDataObject[] }).signers[0]).not.toHaveProperty('requireIdLookup');
 	});
 });

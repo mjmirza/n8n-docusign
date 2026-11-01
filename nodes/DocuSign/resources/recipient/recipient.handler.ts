@@ -77,8 +77,10 @@ export async function handleRecipient(
 					recipient[field] = additionalFields[field];
 				}
 			}
-			// An ID check only applies with requireIdLookup true, so choosing one turns it on.
-			if (recipient.idCheckConfigurationName) recipient.requireIdLookup = 'true';
+			// Version 4: an ID check turns requireIdLookup on unless No was chosen. Earlier versions send it as set.
+			if (ctx.getNode().typeVersion >= 4 && recipient.idCheckConfigurationName && additionalFields.requireIdLookup === undefined) {
+				recipient.requireIdLookup = 'true';
+			}
 			const phoneAuthentication = buildPhoneAuthentication(recipient.idCheckConfigurationName, additionalFields.phoneAuthNumbers);
 			if (phoneAuthentication) recipient.phoneAuthentication = phoneAuthentication;
 

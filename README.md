@@ -163,7 +163,8 @@ Create a **DocuSign Connect HMAC API** credential with a key from DocuSign Admin
 
 | Change | What to do |
 |---|---|
-| Node version 4, the default for new nodes: a list with only empty result arrays and paging fields outputs no items, Folder List Items includes the items, and tabs send a chosen No, Left alignment and Size 12 | Nothing. Saved nodes keep their version and the output they had in 3.3.0 |
+| Node version 4, the default for new nodes: a list with only empty result arrays and paging fields outputs no items, Folder List Items includes the items, tabs send a chosen No, Left alignment and Size 12, and an ID Check Config Name turns Require ID Lookup on | Nothing. Saved nodes keep their version and the output they had in 3.3.0 |
+| Workflows built on 3.4.0: saved version 3 list nodes output one item for an empty list again, and saved tabs no longer send a No anchor option, as in 3.3.0 | If a workflow relies on the 3.4.0 behaviour, replace the node with a new one, which uses version 4 |
 | An attached Connect HMAC credential that cannot be loaded no longer falls back to the old Options > HMAC Secret | Fix or reattach the credential if events start getting HTTP 401 |
 | Revoke User Authorizations accepts a JSON array of `{ "authorizationId" }` objects or IDs and sends DocuSign's `{ "authorizations": [...] }` body | Nothing. A full body still works |
 | Contact Emails is a list of addresses, such as `["user@example.com"]`; the older `[{ "email": ... }]` form is converted | Nothing |

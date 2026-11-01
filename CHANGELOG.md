@@ -3,7 +3,7 @@
 ## [3.5.0] - 2026-11-01
 
 ### Fixed
-- Version 3 nodes output list responses with empty result arrays as in 3.3.0; the 3.4.0 rule now applies to version 4 only, and counts a response as empty only when everything beside the arrays is paging or ID metadata.
+- Version 3 nodes output list responses with empty result arrays as in 3.3.0 (a 3.4.0-only change, see the README upgrade table); the 3.4.0 rule now applies to version 4 only, and counts a response as empty only when everything beside the arrays is paging or ID metadata.
 - Tabs on node versions 1 to 3 send the request 3.3.0 sent: saved No anchor options, Size 12 and Left alignment are left out.
 - An attached Connect HMAC credential that fails to load rejects calls instead of falling back to the deprecated HMAC Secret option.
 - An existing Connect subscription is reused only when its events, format, delivery mode and document settings match; otherwise a new one is registered.
@@ -12,7 +12,7 @@
 - Contact Emails sends a list of address strings.
 - Request bodies use the spec field names: `customFieldType`, `eNoteConfigured`, template `documents`, publish `envelopes`, `allowApiSequentialSigning`, `allowVaulting`, and the user profile address fields.
 - Envelope attachment Replace sends the attachment ID it replaces; brand logo uploads send `Content-Disposition`, resource uploads send multipart `file.xml`.
-- ID check sets `requireIdLookup`; Phone Auth sends `phoneAuthentication`; Witness For and group lists are sent in the spec shape.
+- On node version 4, an ID check sets `requireIdLookup` unless No was chosen; earlier versions send what 3.4.0 sent. Phone Auth sends `phoneAuthentication`; Witness For and group lists are sent in the spec shape.
 - JSON inputs accept an object as well as text everywhere.
 - Reminder frequency on its own turns reminders on.
 - The trigger checks for an HMAC key before reusing a subscription.

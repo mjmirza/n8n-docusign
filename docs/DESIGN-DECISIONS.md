@@ -146,6 +146,22 @@ activation registers the current settings, rather than leaving events that never
 `Phone Auth $` needs a `phoneAuthentication` object. With Phone Auth Numbers set, those are the
 sender-provided numbers; empty lets the recipient supply one (`recipMayProvideNumber`).
 
+## Accepted exception: two 3.4.0-only behaviours are reverted for saved nodes
+
+3.4.0 changed two outputs of saved nodes without a new node version: version 3 list operations
+dropped responses whose result arrays were empty, and saved tabs sent a No anchor option. 3.3.0 and
+every earlier release did neither. A saved node does not record which release last ran it, so one
+version number cannot match both 3.3.0 and 3.4.0. 3.5.0 restores the long-standing behaviour for
+node versions 1 to 3 and moves both 3.4.0 changes to node version 4, the default for new nodes.
+3.4.0 was the latest release for about three hours. Workflows built on it that need its behaviour
+replace the node with a new one, which is version 4. This is listed in the README upgrade table.
+
+## Identity checks keep their saved request until version 4
+
+3.4.0 sent `requireIdLookup` only as the user set it. On node version 4, choosing an ID Check
+Config Name turns `requireIdLookup` on unless No was chosen, because DocuSign applies the check only
+when it is true. Saved nodes on versions 1 to 3 send exactly what 3.4.0 sent.
+
 ## Saved tab values keep their request until version 4
 
 n8n stores a fixedCollection's values with their defaults, so a tab saved in 3.3.0 carries

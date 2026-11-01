@@ -47,8 +47,10 @@ export async function handleTemplateRecipient(
 					recipient[field] = additionalFields[field];
 				}
 			}
-			// An ID check only applies with requireIdLookup true; an explicit value is kept.
-			if (recipient.idCheckConfigurationName && recipient.requireIdLookup === undefined) recipient.requireIdLookup = 'true';
+			// Version 4: an ID check turns requireIdLookup on unless a value was chosen.
+			if (ctx.getNode().typeVersion >= 4 && recipient.idCheckConfigurationName && recipient.requireIdLookup === undefined) {
+				recipient.requireIdLookup = 'true';
+			}
 
 			applyDeliveryMethod(recipient, additionalFields.deliveryMethod, additionalFields.phoneNumber);
 

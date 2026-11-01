@@ -74,10 +74,10 @@ export async function handleTemplate(
 				if (s.email) signer.email = s.email;
 				if (s.name) signer.name = s.name;
 				if (s.accessCode) signer.accessCode = s.accessCode;
-				// An ID check only applies with requireIdLookup true, so choosing one turns it on.
+				// Version 4: an ID check turns requireIdLookup on. Earlier versions send the check alone.
 				if (s.idCheckConfigurationName) {
 					signer.idCheckConfigurationName = s.idCheckConfigurationName;
-					signer.requireIdLookup = 'true';
+					if (ctx.getNode().typeVersion >= 4) signer.requireIdLookup = 'true';
 				}
 				if (s.deliveryMethod && s.deliveryMethod !== 'email') {
 					applyDeliveryMethod(signer, s.deliveryMethod, s.phoneNumber);

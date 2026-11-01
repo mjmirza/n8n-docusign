@@ -6,6 +6,8 @@ import {
 	accountPath,
 	templatePath,
 } from '../../transport';
+import { applyDeliveryMethod } from '../../utils/recipientDelivery';
+import { buildNotificationBody } from '../../utils/notification';
 
 /**
  * Handle all Template resource operations.
@@ -65,7 +67,9 @@ export async function handleTemplate(
 				if (s.name) signer.name = s.name;
 				if (s.accessCode) signer.accessCode = s.accessCode;
 				if (s.idCheckConfigurationName) signer.idCheckConfigurationName = s.idCheckConfigurationName;
-				if (s.deliveryMethod && s.deliveryMethod !== 'email') signer.deliveryMethod = s.deliveryMethod;
+				if (s.deliveryMethod && s.deliveryMethod !== 'email') {
+					applyDeliveryMethod(signer, s.deliveryMethod, s.phoneNumber);
+				}
 				if (s.emailNotificationSubject || s.emailNotificationBody) {
 					signer.emailNotification = {
 						emailSubject: s.emailNotificationSubject || '',
@@ -188,23 +192,9 @@ export async function handleTemplate(
 				ctx.getNodeParameter('accountId', i) as string,
 				ctx.getNodeParameter('templateId', i) as string,
 			);
+			// Sends exactly what was set, nested as DocuSign expects; 0 stays 0 (e.g. no warning email).
 			const settings = ctx.getNodeParameter('notificationSettings', i, {}) as IDataObject;
-			const body: IDataObject = {};
-			if (settings.reminderEnabled !== undefined) {
-				body.reminders = {
-					reminderEnabled: settings.reminderEnabled,
-					reminderDelay: String(settings.reminderDelay || 3),
-					reminderFrequency: String(settings.reminderFrequency || 2),
-				};
-			}
-			if (settings.expireEnabled !== undefined) {
-				body.expirations = {
-					expireEnabled: settings.expireEnabled,
-					expireAfter: String(settings.expireAfter || 120),
-					expireWarn: String(settings.expireWarn || 3),
-				};
-			}
-			return docuSignRequest(ctx, 'PUT', `${tmplPath}/notification`, body);
+			return docuSignRequest(ctx, 'PUT', `${tmplPath}/notification`, buildNotificationBody(settings));
 		}
 
 		case 'getPageImages': {

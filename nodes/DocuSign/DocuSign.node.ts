@@ -394,7 +394,7 @@ export class DocuSign implements INodeType {
 		name: 'docuSign',
 		icon: { light: 'file:docusign.light.svg', dark: 'file:docusign.dark.svg' },
 		group: ['transform'],
-		// Version 2 returns Envelope Attachment Get as binary; version 1 keeps the JSON response.
+		// Versions 1 and 2 behave the same; version 2 is the default for new nodes.
 		version: [1, 2],
 		defaultVersion: 2,
 		subtitle:

@@ -1,4 +1,5 @@
 import type { IDataObject, IExecuteFunctions } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 
 /** Yes/No tab properties; by default only Yes is sent, so No can only reach DocuSign explicitly. */
 const FLAG_FIELDS = [
@@ -22,6 +23,23 @@ function applyExplicitValues(tab: IDataObject, t: IDataObject): void {
 	}
 	if (t.fontSize !== undefined) tab.fontSize = t.fontSize;
 	if (t.font !== undefined) tab.font = t.font;
+}
+
+/** List and radio tabs carry arrays; accept them as JSON text or as an expression-supplied array. */
+function parseTabArray(ctx: IExecuteFunctions, i: number, raw: unknown, field: string): IDataObject[] | undefined {
+	if (raw === undefined || raw === null || raw === '') return undefined;
+	let value: unknown = raw;
+	if (typeof raw === 'string') {
+		try {
+			value = JSON.parse(raw);
+		} catch {
+			throw new NodeOperationError(ctx.getNode(), `${field} must be a JSON array`, { itemIndex: i });
+		}
+	}
+	if (!Array.isArray(value)) {
+		throw new NodeOperationError(ctx.getNode(), `${field} must be a JSON array`, { itemIndex: i });
+	}
+	return value as IDataObject[];
 }
 
 export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues = false): IDataObject[] {
@@ -95,6 +113,14 @@ export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues 
 		}
 
 		if (t.tabId) tab.tabId = t.tabId;
+
+		// List, radio group and formula configuration
+		const listItems = parseTabArray(ctx, i, t.listItems, 'List Items');
+		if (listItems) tab.listItems = listItems;
+		const radios = parseTabArray(ctx, i, t.radios, 'Radios');
+		if (radios) tab.radios = radios;
+		if (t.groupName) tab.groupName = t.groupName;
+		if (t.formula) tab.formula = t.formula;
 
 		if (sendEmptyValues) applyExplicitValues(tab, t);
 		return tab;

@@ -21,11 +21,7 @@ export async function handleEnvelopeAttachment(
 				ctx.getNodeParameter('attachmentId', i) as string,
 				'Attachment ID',
 			);
-			// Node version 1 keeps the response as JSON so saved workflows see the same output.
-			if (ctx.getNode().typeVersion < 2) {
-				return docuSignRequest(ctx, 'GET', `${basePath}/${attachmentId}`);
-			}
-			// Version 2: the endpoint returns the file itself (application/octet-stream), so return binary.
+			// Every node version returns binary, as 2.1.0 did: the endpoint serves the file (application/octet-stream).
 			const bytes = (await docuSignRequest(ctx, 'GET', `${basePath}/${attachmentId}`, undefined, undefined, {
 				encoding: 'arraybuffer',
 				json: false,

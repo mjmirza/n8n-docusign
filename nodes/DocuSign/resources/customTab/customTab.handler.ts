@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all Custom Tab operations.
@@ -30,7 +31,7 @@ export async function handleCustomTab(
 		case 'create': {
 			let body: IDataObject;
 			try {
-				body = JSON.parse(
+				body = parseJsonInput(
 					ctx.getNodeParameter('requestBody', i) as string,
 				) as IDataObject;
 			} catch {
@@ -46,7 +47,7 @@ export async function handleCustomTab(
 			);
 			let body: IDataObject;
 			try {
-				body = JSON.parse(
+				body = parseJsonInput(
 					ctx.getNodeParameter('requestBody', i) as string,
 				) as IDataObject;
 			} catch {

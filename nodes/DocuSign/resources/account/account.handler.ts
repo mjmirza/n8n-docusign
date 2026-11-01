@@ -1,5 +1,6 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { docuSignRequest, accountPath } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all Account operations.
@@ -53,28 +54,28 @@ export async function handleAccount(
 		}
 
 		case 'updateEnvelopePurgeConfiguration': {
-			const body = JSON.parse(
+			const body = parseJsonInput(
 				ctx.getNodeParameter('purgeConfiguration', i) as string,
 			) as IDataObject;
 			return docuSignRequest(ctx, 'PUT', `${basePath}/settings/envelope_purge_configuration`, body);
 		}
 
 		case 'updateNotificationDefaults': {
-			const body = JSON.parse(
+			const body = parseJsonInput(
 				ctx.getNodeParameter('notificationDefaults', i) as string,
 			) as IDataObject;
 			return docuSignRequest(ctx, 'PUT', `${basePath}/settings/notification_defaults`, body);
 		}
 
 		case 'updateSettings': {
-			const body = JSON.parse(
+			const body = parseJsonInput(
 				ctx.getNodeParameter('settings', i) as string,
 			) as IDataObject;
 			return docuSignRequest(ctx, 'PUT', `${basePath}/settings`, body);
 		}
 
 		case 'updateSharedAccess': {
-			const body = JSON.parse(
+			const body = parseJsonInput(
 				ctx.getNodeParameter('sharedAccess', i) as string,
 			) as IDataObject;
 			return docuSignRequest(ctx, 'PUT', `${basePath}/shared_access`, body);

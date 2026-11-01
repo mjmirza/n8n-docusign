@@ -26,7 +26,7 @@ Send, track and manage DocuSign envelopes from any n8n workflow, without writing
 1. In n8n open **Settings**, then **Community Nodes**, choose **Install**, enter `n8n-nodes-docusigns` and confirm.
 2. Create a **DocuSign OAuth2 API** credential (steps below), pick **Demo / Sandbox** for a first test and click **Sign in with DocuSign**.
 3. Add the **DocuSign** node, set **Category** to Envelopes, **Resource** to Envelope and **Operation** to Create From Template.
-4. Pick your account, paste a template ID, map one signer email and name, and run the node.
+4. Pick your account, paste a template ID, add a template role with the Role Name from your template plus the signer's email and name, and run the node.
 5. The output holds the new `envelopeId` and status `sent`, and the signer receives the email from DocuSign.
 
 Add a **DocuSign Trigger** with the event Envelope Completed to continue the workflow once everyone has signed.
@@ -159,13 +159,27 @@ The **DocuSign Trigger** registers a DocuSign Connect configuration for the work
 
 Create a **DocuSign Connect HMAC API** credential with a key from DocuSign Admin, **Connect**, **Connect Keys**, and attach it to the trigger. The credential is encrypted and not included in workflow exports. The older Options > HMAC Secret field still works when no credential is attached, but it is stored in the workflow, so move the key to the credential. DocuSign signs every event with its active keys, and the trigger accepts a call only when one signature header matches one of your keys (constant time comparison). Separate two keys with a comma while you rotate. Calls without a valid signature get HTTP 401, and the trigger will not activate without a key.
 
+## Upgrading to 3.5
+
+| Change | What to do |
+|---|---|
+| Node version 4, the default for new nodes: a list with only empty result arrays and paging fields outputs no items, Folder List Items includes the items, tabs send a chosen No, Left alignment and Size 12, and an ID Check Config Name turns Require ID Lookup on | Nothing. Saved nodes keep their version and the output they had in 3.3.0 |
+| Workflows built on 3.4.0: saved version 3 list nodes output one item for an empty list again, and saved tabs no longer send a No anchor option, as in 3.3.0 | Maintainer decision: keep the 3.3.0 behaviour that every earlier release had, because a saved node cannot show which release built it; tradeoff and evidence in docs/DESIGN-DECISIONS.md. If a workflow relies on the 3.4.0 behaviour, replace the node with a new one, which uses version 4 |
+| An attached Connect HMAC credential that cannot be loaded no longer falls back to the old Options > HMAC Secret | Fix or reattach the credential if events start getting HTTP 401 |
+| Revoke User Authorizations accepts a JSON array of `{ "authorizationId" }` objects or IDs and sends DocuSign's `{ "authorizations": [...] }` body | Nothing. A full body still works |
+| Contact Emails is a list of addresses, such as `["user@example.com"]`; the older `[{ "email": ... }]` form is converted | Nothing |
+| Access code fields are masked in the editor | Nothing |
+| Workspace Update File on node version 4 updates metadata only; DocuSign defines no request to replace file content | To change content, upload a new file with Create File |
+| Several fields use the spec names DocuSign accepts (custom field type, eNote configuration, template documents, publish envelopes, permission profile and address settings) | Nothing |
+| Folder List Items Count, folder Search Text and the Auto Stamp and Confirm Initial Envelope Send tab settings are removed; DocuSign does not define them | Remove them from saved workflows if you set them; they were never applied |
+
 ## Upgrading to 3.4
 
 | Change | What to do |
 |---|---|
 | The trigger runs only for a signed event that names a subscribed event and carries its own Connect configuration ID; payloads without them are ignored | Nothing for subscriptions the trigger created, which always send both |
-| Version 3 nodes output no items for list responses whose result arrays are empty, such as `{ groups: [] }` | Nothing for saved nodes on versions 1 and 2 |
-| Anchored tabs send the Anchor Match Whole Word, Case Sensitive and Ignore If Not Present values you choose | Nothing |
+| 3.4.0 only: version 3 nodes dropped list responses whose result arrays are empty | Fixed in 3.5.0: that rule moved to version 4, so saved version 3 nodes behave as in 3.3.0 |
+| Anchored tabs send the Anchor Match Whole Word, Case Sensitive and Ignore If Not Present values you choose | From 3.5.0 this applies to version 4 nodes only; saved nodes on versions 1 to 3 send Yes values only, as in 3.3.0 |
 | Anchor Horizontal Alignment offers only Left and Right; Center is rejected with a message | Pick Left or Right. DocuSign never supported Center |
 
 ## Upgrading to 3.3
@@ -228,7 +242,7 @@ Saved workflows keep their parameters, no field was renamed or removed.
 
 ## Compatibility
 
-- n8n 1.x and 2.x, self-hosted. Tested against `n8n-workflow` 2.45.
+- n8n 1.86.0 or later (1.x and 2.x), self-hosted. Earlier n8n releases lack the `NodeConnectionTypes` export the nodes use. Tested against `n8n-workflow` 2.45.
 - n8n Cloud once the package passes n8n verification. It ships with no runtime dependencies and passes the `@n8n/scan-community-package` checks.
 - DocuSign eSignature REST API v2.1, demo and production environments.
 

@@ -20,7 +20,7 @@ function failingHookContext(staticData: IDataObject) {
 	const ctx = Object.assign(base, {
 		getWorkflowStaticData: () => staticData,
 		getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/abc',
-		getNodeParameter: () => 'acct-1',
+		getNodeParameter: (name: string) => (name === 'options' ? { hmacSecret: 'k' } : 'acct-1'),
 		logger: { warn, debug: jest.fn(), info: jest.fn(), error: jest.fn() },
 	}) as unknown as IHookFunctions;
 	return { ctx, warn };

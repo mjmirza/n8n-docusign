@@ -1,8 +1,28 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 const VALID_LOGO_TYPES = new Set(['primary', 'secondary', 'email']);
 const VALID_RESOURCE_TYPES = new Set(['sending', 'signing', 'email', 'signing_captive']);
+
+const CRLF = String.fromCharCode(13, 10);
+
+/** A file name safe inside a quoted header value: no quotes, backslashes or control characters. */
+function safeFileName(name: string | undefined, fallback: string): string {
+	const cleaned = [...(name ?? '')]
+		.filter((c) => c.charCodeAt(0) >= 32 && c !== '"' && c.charCodeAt(0) !== 92)
+		.join('')
+		.trim();
+	return cleaned || fallback;
+}
+
+/** A single-part multipart/form-data body. */
+function multipartFile(field: string, fileName: string, mimeType: string, data: Buffer): { body: Buffer; contentType: string } {
+	const boundary = `----n8nDocuSign${Date.now().toString(16)}`;
+	const head = [`--${boundary}`, `Content-Disposition: form-data; name="${field}"; filename="${fileName}"`, `Content-Type: ${mimeType}`, '', ''].join(CRLF);
+	const body = Buffer.concat([Buffer.from(head), data, Buffer.from(`${CRLF}--${boundary}--${CRLF}`)]);
+	return { body, contentType: `multipart/form-data; boundary=${boundary}` };
+}
 
 /**
  * Handle all Account Brand operations.
@@ -39,10 +59,10 @@ export async function handleAccountBrand(
 				body.brandCompany = additionalFields.brandCompany;
 			}
 			if (additionalFields.colors) {
-				body.colors = JSON.parse(additionalFields.colors as string);
+				body.colors = parseJsonInput(additionalFields.colors as string);
 			}
 			if (additionalFields.logos) {
-				body.logos = JSON.parse(additionalFields.logos as string);
+				body.logos = parseJsonInput(additionalFields.logos as string);
 			}
 			return docuSignRequest(ctx, 'POST', basePath, body);
 		}
@@ -58,10 +78,10 @@ export async function handleAccountBrand(
 				body.brandCompany = additionalFields.brandCompany;
 			}
 			if (additionalFields.colors) {
-				body.colors = JSON.parse(additionalFields.colors as string);
+				body.colors = parseJsonInput(additionalFields.colors as string);
 			}
 			if (additionalFields.logos) {
-				body.logos = JSON.parse(additionalFields.logos as string);
+				body.logos = parseJsonInput(additionalFields.logos as string);
 			}
 			return docuSignRequest(ctx, 'PUT', `${basePath}/${brandId}`, body);
 		}
@@ -134,24 +154,30 @@ export async function handleAccountBrand(
 			}
 
 			let fileBuffer: Buffer;
+			let uploadName: string | undefined;
 			const uploadSource = ctx.getNodeParameter('uploadSource', i, 'binary') as string;
 			if (uploadSource === 'binary') {
 				const binaryPropName = ctx.getNodeParameter('inputBinaryPropertyName', i, 'data') as string;
 				const binaryData = ctx.helpers.assertBinaryData(i, binaryPropName);
 				fileBuffer = await ctx.helpers.getBinaryDataBuffer(i, binaryPropName);
-				void binaryData; // referenced for assertion
+				uploadName = binaryData.fileName;
 			} else {
 				const base64 = ctx.getNodeParameter('base64Content', i) as string;
 				fileBuffer = Buffer.from(base64, 'base64');
 			}
 
+			// The spec passes the logo's file name in Content-Disposition next to the raw image bytes.
+			const logoName = safeFileName(uploadName, `logo_${logoType}.png`);
 			return docuSignRequest(
 				ctx,
 				'PUT',
 				`${basePath}/${brandId}/logos/${logoType}`,
 				fileBuffer as unknown as IDataObject,
 				undefined,
-				{ contentType: 'image/png' },
+				{
+					contentType: 'image/png',
+					headers: { 'Content-Disposition': `form-data; name="file"; filename="${logoName}"` },
+				},
 			);
 		}
 
@@ -195,24 +221,28 @@ export async function handleAccountBrand(
 			}
 
 			let fileBuffer: Buffer;
+			let uploadName: string | undefined;
 			const uploadSource = ctx.getNodeParameter('uploadSource', i, 'binary') as string;
 			if (uploadSource === 'binary') {
 				const binaryPropName = ctx.getNodeParameter('inputBinaryPropertyName', i, 'data') as string;
 				const binaryData = ctx.helpers.assertBinaryData(i, binaryPropName);
 				fileBuffer = await ctx.helpers.getBinaryDataBuffer(i, binaryPropName);
-				void binaryData; // referenced for assertion
+				uploadName = binaryData.fileName;
 			} else {
 				const base64 = ctx.getNodeParameter('base64Content', i) as string;
 				fileBuffer = Buffer.from(base64, 'base64');
 			}
 
+			// The spec takes the resource as a multipart/form-data part named file.xml.
+			const resourceName = safeFileName(uploadName, `${resourceContentType}.xml`);
+			const { body, contentType } = multipartFile('file.xml', resourceName, 'application/xml', fileBuffer);
 			return docuSignRequest(
 				ctx,
 				'PUT',
 				`${basePath}/${brandId}/resources/${resourceContentType}`,
-				fileBuffer as unknown as IDataObject,
+				body as unknown as IDataObject,
 				undefined,
-				{ contentType: 'application/xml' },
+				{ contentType },
 			);
 		}
 

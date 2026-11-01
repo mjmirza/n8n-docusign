@@ -1,5 +1,6 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all User operations.
@@ -47,10 +48,11 @@ export async function handleUser(
 			if (createFields.jobTitle) newUser.jobTitle = createFields.jobTitle;
 			if (createFields.password) newUser.password = createFields.password;
 			if (createFields.activationAccessCode) newUser.activationAccessCode = createFields.activationAccessCode;
-			if (createFields.groupId) newUser.groupId = createFields.groupId;
+			// userInformation has no groupId; DocuSign takes the group through groupList.
+			if (createFields.groupId) newUser.groupList = [{ groupId: createFields.groupId }];
 			if (createFields.sendActivationEmail !== undefined) newUser.sendActivationEmail = createFields.sendActivationEmail;
 			if (createFields.userSettings) {
-				newUser.userSettings = JSON.parse(createFields.userSettings as string);
+				newUser.userSettings = parseJsonInput(createFields.userSettings as string);
 			}
 
 			return docuSignRequest(ctx, 'POST', basePath, { newUsers: [newUser] } as unknown as IDataObject);
@@ -61,14 +63,14 @@ export async function handleUser(
 				ctx.getNodeParameter('userId', i) as string,
 				'User ID',
 			);
-			const body = JSON.parse(
+			const body = parseJsonInput(
 				ctx.getNodeParameter('updateBody', i) as string,
 			) as IDataObject;
 			return docuSignRequest(ctx, 'PUT', `${basePath}/${userId}`, body);
 		}
 
 		case 'updateList': {
-			const users = JSON.parse(
+			const users = parseJsonInput(
 				ctx.getNodeParameter('usersBody', i) as string,
 			);
 			return docuSignRequest(ctx, 'PUT', basePath, { users } as unknown as IDataObject);
@@ -95,7 +97,7 @@ export async function handleUser(
 				ctx.getNodeParameter('userId', i) as string,
 				'User ID',
 			);
-			const body = JSON.parse(
+			const body = parseJsonInput(
 				ctx.getNodeParameter('settingsBody', i) as string,
 			) as IDataObject;
 			return docuSignRequest(ctx, 'PUT', `${basePath}/${userId}/settings`, body);

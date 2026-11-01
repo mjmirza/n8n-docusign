@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { createMockContext } from './helpers/mockContext';
+import { createMockContext, getRecordedRequests } from './helpers/mockContext';
 import { handleConnectConfiguration } from '../nodes/DocuSign/resources/connectConfiguration/connectConfiguration.handler';
 import { handlePowerForm } from '../nodes/DocuSign/resources/powerForm/powerForm.handler';
 import { handlePowerFormData } from '../nodes/DocuSign/resources/powerFormData/powerFormData.handler';
@@ -41,7 +41,12 @@ describe('handlePowerForm', () => {
 	it('create — invalid JSON', async () => { const ctx = createMockContext({ credentials: C, parameters: { ...P, requestBody: { 0: 'bad' } } }); await expect(handlePowerForm(ctx, 'create', 0)).rejects.toThrow(); });
 	it('update', async () => { const ctx = createMockContext({ credentials: C, parameters: { ...P, powerFormId: { 0: 'pf-1' }, requestBody: { 0: '{"name":"Updated"}' } }, httpResponses: [{}] }); await handlePowerForm(ctx, 'update', 0); });
 	it('delete', async () => { const ctx = createMockContext({ credentials: C, parameters: { ...P, powerFormId: { 0: 'pf-1' } }, httpResponses: [{}] }); await handlePowerForm(ctx, 'delete', 0); });
-	it('deleteList', async () => { const ctx = createMockContext({ credentials: C, parameters: { ...P, powerFormIds: { 0: 'pf-1, pf-2' } }, httpResponses: [{}] }); await handlePowerForm(ctx, 'deleteList', 0); });
+	it('deleteList', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: { ...P, powerFormIds: { 0: 'pf-1, pf-2' } }, httpResponses: [{}] });
+		await handlePowerForm(ctx, 'deleteList', 0);
+		// powerFormsRequest: { powerForms: [{ powerFormId }] }
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ powerForms: [{ powerFormId: 'pf-1' }, { powerFormId: 'pf-2' }] });
+	});
 	it('listSenders', async () => { const ctx = createMockContext({ credentials: C, parameters: P, httpResponses: [{}] }); await handlePowerForm(ctx, 'listSenders', 0); });
 	it('rejects invalid powerFormId', async () => { const ctx = createMockContext({ credentials: C, parameters: { ...P, powerFormId: { 0: '../x' } } }); await expect(handlePowerForm(ctx, 'get', 0)).rejects.toThrow('contains invalid characters'); });
 	it('unsupported', async () => { const ctx = createMockContext({ credentials: C, parameters: P }); await expect(handlePowerForm(ctx, 'clone', 0)).rejects.toThrow('Unsupported'); });

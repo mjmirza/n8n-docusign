@@ -85,7 +85,7 @@ export const templateFields: INodeProperties[] = [
 				displayName: 'Signer',
 				name: 'signer',
 				values: [
-					{ displayName: 'Access Code', name: 'accessCode', type: 'string', default: '' },
+					{ displayName: 'Access Code', name: 'accessCode', type: 'string', typeOptions: { password: true }, default: '' },
 					{ displayName: 'Default Email', name: 'email', type: 'string', placeholder: 'name@email.com', default: '', description: 'Default email (can be overridden when creating envelope)' },
 					{ displayName: 'Default Name', name: 'name', type: 'string', default: '', description: 'Default name (can be overridden when creating envelope)' },
 					{ displayName: 'Delivery Method', name: 'deliveryMethod', type: 'options', options: [{ name: 'Email', value: 'email' }, { name: 'SMS', value: 'sms' }], default: 'email' },

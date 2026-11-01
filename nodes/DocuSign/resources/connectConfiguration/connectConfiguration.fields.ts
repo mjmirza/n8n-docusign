@@ -67,7 +67,7 @@ export const connectConfigurationFields: INodeProperties[] = [
 		type: 'json',
 		default: '{}',
 		required: true,
-		description: 'JSON body for the request. For create/update: { "urlToPublishTo", "name", "allUsers", "allowEnvelopePublish", "envelopeEvents", "recipientEvents", ... }. For publish: { "envelopeIds": [...] }.',
+		description: 'JSON body for the request. For create/update: { "urlToPublishTo", "name", "allUsers", "allowEnvelopePublish", "envelopeEvents", "recipientEvents", ... }. For publish: { "envelopes": [{ "envelopeId": "..." }], "config": { "connectId": "..." } }; an older "envelopeIds" list is converted.',
 		displayOptions: {
 			show: {
 				resource: ['connectConfiguration'],

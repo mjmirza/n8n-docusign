@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, templatePath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 export async function handleTemplateDocument(
 	ctx: IExecuteFunctions,
@@ -38,6 +39,7 @@ export async function handleTemplateDocument(
 		}
 
 		case 'update': {
+			// The spec's body is an envelopeDefinition, so the document goes inside documents[].
 			const documentId = assertSafeId(ctx.getNodeParameter('documentId', i) as string, 'Document ID');
 			const docData = ctx.getNodeParameter('documentData', i, {}) as IDataObject;
 			const content = (docData.content || [{}]) as IDataObject[];
@@ -47,17 +49,21 @@ export async function handleTemplateDocument(
 				const binaryData = ctx.helpers.assertBinaryData(i, doc.binaryProperty as string);
 				const buffer = await ctx.helpers.getBinaryDataBuffer(i, doc.binaryProperty as string);
 				return docuSignRequest(ctx, 'PUT', `${basePath}/${documentId}`, {
-					documentBase64: buffer.toString('base64'),
-					name: doc.name || binaryData.fileName || '',
-					fileExtension: doc.fileExtension || 'pdf',
-					documentId,
+					documents: [{
+						documentBase64: buffer.toString('base64'),
+						name: doc.name || binaryData.fileName || '',
+						fileExtension: doc.fileExtension || 'pdf',
+						documentId,
+					}],
 				});
 			} else if (doc.documentBase64) {
 				return docuSignRequest(ctx, 'PUT', `${basePath}/${documentId}`, {
-					documentBase64: doc.documentBase64,
-					name: doc.name || '',
-					fileExtension: doc.fileExtension || 'pdf',
-					documentId,
+					documents: [{
+						documentBase64: doc.documentBase64,
+						name: doc.name || '',
+						fileExtension: doc.fileExtension || 'pdf',
+						documentId,
+					}],
 				});
 			}
 
@@ -67,7 +73,7 @@ export async function handleTemplateDocument(
 		case 'updateList': {
 			const docsJson = ctx.getNodeParameter('documentsJson', i, '[]') as string;
 			let parsed: unknown;
-			try { parsed = JSON.parse(docsJson); } catch { throw new NodeOperationError(ctx.getNode(), 'Documents must be valid JSON'); }
+			try { parsed = parseJsonInput(docsJson); } catch { throw new NodeOperationError(ctx.getNode(), 'Documents must be valid JSON'); }
 			return docuSignRequest(ctx, 'PUT', basePath, { documents: parsed } as IDataObject);
 		}
 

@@ -1,5 +1,6 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 const VALID_IMAGE_TYPES = new Set(['signature_image', 'initials_image']);
 
@@ -33,7 +34,7 @@ export async function handleUserSignature(
 		}
 
 		case 'create': {
-			const body = JSON.parse(
+			const body = parseJsonInput(
 				ctx.getNodeParameter('signatureBody', i) as string,
 			) as IDataObject;
 			return docuSignRequest(ctx, 'POST', basePath, body);
@@ -44,14 +45,14 @@ export async function handleUserSignature(
 				ctx.getNodeParameter('signatureId', i) as string,
 				'Signature ID',
 			);
-			const body = JSON.parse(
+			const body = parseJsonInput(
 				ctx.getNodeParameter('updateBody', i) as string,
 			) as IDataObject;
 			return docuSignRequest(ctx, 'PUT', `${basePath}/${signatureId}`, body);
 		}
 
 		case 'updateList': {
-			const signatures = JSON.parse(
+			const signatures = parseJsonInput(
 				ctx.getNodeParameter('signaturesBody', i) as string,
 			);
 			return docuSignRequest(ctx, 'PUT', basePath, { userSignatures: signatures } as unknown as IDataObject);

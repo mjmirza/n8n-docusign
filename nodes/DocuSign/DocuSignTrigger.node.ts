@@ -14,6 +14,34 @@ import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workf
 import crypto from 'crypto';
 import { docuSignRequest, assertSafeId } from './transport';
 
+/** True when a stored Connect configuration still has this trigger's events, JSON SIM delivery and HMAC. */
+export function matchesSubscription(config: IDataObject, events: string[], options: IDataObject = {}): boolean {
+	const stored = Array.isArray(config.events) ? (config.events as string[]).map(String) : [];
+	const sameEvents = stored.length === events.length && events.every((e) => stored.includes(e));
+	const format = (config.eventData as IDataObject | undefined)?.format;
+	const json = format === undefined || String(format).toLowerCase() === 'json';
+	const sim = config.deliveryMode === undefined || config.deliveryMode === 'SIM';
+	const hmac = config.includeHMAC === undefined || String(config.includeHMAC) === 'true';
+	// An unreported setting counts as matching; a reported one must equal what this node creates.
+	const same = (key: string, want: boolean) => config[key] === undefined || String(config[key]) === String(want);
+	const settings =
+		same('includeDocuments', options.includeDocuments === true) &&
+		same('includeCertificateOfCompletion', options.includeCertificateOfCompletion === true) &&
+		same('requiresAcknowledgement', options.requireAcknowledgement !== false);
+	return sameEvents && json && sim && hmac && settings;
+}
+
+/** Refuses activation without a Connect HMAC key; DocuSign keys cannot be created through the API. */
+async function requireHmacKey(ctx: IHookFunctions, options?: IDataObject): Promise<void> {
+	const opts = options ?? (ctx.getNodeParameter('options', {}) as IDataObject);
+	if ((await resolveHmacSecrets(ctx, opts)).length === 0) {
+		throw new NodeOperationError(
+			ctx.getNode(),
+			'Add a DocuSign Connect HMAC credential with the key from DocuSign Admin > Connect > Connect Keys',
+		);
+	}
+}
+
 /** Deletes a Connect configuration; a 404 means it is already gone. */
 async function deleteStaleSubscription(
 	ctx: IHookFunctions,
@@ -238,6 +266,8 @@ export class DocuSignTrigger implements INodeType {
 	webhookMethods = {
 		default: {
 			async checkExists(this: IHookFunctions): Promise<boolean> {
+				// n8n skips create() for an existing subscription, so the key requirement is checked here too.
+				await requireHmacKey(this);
 				const webhookData = this.getWorkflowStaticData('node');
 				const webhookUrl = this.getNodeWebhookUrl('default') as string;
 
@@ -261,10 +291,12 @@ export class DocuSignTrigger implements INodeType {
 						const configurations = Array.isArray(config?.configurations)
 							? (config.configurations as IDataObject[])
 							: [config];
-						if (configurations.some((c) => c?.urlToPublishTo === webhookUrl)) {
+						const events = this.getNodeParameter('events', []) as string[];
+						const wanted = this.getNodeParameter('options', {}) as IDataObject;
+						if (configurations.some((c) => c?.urlToPublishTo === webhookUrl && matchesSubscription(c, events, wanted))) {
 							return true;
 						}
-						// The stored subscription points at an old URL; remove it so it stops receiving data.
+						// An old URL or changed settings: remove it so create() registers the current one.
 						await deleteStaleSubscription(this, accountId, connectId);
 						delete webhookData.connectId;
 					} catch (error) {
@@ -293,15 +325,14 @@ export class DocuSignTrigger implements INodeType {
 				// Connect HMAC keys are created in DocuSign Admin and cannot be set through the API,
 				// so a secret generated here could never match. Without a key the trigger cannot
 				// verify events, so it refuses to activate instead of accepting unsigned calls.
-				if ((await resolveHmacSecrets(this, options)).length === 0) {
-					throw new NodeOperationError(
-						this.getNode(),
-						'Add a DocuSign Connect HMAC credential with the key from DocuSign Admin > Connect > Connect Keys',
-					);
-				}
+				await requireHmacKey(this, options);
 
 				// includeHMAC makes DocuSign sign each event with the account's Connect keys.
+				// configurationType and deliveryMode are required by the spec; SIM sends one message per event.
 				const connectConfig: IDataObject = {
+					configurationType: 'custom',
+					deliveryMode: 'SIM',
+					enableLog: 'true',
 					urlToPublishTo: webhookUrl,
 					name: `n8n-${this.getNode().name}-${Date.now()}`,
 					allUsers: 'true',
@@ -436,12 +467,13 @@ export async function resolveHmacSecrets(
 	ctx: IHookFunctions | IWebhookFunctions,
 	options: IDataObject,
 ): Promise<string[]> {
-	try {
-		const credential = await ctx.getCredentials('docuSignConnectHmacApi');
-		const fromCredential = parseHmacSecrets(credential?.hmacSecret);
-		if (fromCredential.length > 0) return fromCredential;
-	} catch {
-		// No HMAC credential attached to this node.
+	// An attached credential is the only source: if it fails to load, no key, so calls are rejected.
+	if (ctx.getNode().credentials?.docuSignConnectHmacApi) {
+		try {
+			return parseHmacSecrets((await ctx.getCredentials('docuSignConnectHmacApi'))?.hmacSecret);
+		} catch {
+			return [];
+		}
 	}
 	return parseHmacSecrets(options.hmacSecret);
 }

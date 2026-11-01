@@ -17,10 +17,19 @@ import {
 	DocuSignTrigger,
 	verifyDocuSignSignature,
 	parseHmacSecrets,
+	matchesSubscription,
 } from '../nodes/DocuSign/DocuSignTrigger.node';
 import { DocuSignJwtApi, buildDocuSignJwtAssertion } from '../credentials/DocuSignJwtApi.credentials';
 import { handleRecipient } from '../nodes/DocuSign/resources/recipient/recipient.handler';
 import { handleTemplateDocument } from '../nodes/DocuSign/resources/templateDocument/templateDocument.handler';
+import { handleAccountPermissionProfile } from '../nodes/DocuSign/resources/accountPermissionProfile/accountPermissionProfile.handler';
+import { handleAccountTabSetting } from '../nodes/DocuSign/resources/accountTabSetting/accountTabSetting.handler';
+import { handleBulkEnvelope } from '../nodes/DocuSign/resources/bulkEnvelope/bulkEnvelope.handler';
+import { handleEnvelopeWorkflow } from '../nodes/DocuSign/resources/envelopeWorkflow/envelopeWorkflow.handler';
+import { parseJsonInput } from '../nodes/DocuSign/utils/jsonInput';
+import { handlePowerForm } from '../nodes/DocuSign/resources/powerForm/powerForm.handler';
+import { handleAccountCustomField } from '../nodes/DocuSign/resources/accountCustomField/accountCustomField.handler';
+import { handleENoteConfiguration } from '../nodes/DocuSign/resources/eNoteConfiguration/eNoteConfiguration.handler';
 import { handleTemplateRecipient } from '../nodes/DocuSign/resources/templateRecipient/templateRecipient.handler';
 import { handleEnvelopePublish } from '../nodes/DocuSign/resources/envelopePublish/envelopePublish.handler';
 import { handleUserContact } from '../nodes/DocuSign/resources/userContact/userContact.handler';
@@ -29,6 +38,8 @@ import { handleTemplateLock } from '../nodes/DocuSign/resources/templateLock/tem
 import { handleFolder } from '../nodes/DocuSign/resources/folder/folder.handler';
 import { handleWorkspaceItem } from '../nodes/DocuSign/resources/workspaceItem/workspaceItem.handler';
 import { handleUser } from '../nodes/DocuSign/resources/user/user.handler';
+import { handleAccountBrand } from '../nodes/DocuSign/resources/accountBrand/accountBrand.handler';
+import { handleUserProfile } from '../nodes/DocuSign/resources/userProfile/userProfile.handler';
 import { handleEnvelopeTemplate } from '../nodes/DocuSign/resources/envelopeTemplate/envelopeTemplate.handler';
 import { handleEnvelopeComment } from '../nodes/DocuSign/resources/envelopeComment/envelopeComment.handler';
 import { handleAccountPasswordRule } from '../nodes/DocuSign/resources/accountPasswordRule/accountPasswordRule.handler';
@@ -43,9 +54,10 @@ import { handleBillingPlan } from '../nodes/DocuSign/resources/billingPlan/billi
 import { handleEnvelopeCustomField } from '../nodes/DocuSign/resources/envelopeCustomField/envelopeCustomField.handler';
 import { handleTemplateCustomField } from '../nodes/DocuSign/resources/templateCustomField/templateCustomField.handler';
 import { handleAccount } from '../nodes/DocuSign/resources/account/account.handler';
-import { matchSpecRoute, unknownQueryParams } from './setup/spec-routes';
+import { handleAccountWatermark } from '../nodes/DocuSign/resources/accountWatermark/accountWatermark.handler';
+import { matchSpecRoute, unknownBodyKeys, unknownQueryParams } from './setup/spec-routes';
 import { toRecipientPhone } from '../nodes/DocuSign/utils/recipientDelivery';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 
 // Some tests assert inside catch; an unexpected success must fail them.
 beforeEach(() => {
@@ -253,6 +265,7 @@ describe('DocuSign Connect trigger (H5, H6, M13)', () => {
 			getRequestObject: () => ({ rawBody: rawBody ?? undefined }),
 			getResponseObject: () => res,
 			getWorkflowStaticData: () => ({ connectId: 'c-1' }),
+			getNode: () => ({ credentials: {} }),
 			helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
 		} as unknown as IWebhookFunctions;
 		return { ctx, status };
@@ -394,7 +407,7 @@ describe('retries (M9)', () => {
 			credentials: C,
 			httpResponses: [createHttpError(502, {}, 'bad gateway', { 'retry-after': '1' }), { ok: true }],
 		});
-		await expect(docuSignRequest(ctx, 'POST', 'accounts/a/envelopes', { a: 1 })).rejects.toThrow('[502]');
+		await expect(docuSignRequest(ctx, 'POST', 'accounts/a/envelopes', { emailSubject: 's' })).rejects.toThrow('[502]');
 		expect(getRecordedRequests(ctx)).toHaveLength(1);
 	});
 
@@ -403,7 +416,7 @@ describe('retries (M9)', () => {
 			credentials: C,
 			httpResponses: [createHttpError(429, {}, 'slow down', { 'retry-after': '1' }), { ok: true }],
 		});
-		await expect(docuSignRequest(ctx, 'POST', 'accounts/a/envelopes', { a: 1 })).resolves.toEqual({ ok: true });
+		await expect(docuSignRequest(ctx, 'POST', 'accounts/a/envelopes', { emailSubject: 's' })).resolves.toEqual({ ok: true });
 	});
 });
 
@@ -491,7 +504,7 @@ describe('round 2: trigger Connect lookup and documents', () => {
 		}) as unknown as IHookFunctions;
 
 	it('recognises an existing configuration in the configurations array', async () => {
-		const ctx = hook([{ configurations: [{ connectId: 'c-1', urlToPublishTo: 'https://n8n.example.com/webhook/abc' }] }]);
+		const ctx = hook([{ configurations: [{ connectId: 'c-1', urlToPublishTo: 'https://n8n.example.com/webhook/abc', events: ['envelope-completed'] }] }]);
 		await expect(methods.checkExists.call(ctx)).resolves.toBe(true);
 	});
 
@@ -663,6 +676,7 @@ describe('round 3: Connect HMAC key lives in a credential', () => {
 				getRequestObject: () => ({ rawBody: raw }),
 				getResponseObject: () => ({ status: (c: number) => (status(c), { json: jest.fn() }) }),
 				getWorkflowStaticData: () => ({ connectId: 'c-1' }),
+				getNode: () => ({ credentials: credentialKey ? { docuSignConnectHmacApi: { id: '1', name: 'HMAC' } } : {} }),
 				helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
 			} as unknown as IWebhookFunctions,
 		};
@@ -697,7 +711,7 @@ describe('round 3: trigger keeps track of its subscription', () => {
 		Object.assign(createMockContext({ credentials: C, httpResponses: responses }), {
 			getWorkflowStaticData: () => staticData,
 			getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/abc',
-			getNodeParameter: () => 'acct-1',
+			getNodeParameter: (name: string) => (name === 'options' ? { hmacSecret: 'k' } : 'acct-1'),
 			logger: { warn: jest.fn() },
 		}) as unknown as IHookFunctions;
 
@@ -718,7 +732,7 @@ describe('round 3: writes are not repeated after a 5xx', () => {
 			credentials: C,
 			httpResponses: [createHttpError(502, {}, 'bad gateway', { 'retry-after': '1' }), { ok: true }],
 		});
-		await expect(docuSignRequest(ctx, 'PUT', 'accounts/a/envelopes/e/attachments', { a: 1 })).rejects.toThrow('[502]');
+		await expect(docuSignRequest(ctx, 'PUT', 'accounts/a/envelopes/e/attachments', { attachments: [] })).rejects.toThrow('[502]');
 		expect(getRecordedRequests(ctx)).toHaveLength(1);
 	});
 });
@@ -971,10 +985,10 @@ describe('round 4: envelope operations are in the picker', () => {
 });
 
 describe('round 4: node versions keep saved workflows stable', () => {
-	it('the node offers versions 1, 2 and 3, new nodes get 3; saved versions stay', () => {
+	it('the node offers versions 1 to 4, new nodes get 4; saved versions stay', () => {
 		const d = new DocuSign().description;
-		expect(d.version).toEqual([1, 2, 3]);
-		expect(d.defaultVersion).toBe(3);
+		expect(d.version).toEqual([1, 2, 3, 4]);
+		expect(d.defaultVersion).toBe(4);
 	});
 
 	it('version 1 Attachment Get keeps the binary output 2.1.0 shipped', async () => {
@@ -1170,7 +1184,7 @@ describe('round 5: a changed webhook URL removes the old subscription', () => {
 			{
 				getWorkflowStaticData: () => staticData,
 				getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/abc',
-				getNodeParameter: () => 'acct-1',
+				getNodeParameter: (name: string) => (name === 'options' ? { hmacSecret: 'k' } : 'acct-1'),
 				logger: { warn: jest.fn() },
 			},
 		) as unknown as IHookFunctions;
@@ -1362,6 +1376,7 @@ describe('round 7: a signed event must belong to this subscription', () => {
 			getRequestObject: () => ({ rawBody: raw }),
 			getResponseObject: () => ({ status: (c: number) => (status(c), { json: jest.fn() }) }),
 			getWorkflowStaticData: () => (connectId ? { connectId } : {}),
+			getNode: () => ({ credentials: {} }),
 			helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
 		} as unknown as IWebhookFunctions;
 		return { result: await trigger.webhook.call(ctx), status };
@@ -1453,6 +1468,7 @@ describe('round 8: the trigger fails closed on events without subscription detai
 			getRequestObject: () => ({ rawBody: raw }),
 			getResponseObject: () => ({ status: (c: number) => (status(c), { json: jest.fn() }) }),
 			getWorkflowStaticData: () => (connectId ? { connectId } : {}),
+			getNode: () => ({ credentials: {} }),
 			helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
 		} as unknown as IWebhookFunctions;
 		return trigger.webhook.call(ctx);
@@ -1478,8 +1494,8 @@ describe('round 8: an empty list response outputs no items on version 3', () => 
 		return (await new DocuSign().execute.call(ctx))[0];
 	};
 
-	it('Group Get Many without Return All returns no items for an empty groups list', async () => {
-		expect(await run(3, 'group', 'list', { returnAll: false, groupFilters: {} }, { groups: [], resultSetSize: '0' })).toEqual([]);
+	it('Group Get Many without Return All returns no items for an empty groups list (version 4)', async () => {
+		expect(await run(4, 'group', 'list', { returnAll: false, groupFilters: {} }, { groups: [], resultSetSize: '0' })).toEqual([]);
 	});
 
 	it('version 2 keeps the response item saved workflows rely on', async () => {
@@ -1499,6 +1515,7 @@ describe('round 8: anchor options go out exactly as chosen', () => {
 			credentials: C,
 			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [tab] } }),
 			httpResponses: [{}],
+			typeVersion: 4,
 		});
 		await handleEnvelopeRecipientTab(ctx, 'create', 0);
 		return (getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0];
@@ -1516,5 +1533,800 @@ describe('round 8: anchor options go out exactly as chosen', () => {
 	it('the picker offers only Left and Right', () => {
 		const tabs = new DocuSign().description.properties.filter((p) => p.name === 'tabs');
 		expect(JSON.stringify(tabs)).not.toContain('"center"');
+	});
+});
+
+// Round 9: findings from the confirming Codex review of the published 3.4.0.
+
+describe('round 9: version 3 keeps the 3.3.0 output for list responses', () => {
+	it('a saved version 3 Group Get Many still outputs the empty response item', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ resource: 'group', operation: 'list', accountId: 'acct-1', returnAll: false, groupFilters: {} }),
+			httpResponses: [{ groups: [] }],
+			typeVersion: 3,
+		});
+		expect((await new DocuSign().execute.call(ctx))[0]).toEqual([{ json: { groups: [] }, pairedItem: { item: 0 } }]);
+	});
+});
+
+describe('round 9: user and profile fields use DocuSign names', () => {
+	it('user create assigns the group through groupList', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', email: 'a@example.com', userName: 'A', createFields: { groupId: 'g-1' } }),
+			httpResponses: [{}],
+		});
+		await handleUser(ctx, 'create', 0);
+		const user = (getRecordedRequests(ctx)[0].options.body as { newUsers: IDataObject[] }).newUsers[0];
+		expect(user.groupList).toEqual([{ groupId: 'g-1' }]);
+		expect(user).not.toHaveProperty('groupId');
+	});
+
+	it('profile update sends Company as companyName', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', userId: 'u-1', additionalFields: { company: 'Example' } }), httpResponses: [{}] });
+		await handleUserProfile(ctx, 'update', 0);
+		const body = getRecordedRequests(ctx)[0].options.body as IDataObject;
+		expect(body.companyName).toBe('Example');
+		expect(body).not.toHaveProperty('company');
+	});
+});
+
+describe('round 9: Reminder Frequency on its own turns reminders on', () => {
+	it.each([
+		['envelope', handleEnvelope],
+		['template', handleTemplate],
+	])('%s create sends reminders for a frequency set without a delay', async (_k, handler) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', emailSubject: 'Sign', status: 'created', templateName: 'T', name: 'T', description: '', additionalFields: { reminderFrequency: 7 }, signers: {}, recipients: {}, documents: { document: [] } }),
+			httpResponses: [{}],
+		});
+		await (handler as (c: IExecuteFunctions, o: string, i: number) => Promise<unknown>)(ctx, 'create', 0);
+		const notification = (getRecordedRequests(ctx)[0].options.body as { notification: IDataObject }).notification;
+		expect(notification.reminders).toEqual({ reminderEnabled: 'true', reminderDelay: '3', reminderFrequency: '7' });
+	});
+});
+
+describe('round 9: an existing subscription still needs the HMAC key', () => {
+	it('checkExists refuses to report a subscription when no key is configured', async () => {
+		const methods = new DocuSignTrigger().webhookMethods.default;
+		const ctx = Object.assign(createMockContext({ credentials: C, httpResponses: [{ configurations: [{ urlToPublishTo: 'https://n8n.example.com/webhook/abc' }] }] }), {
+			getWorkflowStaticData: () => ({ connectId: 'c-1' }),
+			getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/abc',
+			getNodeParameter: (name: string) => (name === 'options' ? {} : 'acct-1'),
+			logger: { warn: jest.fn() },
+		}) as unknown as IHookFunctions;
+		await expect(methods.checkExists.call(ctx)).rejects.toThrow('HMAC');
+		expect(getRecordedRequests(ctx as unknown as IExecuteFunctions)).toHaveLength(0);
+	});
+});
+
+// Round 9, branch review: findings on the working tree before release.
+
+describe('round 9b: Connect registration sends the fields the spec requires', () => {
+	it('create sends configurationType, deliveryMode SIM and enableLog', async () => {
+		const methods = new DocuSignTrigger().webhookMethods.default;
+		const staticData: IDataObject = {};
+		const ctx = Object.assign(createMockContext({ credentials: C, httpResponses: [{ connectId: 'c-9' }] }), {
+			getWorkflowStaticData: () => staticData,
+			getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/abc',
+			getNodeParameter: (name: string, fallback?: unknown) =>
+				(({ accountId: 'acct-1', events: ['envelope-completed'], options: { hmacSecret: 'k' } }) as IDataObject)[name] ?? fallback,
+			logger: { warn: jest.fn() },
+		}) as unknown as IHookFunctions;
+		await methods.create.call(ctx);
+		expect(getRecordedRequests(ctx as unknown as IExecuteFunctions)[0].options.body).toMatchObject({
+			configurationType: 'custom',
+			deliveryMode: 'SIM',
+			enableLog: 'true',
+		});
+	});
+});
+
+describe('round 9b: choosing an ID check turns on requireIdLookup', () => {
+	it('template create signer', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', templateName: 'T', emailSubject: 'S', name: 'T', description: '', additionalFields: {}, documents: { document: [] }, recipients: { signer: [{ roleName: 'R', idCheckConfigurationName: 'ID Check $' }] } }),
+			httpResponses: [{}],
+			typeVersion: 4,
+		});
+		await handleTemplate(ctx, 'create', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { recipients: { signers: IDataObject[] } }).recipients.signers[0]).toMatchObject({ idCheckConfigurationName: 'ID Check $', requireIdLookup: 'true' });
+	});
+
+	it('template recipient create keeps an explicit value and fills a missing one', async () => {
+		const run = async (extra: IDataObject) => {
+			const ctx = createMockContext({
+				credentials: C,
+				parameters: params({ accountId: 'acct-1', templateId: 'tp-1', recipientType: 'signers', roleName: 'R', routingOrder: '1', additionalFields: { idCheckConfigurationName: 'ID Check $', ...extra } }),
+				httpResponses: [{}],
+				typeVersion: 4,
+			});
+			await handleTemplateRecipient(ctx, 'create', 0);
+			return (getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0].requireIdLookup;
+		};
+		expect(await run({})).toBe('true');
+		expect(await run({ requireIdLookup: 'false' })).toBe('false');
+	});
+
+	it('envelope recipient add fills a missing value and keeps a chosen No', async () => {
+		const run = async (extra: IDataObject) => {
+			const ctx = createMockContext({
+				credentials: C,
+				parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientType: 'signers', recipientEmail: 'a@example.com', recipientName: 'A', recipientId: '1', additionalFields: { idCheckConfigurationName: 'ID Check $', ...extra } }),
+				httpResponses: [{}],
+				typeVersion: 4,
+			});
+			await handleRecipient(ctx, 'add', 0);
+			return (getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0].requireIdLookup;
+		};
+		expect(await run({})).toBe('true');
+		expect(await run({ requireIdLookup: 'false' })).toBe('false');
+	});
+});
+
+describe('round 9b: the declared n8n range matches the API the nodes use', () => {
+	it('states n8n 1.86.0, the first release whose n8n-workflow (1.84.0) exports NodeConnectionTypes', () => {
+		// n8n verification requires peerDependencies n8n-workflow "*", so the minimum is documented.
+		expect(readFileSync('README.md', 'utf8')).toContain('n8n 1.86.0 or later');
+		expect(readFileSync('README.md', 'utf8')).not.toContain('- n8n 1.x and 2.x, self-hosted.');
+		expect(new DocuSign().description.outputs).toEqual(['main']);
+	});
+});
+
+describe('round 9b: branding uploads follow the documented contract', () => {
+	const base = { accountId: 'acct-1', brandId: 'b-1', uploadSource: 'base64', base64Content: Buffer.from('<xml/>').toString('base64') };
+
+	it('logo upload names the file in Content-Disposition', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ ...base, logoType: 'primary' }), httpResponses: [{}] });
+		await handleAccountBrand(ctx, 'updateLogo', 0);
+		const headers = getRecordedRequests(ctx)[0].options.headers as Record<string, string>;
+		expect(headers['Content-Disposition']).toBe('form-data; name="file"; filename="logo_primary.png"');
+	});
+
+	it('resource upload is multipart/form-data with a file.xml part', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ ...base, resourceContentType: 'sending' }), httpResponses: [{}] });
+		await handleAccountBrand(ctx, 'updateResource', 0);
+		const req = getRecordedRequests(ctx)[0].options;
+		expect(String((req.headers as Record<string, string>)['Content-Type'])).toMatch(/^multipart\/form-data; boundary=/);
+		const body = Buffer.from(req.body as unknown as Buffer).toString();
+		expect(body).toContain('Content-Disposition: form-data; name="file.xml"; filename="sending.xml"');
+		expect(body).toContain('<xml/>');
+	});
+});
+
+// Round 9c: second branch review, plus bugs the new body-key check found.
+
+describe('round 9c: request bodies use the spec field names', () => {
+	it('PowerForm Delete Many sends powerForms objects', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', powerFormIds: 'pf-1, pf-2' }), httpResponses: [{}] });
+		await handlePowerForm(ctx, 'deleteList', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ powerForms: [{ powerFormId: 'pf-1' }, { powerFormId: 'pf-2' }] });
+	});
+
+	it('account custom field sends customFieldType', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', fieldType: 'text', name: 'Region', additionalFields: {} }), httpResponses: [{}] });
+		await handleAccountCustomField(ctx, 'create', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ customFieldType: 'text', name: 'Region' });
+	});
+
+	it('eNote configuration sends eNoteConfigured', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', eNoteEnabled: 'true' }), httpResponses: [{}] });
+		await handleENoteConfiguration(ctx, 'update', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ eNoteConfigured: 'true' });
+	});
+
+	it('template document update wraps the document in an envelopeDefinition', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', templateId: 'tp-1', documentId: '1', documentData: { content: [{ documentBase64: 'JVBERg==', name: 'c.pdf' }] } }), httpResponses: [{}] });
+		await handleTemplateDocument(ctx, 'update', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ documents: [{ documentBase64: 'JVBERg==', name: 'c.pdf', fileExtension: 'pdf', documentId: '1' }] });
+	});
+
+	it('historical republish converts an envelopeIds list to envelopes', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', requestBody: '{"envelopeIds":["e-1","e-2"]}' }), httpResponses: [{}] });
+		await handleConnectConfiguration(ctx, 'publishToConnect', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ envelopes: [{ envelopeId: 'e-1' }, { envelopeId: 'e-2' }] });
+	});
+
+	it('the spec check names a body key the schema does not define', () => {
+		expect(unknownBodyKeys('DELETE', `${DEMO}/accounts/a/powerforms`, { powerFormIds: ['x'] })).toEqual(['powerFormIds']);
+		expect(unknownBodyKeys('DELETE', `${DEMO}/accounts/a/powerforms`, { powerForms: [] })).toEqual([]);
+	});
+});
+
+describe('round 9c: attachment replace and tab alignment', () => {
+	it('Create with an Attachment ID to Replace updates that attachment', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', attachmentName: 'a.pdf', attachmentType: 'pdf', source: 'base64', base64Content: 'JVBERg==', replaceAttachmentId: 'a-7' }),
+			httpResponses: [{}],
+		});
+		await handleEnvelopeAttachment(ctx, 'create', 0);
+		const req = getRecordedRequests(ctx)[0].options;
+		expect(req.url).toBe(`${DEMO}/accounts/acct-1/envelopes/e-1/attachments/a-7`);
+		expect(req.body).toMatchObject({ attachmentId: 'a-7', name: 'a.pdf', data: 'JVBERg==' });
+	});
+
+	it.each([
+		[{ placementMethod: 'anchor', anchorString: '/x/', anchorHorizontalAlignment: 'left' }, false],
+		[{ tabId: 't-1', anchorHorizontalAlignment: 'left' }, true],
+	])('Left alignment is sent for %j', async (tab, sendEmptyValues) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [tab] }, sendEmptyValues }),
+			httpResponses: [{}],
+			typeVersion: 4,
+		});
+		await handleEnvelopeRecipientTab(ctx, sendEmptyValues ? 'update' : 'create', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0].anchorHorizontalAlignment).toBe('left');
+	});
+});
+
+// Round 9d: third branch review.
+
+describe('round 9d: JSON parameters accept an expression that is already an object', () => {
+	it('parseJsonInput passes objects and arrays through and parses text', () => {
+		expect(parseJsonInput({ a: 1 })).toEqual({ a: 1 });
+		expect(parseJsonInput([1])).toEqual([1]);
+		expect(parseJsonInput('{"a":1}')).toEqual({ a: 1 });
+		expect(() => parseJsonInput('{bad')).toThrow();
+	});
+
+	it('bulk send list create sends an object expression as the body', async () => {
+		const list = { name: 'L', bulkCopies: [] };
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', requestBody: list }), httpResponses: [{}] });
+		await handleBulkEnvelope(ctx, 'createBulkSendList', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual(list);
+	});
+
+	it('envelope workflow update sends an object expression as the body', async () => {
+		const workflow = { workflowStatus: 'paused' };
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', scope: 'envelope', envelopeId: 'e-1', requestBody: workflow }), httpResponses: [{}] });
+		await handleEnvelopeWorkflow(ctx, 'updateEnvelopeWorkflow', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual(workflow);
+	});
+
+	it('no handler parses a parameter with a bare JSON.parse', () => {
+		const dir = 'nodes/DocuSign/resources';
+		const offenders = readdirSync(dir)
+			.flatMap((r) => readdirSync(`${dir}/${r}`).filter((f) => f.endsWith('.handler.ts')).map((f) => `${dir}/${r}/${f}`))
+			.filter((f) => !f.endsWith('envelopeAttachment.handler.ts') && readFileSync(f, 'utf8').includes('JSON.parse('));
+		expect(offenders).toEqual([]);
+	});
+});
+
+describe('round 9d: witnesses name the signer they witness', () => {
+	it('envelope recipient add sends witnessFor', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientType: 'witnesses', recipientEmail: 'w@example.com', recipientName: 'W', recipientId: '2', additionalFields: { witnessFor: '1' } }),
+			httpResponses: [{}],
+		});
+		await handleRecipient(ctx, 'add', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { witnesses: IDataObject[] }).witnesses[0].witnessFor).toBe('1');
+	});
+
+	it('template recipient create sends witnessFor', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', templateId: 'tp-1', recipientType: 'witnesses', roleName: 'W', routingOrder: '1', additionalFields: { witnessFor: '1' } }),
+			httpResponses: [{}],
+		});
+		await handleTemplateRecipient(ctx, 'create', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { witnesses: IDataObject[] }).witnesses[0].witnessFor).toBe('1');
+	});
+});
+
+describe('round 9d: whole-word matching defaults to DocuSign', () => {
+	it('the default leaves anchorMatchWholeWord out, as releases before 3.4.0 did', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [{ placementMethod: 'anchor', anchorString: '/s/', anchorMatchWholeWord: '' }] } }),
+			httpResponses: [{}],
+		});
+		await handleEnvelopeRecipientTab(ctx, 'create', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0]).not.toHaveProperty('anchorMatchWholeWord');
+		for (const tabs of new DocuSign().description.properties.filter((p) => p.name === 'tabs')) {
+			const values = (tabs.options as Array<{ values: Array<{ name: string; default: unknown }> }>)[0].values;
+			expect(values.find((v) => v.name === 'anchorMatchWholeWord')?.default).toBe('');
+		}
+	});
+});
+
+describe('round 9d: the quick start names the template role', () => {
+	it('step 4 mentions the Role Name', () => {
+		expect(readFileSync('README.md', 'utf8')).toMatch(/4\. Pick your account, paste a template ID, add a template role with the Role Name/);
+	});
+});
+
+// Round 9e: fourth branch review.
+
+describe('round 9e: an existing subscription must match the requested settings', () => {
+	const methods = new DocuSignTrigger().webhookMethods.default;
+	const hook = (config: IDataObject, staticData: IDataObject) =>
+		Object.assign(createMockContext({ credentials: C, httpResponses: [{ configurations: [config] }, {}] }), {
+			getWorkflowStaticData: () => staticData,
+			getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/abc',
+			getNodeParameter: (name: string, fallback?: unknown) =>
+				(({ accountId: 'acct-1', events: ['envelope-completed'], options: { hmacSecret: 'k' } }) as IDataObject)[name] ?? fallback,
+			logger: { warn: jest.fn() },
+		}) as unknown as IHookFunctions;
+
+	it('re-registers a subscription listening to other events', async () => {
+		const staticData: IDataObject = { connectId: 'c-1' };
+		const ctx = hook({ urlToPublishTo: 'https://n8n.example.com/webhook/abc', events: ['envelope-sent'] }, staticData);
+		await expect(methods.checkExists.call(ctx)).resolves.toBe(false);
+		expect(getRecordedRequests(ctx as unknown as IExecuteFunctions).map((r) => r.options.method)).toEqual(['GET', 'DELETE']);
+		expect(staticData.connectId).toBeUndefined();
+	});
+
+	it('keeps a subscription with the same events, JSON SIM delivery and HMAC', () => {
+		expect(matchesSubscription({ events: ['envelope-completed'], eventData: { format: 'json' }, deliveryMode: 'SIM', includeHMAC: 'true' }, ['envelope-completed'])).toBe(true);
+		expect(matchesSubscription({ events: ['envelope-completed'], eventData: { format: 'xml' } }, ['envelope-completed'])).toBe(false);
+		expect(matchesSubscription({ events: ['envelope-completed'], includeHMAC: 'false' }, ['envelope-completed'])).toBe(false);
+		expect(matchesSubscription({ events: ['envelope-completed'], deliveryMode: 'Aggregate' }, ['envelope-completed'])).toBe(false);
+	});
+});
+
+describe('round 9e: Phone Auth sends phoneAuthentication', () => {
+	it('envelope create signer with sender numbers', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', emailSubject: 'Sign', status: 'created', additionalFields: {}, documents: { document: [] }, signers: { signer: [{ email: 'a@example.com', name: 'A', idCheckConfigurationName: 'Phone Auth $', phoneAuthNumbers: '+14155550100, +14155550101' }] } }),
+			httpResponses: [{}],
+		});
+		await handleEnvelope(ctx, 'create', 0);
+		const signer = (getRecordedRequests(ctx)[0].options.body as { recipients: { signers: IDataObject[] } }).recipients.signers[0];
+		expect(signer.phoneAuthentication).toEqual({ recipMayProvideNumber: 'false', senderProvidedNumbers: ['+14155550100', '+14155550101'] });
+	});
+
+	it('recipient add without numbers lets the recipient supply one', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientType: 'signers', recipientEmail: 'a@example.com', recipientName: 'A', recipientId: '1', additionalFields: { idCheckConfigurationName: 'Phone Auth $' } }),
+			httpResponses: [{}],
+		});
+		await handleRecipient(ctx, 'add', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0].phoneAuthentication).toEqual({ recipMayProvideNumber: 'true', senderProvidedNumbers: [] });
+	});
+});
+
+describe('round 9e: font size', () => {
+	const run = async (fontSize: string) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [{ placementMethod: 'anchor', anchorString: '/s/', fontSize }] } }),
+			httpResponses: [{}],
+			typeVersion: 4,
+		});
+		await handleEnvelopeRecipientTab(ctx, 'create', 0);
+		return (getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0];
+	};
+
+	it('sends a chosen Size 12', async () => {
+		expect((await run('size12')).fontSize).toBe('size12');
+	});
+
+	it('Account Default, the default, leaves fontSize out as earlier versions did', async () => {
+		expect(await run('')).not.toHaveProperty('fontSize');
+		for (const tabs of new DocuSign().description.properties.filter((p) => p.name === 'tabs')) {
+			const values = (tabs.options as Array<{ values: Array<{ name: string; default: unknown }> }>)[0].values;
+			expect(values.find((v) => v.name === 'fontSize')?.default).toBe('');
+		}
+	});
+});
+
+describe('round 9e: README describes the version 4 list rule', () => {
+	it('does not tell users the object-list rule is on version 3', () => {
+		const readme = readFileSync('README.md', 'utf8');
+		expect(readme).not.toContain('| Version 3 nodes output no items for list responses whose result arrays are empty');
+		expect(readme).toContain('that rule moved to version 4');
+	});
+});
+
+// Round 9f: fifth branch review.
+
+describe('round 9f: an empty list never swallows real data', () => {
+	it('a list response with data fields beside an empty array still outputs its item', () => {
+		expect(isEmptyListResponse('listSettings', { accountSettings: { allowInPerson: 'true' }, additionalSettings: [] })).toBe(false);
+		expect(isEmptyListResponse('list', { groups: [], resultSetSize: '0', totalSetSize: '0', nextUri: '' })).toBe(true);
+	});
+});
+
+describe('round 9f: request fields use the spec names', () => {
+	it('permission profile settings map to accountRoleSettings names', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', permissionProfileName: 'P', settings: { enableSequentialSigningAPI: 'false', enableVaulting: 'true', allowBulkSending: 'true' } }), httpResponses: [{}] });
+		await handleAccountPermissionProfile(ctx, 'create', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as IDataObject).settings).toEqual({ allowApiSequentialSigning: 'false', allowVaulting: 'true', allowBulkSending: 'true' });
+	});
+
+	it('user profile address uses addressInformation names', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', userId: 'u-1', additionalFields: { street1: '1 Main', street2: 'Apt 2', state: 'CA', zip: '94105', city: 'SF' } }), httpResponses: [{}] });
+		await handleUserProfile(ctx, 'update', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as IDataObject).address).toEqual({ address1: '1 Main', address2: 'Apt 2', stateOrProvince: 'CA', postalCode: '94105', city: 'SF' });
+	});
+
+	it('tab settings drop the two fields tabAccountSettings does not define', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', tabSettings: { tabLockingEnabled: 'true', enableAutoStamp: 'true', confirmInitialEnvelopeSend: 'false' } }), httpResponses: [{}] });
+		await handleAccountTabSetting(ctx, 'update', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ tabLockingEnabled: 'true' });
+		const field = JSON.stringify(new DocuSign().description.properties.find((p) => p.name === 'tabSettings'));
+		expect(field).not.toContain('enableAutoStamp');
+		expect(field).not.toContain('confirmInitialEnvelopeSend');
+	});
+});
+
+describe('round 9f: folders', () => {
+	const run = async (op: string, extra: IDataObject, typeVersion = 4) => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', folderId: 'f-1', searchFolderId: 'drafts', ...extra }), httpResponses: [{}], typeVersion });
+		await handleFolder(ctx, op, 0);
+		return (getRecordedRequests(ctx)[0].options.qs ?? {}) as IDataObject;
+	};
+
+	it('version 4 List Items asks for the items by default', async () => {
+		expect(await run('listItems', { filters: {} })).toEqual({ include_items: 'true' });
+	});
+
+	it('earlier versions keep the request they sent', async () => {
+		expect(await run('listItems', { filters: {} }, 3)).toEqual({});
+	});
+
+	it('list items and search send only parameters their routes define', async () => {
+		expect(await run('listItems', { filters: { count: 5, search_text: 'x' } })).toEqual({ search_text: 'x', include_items: 'true' });
+		expect(await run('search', { searchFilters: { search_text: 'x', count: 5 } })).toEqual({ count: 5 });
+	});
+});
+
+describe('round 9f: subscription settings must match', () => {
+	it('documents, certificate and acknowledgement settings are compared', () => {
+		const base = { events: ['envelope-completed'] };
+		expect(matchesSubscription({ ...base, includeDocuments: 'true' }, ['envelope-completed'], {})).toBe(false);
+		expect(matchesSubscription({ ...base, includeDocuments: 'true' }, ['envelope-completed'], { includeDocuments: true })).toBe(true);
+		expect(matchesSubscription({ ...base, requiresAcknowledgement: 'false' }, ['envelope-completed'], {})).toBe(false);
+		expect(matchesSubscription({ ...base, includeCertificateOfCompletion: 'true' }, ['envelope-completed'], {})).toBe(false);
+	});
+});
+
+describe('round 9g: saved tab values on versions 1 to 3 keep the 3.3.0 output', () => {
+	const run = async (tab: IDataObject, typeVersion: number) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [tab] } }),
+			httpResponses: [{}],
+			typeVersion,
+		});
+		await handleEnvelopeRecipientTab(ctx, 'create', 0);
+		return (getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0];
+	};
+	const saved = { placementMethod: 'anchor', anchorString: '/s/', anchorMatchWholeWord: 'false', anchorCaseSensitive: 'false', fontSize: 'size12', alignment: 'left' };
+
+	it.each([1, 2, 3])('version %i omits a saved No, Size 12 and Left', async (v) => {
+		const tab = await run(saved, v);
+		expect(tab).not.toHaveProperty('anchorMatchWholeWord');
+		expect(tab).not.toHaveProperty('anchorCaseSensitive');
+		expect(tab).not.toHaveProperty('fontSize');
+		expect(tab).not.toHaveProperty('tabLabelAlignment');
+		expect(tab).not.toHaveProperty('anchorHorizontalAlignment');
+	});
+
+	it.each([1, 2, 3])('version %i still sends a chosen Yes and Right', async (v) => {
+		const tab = await run({ ...saved, anchorMatchWholeWord: 'true', alignment: 'right', fontSize: 'size14' }, v);
+		expect(tab.anchorMatchWholeWord).toBe('true');
+		expect(tab.fontSize).toBe('size14');
+	});
+
+	it('version 4 sends the chosen No and Size 12', async () => {
+		const tab = await run(saved, 4);
+		expect(tab.anchorMatchWholeWord).toBe('false');
+		expect(tab.fontSize).toBe('size12');
+	});
+});
+
+describe('round 9g: an attached HMAC credential never falls back to the old option', () => {
+	const raw = Buffer.from('{"event":"envelope-sent","configurationId":"c-1"}');
+	const sig = createHmac('sha256', 'old-key').update(raw).digest('base64');
+	it('rejects a request signed with the old option key when the credential fails to load', async () => {
+		const status = jest.fn();
+		const ctx = {
+			getBodyData: () => JSON.parse(raw.toString()),
+			getHeaderData: () => ({ 'x-docusign-signature-1': sig }),
+			getNodeParameter: (name: string) => (name === 'events' ? ['envelope-sent'] : { hmacSecret: 'old-key' }),
+			getCredentials: async () => {
+				throw new Error('decryption failed');
+			},
+			getRequestObject: () => ({ rawBody: raw }),
+			getResponseObject: () => ({ status: (c: number) => (status(c), { json: jest.fn() }) }),
+			getWorkflowStaticData: () => ({ connectId: 'c-1' }),
+			getNode: () => ({ credentials: { docuSignConnectHmacApi: { id: '1', name: 'HMAC' } } }),
+			helpers: { returnJsonArray: (d: IDataObject) => [{ json: d }] },
+		} as unknown as IWebhookFunctions;
+		const result = await new DocuSignTrigger().webhook.call(ctx);
+		expect(result.workflowData).toBeUndefined();
+		expect(status).toHaveBeenCalledWith(401);
+	});
+});
+
+describe('round 9g: request bodies match the documented input', () => {
+	it.each([
+		['[{"authorizationId":"a-1"},{"authorizationId":"a-2"}]'],
+		['["a-1","a-2"]'],
+		['{"authorizations":[{"authorizationId":"a-1"},{"authorizationId":"a-2"}]}'],
+	])('batch revocation sends { authorizations } for %s', async (input) => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', userId: 'u-1', deleteAuthorizationsBody: input }), httpResponses: [{}] });
+		await handleAuthorization(ctx, 'deleteUserAuthorizations', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ authorizations: [{ authorizationId: 'a-1' }, { authorizationId: 'a-2' }] });
+	});
+
+	it.each([['["user@example.com"]'], ['[{"email":"user@example.com"}]']])('contact emails are strings for %s', async (emails) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', contactName: 'A', name: 'A', additionalFields: { emails } }),
+			httpResponses: [{}],
+		});
+		await handleUserContact(ctx, 'create', 0);
+		const body = getRecordedRequests(ctx)[0].options.body as { contactList: IDataObject[] };
+		expect(body.contactList[0].emails).toEqual(['user@example.com']);
+	});
+});
+
+describe('round 9g: access codes are masked in the editor', () => {
+	const collect = (props: unknown[], out: IDataObject[] = []): IDataObject[] => {
+		for (const p of props as IDataObject[]) {
+			if (p.name === 'accessCode' || p.name === 'activationAccessCode') out.push(p);
+			const opts = p.options as unknown[] | undefined;
+			if (Array.isArray(opts)) {
+				for (const o of opts as IDataObject[]) {
+					if (Array.isArray(o.values)) collect(o.values as unknown[], out);
+					else if (o.type) collect([o], out);
+				}
+			}
+		}
+		return out;
+	};
+	it('every access code field is a password field', () => {
+		const found = collect(new DocuSign().description.properties);
+		expect(found.length).toBeGreaterThan(3);
+		for (const p of found) expect((p.typeOptions as IDataObject)?.password).toBe(true);
+	});
+});
+
+describe('round 9h: ID check on versions 1 to 3 sends what 3.4.0 sent', () => {
+	it.each([1, 2, 3])('version %i: recipient add keeps a chosen No and adds nothing when unset', async (v) => {
+		const run = async (extra: IDataObject) => {
+			const ctx = createMockContext({
+				credentials: C,
+				parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientType: 'signers', recipientEmail: 'a@example.com', recipientName: 'A', recipientId: '1', additionalFields: { idCheckConfigurationName: 'ID Check $', ...extra } }),
+				httpResponses: [{}],
+				typeVersion: v,
+			});
+			await handleRecipient(ctx, 'add', 0);
+			return (getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0];
+		};
+		expect((await run({ requireIdLookup: 'false' })).requireIdLookup).toBe('false');
+		expect(await run({})).not.toHaveProperty('requireIdLookup');
+	});
+
+	it.each([1, 2, 3])('version %i: template signer and template recipient do not add requireIdLookup', async (v) => {
+		const t = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', templateName: 'T', emailSubject: 'S', name: 'T', description: '', additionalFields: {}, documents: { document: [] }, recipients: { signer: [{ roleName: 'R', idCheckConfigurationName: 'ID Check $' }] } }),
+			httpResponses: [{}],
+			typeVersion: v,
+		});
+		await handleTemplate(t, 'create', 0);
+		expect((getRecordedRequests(t)[0].options.body as { recipients: { signers: IDataObject[] } }).recipients.signers[0]).not.toHaveProperty('requireIdLookup');
+		const r = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', templateId: 'tp-1', recipientType: 'signers', roleName: 'R', routingOrder: '1', additionalFields: { idCheckConfigurationName: 'ID Check $' } }),
+			httpResponses: [{}],
+			typeVersion: v,
+		});
+		await handleTemplateRecipient(r, 'create', 0);
+		expect((getRecordedRequests(r)[0].options.body as { signers: IDataObject[] }).signers[0]).not.toHaveProperty('requireIdLookup');
+	});
+});
+
+describe('round 9i: envelope signer Require ID Lookup', () => {
+	const run = async (requireIdLookup: string | undefined, typeVersion: number) => {
+		const signer: IDataObject = { email: 'a@example.com', name: 'A', idCheckConfigurationName: 'ID Check $' };
+		if (requireIdLookup !== undefined) signer.requireIdLookup = requireIdLookup;
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', emailSubject: 'S', status: 'created', signers: { signer: [signer] }, documents: { document: [] }, additionalFields: {} }),
+			httpResponses: [{}],
+			typeVersion,
+		});
+		await handleEnvelope(ctx, 'create', 0);
+		return (getRecordedRequests(ctx)[0].options.body as { recipients: { signers: IDataObject[] } }).recipients.signers[0];
+	};
+	it('version 4 keeps a chosen No', async () => {
+		expect(await run('false', 4)).not.toHaveProperty('requireIdLookup');
+	});
+	it('version 4 Automatic turns it on with an ID check', async () => {
+		expect((await run('', 4)).requireIdLookup).toBe('true');
+	});
+	it.each([1, 2, 3])('version %i sends only a chosen Yes', async (v) => {
+		expect(await run('', v)).not.toHaveProperty('requireIdLookup');
+		expect(await run('false', v)).not.toHaveProperty('requireIdLookup');
+		expect((await run('true', v)).requireIdLookup).toBe('true');
+	});
+});
+
+describe('round 9j: workspace Update File matches the spec', () => {
+	it('version 4 sends PUT without a body or reading upload parameters', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', workspaceId: 'w-1', folderId: 'f-1', fileId: 'file-1' }),
+			httpResponses: [{}],
+			typeVersion: 4,
+		});
+		const getNodeParameter = jest.spyOn(ctx, 'getNodeParameter');
+		await handleWorkspaceItem(ctx, 'updateFile', 0);
+		const requests = getRecordedRequests(ctx);
+		expect(requests).toHaveLength(1);
+		expect(requests[0].options.method).toBe('PUT');
+		expect(requests[0].options.url).toBe(`${DEMO}/accounts/acct-1/workspaces/w-1/folders/f-1/files/file-1`);
+		expect(requests[0].options.body ?? {}).toEqual({});
+		for (const name of ['uploadSource', 'inputBinaryPropertyName', 'base64Content']) {
+			expect(getNodeParameter.mock.calls.some(([parameter]) => parameter === name)).toBe(false);
+		}
+	});
+
+	it('version 3 keeps sending fileBase64 and name', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', workspaceId: 'w-1', folderId: 'f-1', fileId: 'file-1', uploadSource: 'base64', base64Content: 'cGRm' }),
+			httpResponses: [{}],
+			typeVersion: 3,
+		});
+		await handleWorkspaceItem(ctx, 'updateFile', 0);
+		const requests = getRecordedRequests(ctx);
+		expect(requests).toHaveLength(1);
+		expect(requests[0].options.method).toBe('PUT');
+		expect(requests[0].options.url).toBe(`${DEMO}/accounts/acct-1/workspaces/w-1/folders/f-1/files/file-1`);
+		expect(requests[0].options.body).toEqual({ fileBase64: 'cGRm', name: 'upload' });
+	});
+});
+
+describe('round 9k: review i findings', () => {
+	it.each([
+		[4, 'false', 'false'],
+		[1, 'false', undefined],
+		[2, 'false', undefined],
+		[3, 'false', undefined],
+		[4, '', undefined],
+		[4, undefined, undefined],
+		[4, 'true', 'true'],
+	] as const)('version %i creates a custom tab with flags %s as %s', async (typeVersion, value, expected) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({
+				accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs',
+				tabs: { tab: [{ customTabId: 'custom-1', required: value, locked: value }] },
+			}),
+			httpResponses: [{}],
+			typeVersion,
+		});
+		await handleEnvelopeRecipientTab(ctx, 'create', 0);
+		const tab = (getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0];
+		expect(tab.customTabId).toBe('custom-1');
+		for (const field of ['required', 'locked']) {
+			if (expected === undefined) expect(tab).not.toHaveProperty(field);
+			else expect(tab[field]).toBe(expected);
+		}
+	});
+
+	it.each([
+		['displayAngle', '-45', '0, 45, 90'],
+		['font', 'Arial', 'courier, helvetica, timesnewroman'],
+		['transparency', '0.5', '5, 10, 15, 20, 25, 30, 35, 40, 45'],
+		['transparency', '31', '5, 10, 15, 20, 25, 30, 35, 40, 45'],
+	])('version 4 rejects invalid watermark %s %s', async (field, value, allowed) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', watermarkSettings: { [field]: value } }),
+			httpResponses: [{}],
+			typeVersion: 4,
+		});
+		await expect(handleAccountWatermark(ctx, 'update', 0)).rejects.toMatchObject({
+			name: 'NodeOperationError',
+			message: `${field} must be one of ${allowed}`,
+			context: { itemIndex: 0 },
+		});
+		expect(getRecordedRequests(ctx)).toHaveLength(0);
+	});
+
+	it('version 4 sends a lowercase watermark font with valid settings', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', watermarkSettings: { displayAngle: '45', font: 'Helvetica', transparency: '30' } }),
+			httpResponses: [{}],
+			typeVersion: 4,
+		});
+		await handleAccountWatermark(ctx, 'update', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ displayAngle: '45', font: 'helvetica', transparency: '30' });
+	});
+
+	it.each([1, 2, 3])('version %i sends legacy watermark settings unchanged', async (typeVersion) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', watermarkSettings: { displayAngle: '-45', font: 'Helvetica', transparency: '0.5' } }),
+			httpResponses: [{}],
+			typeVersion,
+		});
+		await handleAccountWatermark(ctx, 'update', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ displayAngle: '-45', font: 'Helvetica', transparency: '0.5' });
+	});
+
+	it('truncates an existing NodeApiError description while keeping its message and status', async () => {
+		const httpResponses: unknown[] = [];
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1' }), httpResponses });
+		const original = new NodeApiError(ctx.getNode(), {}, {
+			message: 'Existing API failure', httpCode: '400', description: 'A'.repeat(5000),
+		});
+		httpResponses.push(original);
+		const error = await docuSignRequest(ctx, 'GET', 'accounts/acct-1').catch((e: unknown) => e) as NodeApiError;
+		expect(error).toBeInstanceOf(NodeApiError);
+		expect(error.description?.length).toBeLessThanOrEqual(1000);
+		expect(error.description).toBe('A'.repeat(1000));
+		expect(error.message).toBe('Existing API failure');
+		expect(error.httpCode).toBe('400');
+	});
+});
+
+describe('round 9l: documentation pins', () => {
+	const read = (f: string) => require('fs').readFileSync(require('path').join(__dirname, '..', f), 'utf8') as string;
+
+	it('JWT setup names both consent hosts and the redirect URI', () => {
+		const field = new DocuSignJwtApi().properties.map((p) => `${p.displayName} ${String(p.description ?? '')}`).join(' ');
+		expect(field).toContain('account-d.docusign.com');
+		expect(field).toContain('account.docusign.com for Production');
+		expect(field).toContain('redirect_uri');
+		const readme = read('README.md');
+		expect(readme).toContain('`account-d.docusign.com` for Demo and `account.docusign.com` for Production');
+		expect(readme).toContain('Redirect URI');
+	});
+
+	it('README claims most of the API, not all of it', () => {
+		const readme = read('README.md');
+		expect(readme).toContain('Most of the eSignature API');
+		expect(readme).not.toMatch(/(entire|whole|full|complete) eSignature API/i);
+	});
+
+	it('package version matches the newest changelog entry and an upgrade section', () => {
+		const version = JSON.parse(read('package.json')).version as string;
+		expect(read('CHANGELOG.md').match(/## \[([0-9.]+)\]/)?.[1]).toBe(version);
+		expect(read('README.md')).toContain(`## Upgrading to ${version.split('.').slice(0, 2).join('.')}`);
+		expect(JSON.parse(read('package-lock.json')).version).toBe(version);
+	});
+});
+
+describe('round 9m: Required and Locked on Send Empty updates', () => {
+	const run = async (tab: IDataObject, typeVersion: number) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs', tabs: { tab: [tab] }, sendEmptyValues: true }),
+			httpResponses: [{}],
+			typeVersion,
+		});
+		await handleEnvelopeRecipientTab(ctx, 'update', 0);
+		return (getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0];
+	};
+
+	it.each([1, 2, 3])('version %i sends No when n8n fills the new empty default', async (v) => {
+		const tab = await run({ tabId: 'tab-1', required: '', locked: '' }, v);
+		expect(tab.required).toBe('false');
+		expect(tab.locked).toBe('false');
+	});
+
+	it.each([
+		[false, 'false'],
+		[true, 'true'],
+	])('version 4 sends an expression boolean %s as %s', async (value, expected) => {
+		const tab = await run({ tabId: 'tab-1', required: value, locked: value }, 4);
+		expect(tab.required).toBe(expected);
+		expect(tab.locked).toBe(expected);
 	});
 });

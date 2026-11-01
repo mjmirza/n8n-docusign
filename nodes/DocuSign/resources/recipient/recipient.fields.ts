@@ -106,7 +106,7 @@ export const recipientFields: INodeProperties[] = [
 			show: { resource: ['recipient', 'envelopeRecipient'], operation: ['add'] },
 		},
 		options: [
-			{ displayName: 'Access Code', name: 'accessCode', type: 'string', default: '', description: 'Access code for recipient authentication' },
+			{ displayName: 'Access Code', name: 'accessCode', type: 'string', typeOptions: { password: true }, default: '', description: 'Access code for recipient authentication' },
 			{ displayName: 'Client User ID', name: 'clientUserId', type: 'string', default: '', description: 'Set this for embedded signing' },
 			{ displayName: 'Delivery Method', name: 'deliveryMethod', type: 'options', options: [{ name: 'Email', value: 'email' }, { name: 'SMS', value: 'sms' }], default: 'email' },
 			{ displayName: 'Email Notification Body', name: 'emailNotificationBody', type: 'string', default: '', description: 'Override email body for this recipient' },
@@ -117,12 +117,14 @@ export const recipientFields: INodeProperties[] = [
 			{ displayName: 'Host Name (In-Person)', name: 'hostName', type: 'string', default: '', description: 'Host name for in-person signers' },
 			{ displayName: 'ID Check Config Name', name: 'idCheckConfigurationName', type: 'options', options: [{ name: 'None', value: '' }, { name: 'ID Check $', value: 'ID Check $' }, { name: 'ID Check $$', value: 'ID Check $$' }, { name: 'Phone Auth $', value: 'Phone Auth $' }], default: '' },
 			{ displayName: 'Note', name: 'note', type: 'string', default: '', description: 'A note sent to the recipient' },
+			{ displayName: 'Phone Auth Numbers', name: 'phoneAuthNumbers', type: 'string', default: '', description: 'For Phone Auth $: comma-separated numbers the recipient may use. Empty lets the recipient supply one.' },
 			{ displayName: 'Phone Number (for SMS)', name: 'phoneNumber', type: 'string', default: '', description: 'Required when delivery method is SMS. Country code, a space, then the number, e.g. +49 1701234567.' },
-			{ displayName: 'Require ID Lookup', name: 'requireIdLookup', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false', description: 'Require knowledge-based authentication' },
+			{ displayName: 'Require ID Lookup', name: 'requireIdLookup', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false', description: 'Require knowledge-based authentication. Turned on automatically when an ID Check Config Name is set.' },
 			{ displayName: 'Require Sign on Paper', name: 'requireSignOnPaper', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false' },
 			{ displayName: 'Role Name', name: 'roleName', type: 'string', default: '', description: 'Role name for template-based flows' },
 			{ displayName: 'Signer Name (In-Person)', name: 'signerName', type: 'string', default: '', description: 'Actual signer name for in-person signers' },
 			{ displayName: 'Signing Group ID', name: 'signingGroupId', type: 'string', default: '', description: 'Assign to a signing group' },
+			{ displayName: 'Witness For (Recipient ID)', name: 'witnessFor', type: 'string', default: '', description: 'For a Witness, the recipient ID of the signer being witnessed' },
 		],
 	},
 
@@ -150,7 +152,7 @@ export const recipientFields: INodeProperties[] = [
 			show: { resource: ['recipient', 'envelopeRecipient'], operation: ['update'] },
 		},
 		options: [
-			{ displayName: 'Access Code', name: 'accessCode', type: 'string', default: '' },
+			{ displayName: 'Access Code', name: 'accessCode', type: 'string', typeOptions: { password: true }, default: '' },
 			{ displayName: 'Client User ID', name: 'clientUserId', type: 'string', default: '' },
 			{ displayName: 'Delivery Method', name: 'deliveryMethod', type: 'options', options: [{ name: 'Email', value: 'email' }, { name: 'SMS', value: 'sms' }], default: 'email' },
 			{ displayName: 'Email', name: 'email', type: 'string', placeholder: 'name@email.com', default: '' },

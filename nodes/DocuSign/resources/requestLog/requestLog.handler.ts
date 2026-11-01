@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all Request Log operations.
@@ -35,7 +36,7 @@ export async function handleRequestLog(
 		case 'updateSettings': {
 			let body: IDataObject;
 			try {
-				body = JSON.parse(
+				body = parseJsonInput(
 					ctx.getNodeParameter('requestBody', i) as string,
 				) as IDataObject;
 			} catch {

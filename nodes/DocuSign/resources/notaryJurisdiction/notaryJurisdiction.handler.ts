@@ -1,6 +1,7 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, assertSafeId } from '../../transport';
+import { parseJsonInput } from '../../utils/jsonInput';
 
 /**
  * Handle all Notary Jurisdiction operations.
@@ -29,7 +30,7 @@ export async function handleNotaryJurisdiction(
 		case 'create': {
 			let body: IDataObject;
 			try {
-				body = JSON.parse(
+				body = parseJsonInput(
 					ctx.getNodeParameter('requestBody', i) as string,
 				) as IDataObject;
 			} catch {
@@ -45,7 +46,7 @@ export async function handleNotaryJurisdiction(
 			);
 			let body: IDataObject;
 			try {
-				body = JSON.parse(
+				body = parseJsonInput(
 					ctx.getNodeParameter('requestBody', i) as string,
 				) as IDataObject;
 			} catch {

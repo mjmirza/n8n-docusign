@@ -48,7 +48,7 @@ export const templateRecipientFields: INodeProperties[] = [
 		default: {},
 		displayOptions: { show: { resource: ['templateRecipient'], operation: ['create'] } },
 		options: [
-			{ displayName: 'Access Code', name: 'accessCode', type: 'string', default: '' },
+			{ displayName: 'Access Code', name: 'accessCode', type: 'string', typeOptions: { password: true }, default: '' },
 			{ displayName: 'Default Email', name: 'email', type: 'string', placeholder: 'name@email.com', default: '' },
 			{ displayName: 'Default Name', name: 'name', type: 'string', default: '' },
 			{ displayName: 'Delivery Method', name: 'deliveryMethod', type: 'options', options: [{ name: 'Email', value: 'email' }, { name: 'SMS', value: 'sms' }], default: 'email' },
@@ -63,6 +63,7 @@ export const templateRecipientFields: INodeProperties[] = [
 			{ displayName: 'Signer Name (In-Person)', name: 'signerName', type: 'string', default: '' },
 			{ displayName: 'Template Locked', name: 'templateLocked', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false' },
 			{ displayName: 'Template Required', name: 'templateRequired', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false' },
+			{ displayName: 'Witness For (Recipient ID)', name: 'witnessFor', type: 'string', default: '', description: 'For a Witness, the recipient ID of the signer being witnessed' },
 		],
 	},
 	{
@@ -73,7 +74,7 @@ export const templateRecipientFields: INodeProperties[] = [
 		default: {},
 		displayOptions: { show: { resource: ['templateRecipient'], operation: ['update'] } },
 		options: [
-			{ displayName: 'Access Code', name: 'accessCode', type: 'string', default: '' },
+			{ displayName: 'Access Code', name: 'accessCode', type: 'string', typeOptions: { password: true }, default: '' },
 			{ displayName: 'Delivery Method', name: 'deliveryMethod', type: 'options', options: [{ name: 'Email', value: 'email' }, { name: 'SMS', value: 'sms' }], default: 'email' },
 			{ displayName: 'Email', name: 'email', type: 'string', placeholder: 'name@email.com', default: '' },
 			{ displayName: 'Name', name: 'name', type: 'string', default: '' },

@@ -18,7 +18,7 @@ Send, track and manage DocuSign envelopes from any n8n workflow, without writing
 - **You hear the moment someone signs.** The DocuSign Trigger fires on completed, declined, voided and nine other events, so the next step starts within seconds instead of after someone checks the inbox.
 - **Signed PDFs land where they belong.** Download completed documents as n8n binary data and store them in your drive, CRM or archive in the same workflow.
 - **Templates do the heavy lifting.** Create envelopes from your existing DocuSign templates and fill the recipient roles from workflow data.
-- **The whole eSignature API is there when you need it.** 80 resources and 349 operations cover envelopes, templates, users, groups, PowerForms, Connect, billing and more.
+- **Most of the eSignature API is there when you need it.** 80 resources and 349 operations cover envelopes, templates, users, groups, PowerForms, Connect, billing and more.
 - **Failures are readable.** API errors show the DocuSign status code and reason in n8n, transient errors retry with backoff, and every ID is validated before a request leaves n8n.
 
 ## From install to first signed envelope
@@ -48,7 +48,7 @@ Reference. [DocuSign Authorization Code Grant](https://developers.docusign.com/p
 
 1. Use the same app, then under **Service Integration** choose **Generate RSA** and save the private key.
 2. Copy your **User ID** and **API Account ID** from the top of Apps and Keys.
-3. Grant consent once by opening the consent URL shown in the n8n credential form while logged in as that user.
+3. Add a **Redirect URI** to the app, then grant consent once by opening the consent URL shown in the n8n credential form while logged in as that user, with your integration key and that redirect URI. Use `account-d.docusign.com` for Demo and `account.docusign.com` for Production.
 4. In n8n create **DocuSign JWT API** and paste the Integration Key, User ID, private key and Account ID.
 
 Reference. [DocuSign JWT Grant](https://developers.docusign.com/platform/auth/jwt/)

@@ -309,7 +309,11 @@ export class DocuSignTrigger implements INodeType {
 				await requireHmacKey(this, options);
 
 				// includeHMAC makes DocuSign sign each event with the account's Connect keys.
+				// configurationType and deliveryMode are required by the spec; SIM sends one message per event.
 				const connectConfig: IDataObject = {
+					configurationType: 'custom',
+					deliveryMode: 'SIM',
+					enableLog: 'true',
 					urlToPublishTo: webhookUrl,
 					name: `n8n-${this.getNode().name}-${Date.now()}`,
 					allUsers: 'true',

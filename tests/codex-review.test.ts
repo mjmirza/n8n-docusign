@@ -29,6 +29,7 @@ import { handleTemplateLock } from '../nodes/DocuSign/resources/templateLock/tem
 import { handleFolder } from '../nodes/DocuSign/resources/folder/folder.handler';
 import { handleWorkspaceItem } from '../nodes/DocuSign/resources/workspaceItem/workspaceItem.handler';
 import { handleUser } from '../nodes/DocuSign/resources/user/user.handler';
+import { handleAccountBrand } from '../nodes/DocuSign/resources/accountBrand/accountBrand.handler';
 import { handleUserProfile } from '../nodes/DocuSign/resources/userProfile/userProfile.handler';
 import { handleEnvelopeTemplate } from '../nodes/DocuSign/resources/envelopeTemplate/envelopeTemplate.handler';
 import { handleEnvelopeComment } from '../nodes/DocuSign/resources/envelopeComment/envelopeComment.handler';
@@ -1583,5 +1584,93 @@ describe('round 9: an existing subscription still needs the HMAC key', () => {
 		}) as unknown as IHookFunctions;
 		await expect(methods.checkExists.call(ctx)).rejects.toThrow('HMAC');
 		expect(getRecordedRequests(ctx as unknown as IExecuteFunctions)).toHaveLength(0);
+	});
+});
+
+// Round 9, branch review: findings on the working tree before release.
+
+describe('round 9b: Connect registration sends the fields the spec requires', () => {
+	it('create sends configurationType, deliveryMode SIM and enableLog', async () => {
+		const methods = new DocuSignTrigger().webhookMethods.default;
+		const staticData: IDataObject = {};
+		const ctx = Object.assign(createMockContext({ credentials: C, httpResponses: [{ connectId: 'c-9' }] }), {
+			getWorkflowStaticData: () => staticData,
+			getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/abc',
+			getNodeParameter: (name: string, fallback?: unknown) =>
+				(({ accountId: 'acct-1', events: ['envelope-completed'], options: { hmacSecret: 'k' } }) as IDataObject)[name] ?? fallback,
+			logger: { warn: jest.fn() },
+		}) as unknown as IHookFunctions;
+		await methods.create.call(ctx);
+		expect(getRecordedRequests(ctx as unknown as IExecuteFunctions)[0].options.body).toMatchObject({
+			configurationType: 'custom',
+			deliveryMode: 'SIM',
+			enableLog: 'true',
+		});
+	});
+});
+
+describe('round 9b: choosing an ID check turns on requireIdLookup', () => {
+	it('template create signer', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', templateName: 'T', emailSubject: 'S', name: 'T', description: '', additionalFields: {}, documents: { document: [] }, recipients: { signer: [{ roleName: 'R', idCheckConfigurationName: 'ID Check $' }] } }),
+			httpResponses: [{}],
+		});
+		await handleTemplate(ctx, 'create', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { recipients: { signers: IDataObject[] } }).recipients.signers[0]).toMatchObject({ idCheckConfigurationName: 'ID Check $', requireIdLookup: 'true' });
+	});
+
+	it('template recipient create keeps an explicit value and fills a missing one', async () => {
+		const run = async (extra: IDataObject) => {
+			const ctx = createMockContext({
+				credentials: C,
+				parameters: params({ accountId: 'acct-1', templateId: 'tp-1', recipientType: 'signers', roleName: 'R', routingOrder: '1', additionalFields: { idCheckConfigurationName: 'ID Check $', ...extra } }),
+				httpResponses: [{}],
+			});
+			await handleTemplateRecipient(ctx, 'create', 0);
+			return (getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0].requireIdLookup;
+		};
+		expect(await run({})).toBe('true');
+		expect(await run({ requireIdLookup: 'false' })).toBe('false');
+	});
+
+	it('envelope recipient add', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientType: 'signers', recipientEmail: 'a@example.com', recipientName: 'A', recipientId: '1', additionalFields: { idCheckConfigurationName: 'ID Check $', requireIdLookup: 'false' } }),
+			httpResponses: [{}],
+		});
+		await handleRecipient(ctx, 'add', 0);
+		expect((getRecordedRequests(ctx)[0].options.body as { signers: IDataObject[] }).signers[0].requireIdLookup).toBe('true');
+	});
+});
+
+describe('round 9b: the declared n8n range matches the API the nodes use', () => {
+	it('states n8n 1.86.0, the first release whose n8n-workflow (1.84.0) exports NodeConnectionTypes', () => {
+		// n8n verification requires peerDependencies n8n-workflow "*", so the minimum is documented.
+		expect(readFileSync('README.md', 'utf8')).toContain('n8n 1.86.0 or later');
+		expect(readFileSync('README.md', 'utf8')).not.toContain('- n8n 1.x and 2.x, self-hosted.');
+		expect(new DocuSign().description.outputs).toEqual(['main']);
+	});
+});
+
+describe('round 9b: branding uploads follow the documented contract', () => {
+	const base = { accountId: 'acct-1', brandId: 'b-1', uploadSource: 'base64', base64Content: Buffer.from('<xml/>').toString('base64') };
+
+	it('logo upload names the file in Content-Disposition', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ ...base, logoType: 'primary' }), httpResponses: [{}] });
+		await handleAccountBrand(ctx, 'updateLogo', 0);
+		const headers = getRecordedRequests(ctx)[0].options.headers as Record<string, string>;
+		expect(headers['Content-Disposition']).toBe('form-data; name="file"; filename="logo_primary.png"');
+	});
+
+	it('resource upload is multipart/form-data with a file.xml part', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ ...base, resourceContentType: 'sending' }), httpResponses: [{}] });
+		await handleAccountBrand(ctx, 'updateResource', 0);
+		const req = getRecordedRequests(ctx)[0].options;
+		expect(String((req.headers as Record<string, string>)['Content-Type'])).toMatch(/^multipart\/form-data; boundary=/);
+		const body = Buffer.from(req.body as unknown as Buffer).toString();
+		expect(body).toContain('Content-Disposition: form-data; name="file.xml"; filename="sending.xml"');
+		expect(body).toContain('<xml/>');
 	});
 });

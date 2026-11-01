@@ -104,3 +104,28 @@ SDK model docs have been read as saying otherwise. Either way, an anchored tab n
 or No the user picked, so No never depends on DocuSign's default. Sending false where false is
 the default changes nothing for existing workflows. `anchorHorizontalAlignment` allows only
 `left` and `right` in the spec, so Center is gone from the picker and is rejected with a message.
+
+## Minimum n8n version is documented, not enforced
+
+The nodes use `NodeConnectionTypes.Main`, which n8n's verification scanner requires
+(`node-connection-type-literal` rejects the `'main'` literal). `n8n-workflow` first exports it in
+1.84.0, which ships with n8n 1.86.0, so the README states n8n 1.86.0 or later. The scanner also
+requires `peerDependencies["n8n-workflow"]` to be `"*"`, so the range cannot be narrowed there.
+
+## ID checks turn on requireIdLookup
+
+An `idCheckConfigurationName` only takes effect with `requireIdLookup: "true"`, so choosing an
+ID check sends both. Template recipient Create keeps an explicit `requireIdLookup` value.
+
+## Connect registration sets its type and delivery mode
+
+The v2.1 spec marks `configurationType` and `deliveryMode` required. The trigger creates a
+`custom` account-level configuration in `SIM` mode, the one-message-per-event JSON delivery its
+receiver verifies, with `enableLog` on for troubleshooting.
+
+## Brand uploads
+
+Logo upload sends the raw image with `Content-Disposition: form-data; name="file"; filename=...`,
+as the spec's description shows. Resource upload is `multipart/form-data` with a `file.xml` part,
+as the spec's `consumes` and form parameter define.
+

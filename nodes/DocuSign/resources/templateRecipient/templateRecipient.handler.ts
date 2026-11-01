@@ -39,7 +39,7 @@ export async function handleTemplateRecipient(
 
 			const directFields = [
 				'email', 'name', 'recipientId', 'accessCode', 'note',
-				'idCheckConfigurationName', 'templateLocked', 'templateRequired',
+				'idCheckConfigurationName', 'requireIdLookup', 'templateLocked', 'templateRequired',
 				'hostEmail', 'hostName', 'signerName',
 			];
 			for (const field of directFields) {
@@ -47,6 +47,8 @@ export async function handleTemplateRecipient(
 					recipient[field] = additionalFields[field];
 				}
 			}
+			// An ID check only applies with requireIdLookup true; an explicit value is kept.
+			if (recipient.idCheckConfigurationName && recipient.requireIdLookup === undefined) recipient.requireIdLookup = 'true';
 
 			applyDeliveryMethod(recipient, additionalFields.deliveryMethod, additionalFields.phoneNumber);
 

@@ -118,7 +118,7 @@ export const recipientFields: INodeProperties[] = [
 			{ displayName: 'ID Check Config Name', name: 'idCheckConfigurationName', type: 'options', options: [{ name: 'None', value: '' }, { name: 'ID Check $', value: 'ID Check $' }, { name: 'ID Check $$', value: 'ID Check $$' }, { name: 'Phone Auth $', value: 'Phone Auth $' }], default: '' },
 			{ displayName: 'Note', name: 'note', type: 'string', default: '', description: 'A note sent to the recipient' },
 			{ displayName: 'Phone Number (for SMS)', name: 'phoneNumber', type: 'string', default: '', description: 'Required when delivery method is SMS. Country code, a space, then the number, e.g. +49 1701234567.' },
-			{ displayName: 'Require ID Lookup', name: 'requireIdLookup', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false', description: 'Require knowledge-based authentication' },
+			{ displayName: 'Require ID Lookup', name: 'requireIdLookup', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false', description: 'Require knowledge-based authentication. Turned on automatically when an ID Check Config Name is set.' },
 			{ displayName: 'Require Sign on Paper', name: 'requireSignOnPaper', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false' },
 			{ displayName: 'Role Name', name: 'roleName', type: 'string', default: '', description: 'Role name for template-based flows' },
 			{ displayName: 'Signer Name (In-Person)', name: 'signerName', type: 'string', default: '', description: 'Actual signer name for in-person signers' },

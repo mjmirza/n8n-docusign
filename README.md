@@ -228,7 +228,7 @@ Saved workflows keep their parameters, no field was renamed or removed.
 
 ## Compatibility
 
-- n8n 1.x and 2.x, self-hosted. Tested against `n8n-workflow` 2.45.
+- n8n 1.86.0 or later (1.x and 2.x), self-hosted. Earlier n8n releases lack the `NodeConnectionTypes` export the nodes use. Tested against `n8n-workflow` 2.45.
 - n8n Cloud once the package passes n8n verification. It ships with no runtime dependencies and passes the `@n8n/scan-community-package` checks.
 - DocuSign eSignature REST API v2.1, demo and production environments.
 

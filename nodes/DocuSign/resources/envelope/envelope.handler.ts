@@ -113,7 +113,8 @@ export async function handleEnvelope(
 				if (s.note) signer.note = s.note;
 				applyDeliveryMethod(signer, s.deliveryMethod, s.phoneNumber);
 				if (s.idCheckConfigurationName) signer.idCheckConfigurationName = s.idCheckConfigurationName;
-				if (s.requireIdLookup === 'true') signer.requireIdLookup = 'true';
+				// An ID check only applies with requireIdLookup true, so choosing one turns it on.
+				if (s.requireIdLookup === 'true' || s.idCheckConfigurationName) signer.requireIdLookup = 'true';
 				if (s.requireSignOnPaper === 'true') signer.requireSignOnPaper = 'true';
 				if (s.embeddedRecipientStartURL) signer.embeddedRecipientStartURL = s.embeddedRecipientStartURL;
 				// Per-recipient email notification override; a language alone is enough to send it.

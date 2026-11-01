@@ -74,7 +74,11 @@ export async function handleTemplate(
 				if (s.email) signer.email = s.email;
 				if (s.name) signer.name = s.name;
 				if (s.accessCode) signer.accessCode = s.accessCode;
-				if (s.idCheckConfigurationName) signer.idCheckConfigurationName = s.idCheckConfigurationName;
+				// An ID check only applies with requireIdLookup true, so choosing one turns it on.
+				if (s.idCheckConfigurationName) {
+					signer.idCheckConfigurationName = s.idCheckConfigurationName;
+					signer.requireIdLookup = 'true';
+				}
 				if (s.deliveryMethod && s.deliveryMethod !== 'email') {
 					applyDeliveryMethod(signer, s.deliveryMethod, s.phoneNumber);
 				}

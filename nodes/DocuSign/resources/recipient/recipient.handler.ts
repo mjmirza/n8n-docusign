@@ -77,6 +77,8 @@ export async function handleRecipient(
 					recipient[field] = additionalFields[field];
 				}
 			}
+			// An ID check only applies with requireIdLookup true, so choosing one turns it on.
+			if (recipient.idCheckConfigurationName) recipient.requireIdLookup = 'true';
 
 			// Delivery method + phone
 			applyDeliveryMethod(recipient, additionalFields.deliveryMethod, additionalFields.phoneNumber);

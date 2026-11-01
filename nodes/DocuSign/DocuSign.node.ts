@@ -394,9 +394,9 @@ export class DocuSign implements INodeType {
 		name: 'docuSign',
 		icon: { light: 'file:docusign.light.svg', dark: 'file:docusign.dark.svg' },
 		group: ['transform'],
-		// Versions 1 and 2 behave the same; version 2 is the default for new nodes.
-		version: [1, 2],
-		defaultVersion: 2,
+		// Version 3: a list with no results outputs no items. Versions 1 and 2 keep one count item.
+		version: [1, 2, 3],
+		defaultVersion: 3,
 		subtitle:
 			'={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description:
@@ -606,6 +606,9 @@ export class DocuSign implements INodeType {
 			throw new NodeOperationError(this.getNode(), `Unknown resource: ${resource}`);
 		}
 
+		// From node version 3 an empty list is no items, so downstream nodes do not run on nothing.
+		const emptyMeansNoItems = this.getNode().typeVersion >= 3;
+
 		for (let i = 0; i < items.length; i++) {
 			try {
 				const result = await handler(this, operation, i);
@@ -614,7 +617,7 @@ export class DocuSign implements INodeType {
 					returnData.push({ json: { success: true }, pairedItem: { item: i } });
 				} else if (Array.isArray(result)) {
 					if (result.length === 0) {
-						returnData.push({ json: { success: true, count: 0 }, pairedItem: { item: i } });
+						if (!emptyMeansNoItems) returnData.push({ json: { success: true, count: 0 }, pairedItem: { item: i } });
 					} else {
 						for (const entry of result) {
 							returnData.push({
@@ -629,7 +632,7 @@ export class DocuSign implements INodeType {
 						returnData.push({ ...(result as INodeExecutionData), pairedItem: { item: i } });
 					} else if (Array.isArray(obj.data)) {
 						if (obj.data.length === 0) {
-							returnData.push({ json: { success: true, count: 0 }, pairedItem: { item: i } });
+							if (!emptyMeansNoItems) returnData.push({ json: { success: true, count: 0 }, pairedItem: { item: i } });
 						} else {
 							for (const entry of obj.data) {
 								returnData.push({

@@ -66,3 +66,30 @@ knows the field ID, and field IDs are unique across both kinds, so it names the 
 
 Writes can append, for example attachments through `PUT .../attachments`, so POST, PUT, PATCH
 and DELETE retry only on 429, which DocuSign rejects before processing.
+
+## Notification: both blocks are always sent
+
+DocuSign sets any reminders or expirations value a request leaves out to 0, and an envelope
+with `ExpireAfter` 0 expires the next day ([DocuSign developer blog, reminders and
+expirations](https://www.docusign.com/blog/developers/dsdev-trenches-reminders-expirations)).
+So a request with reminders and no expirations also sends `expirations.expireEnabled: false`,
+which the v2.1 spec defines as "the default expiration account setting". `expireAfter` and the
+reminder values only apply when their block is enabled, so setting one without the flag enables it.
+
+## Trigger: a valid signature is not enough
+
+DocuSign signs every Connect configuration's events with the account's HMAC keys. After the
+signature check the trigger also requires the event name to be one it subscribed to and the
+payload's `configurationId` to match its own subscription. Other events get HTTP 200 and do not
+run the workflow, so DocuSign does not retry them.
+
+## Node version 3: an empty list outputs no items
+
+Versions 1 and 2 output one `{ success: true, count: 0 }` item for an empty list, and saved
+workflows keep that. From version 3 an empty list outputs no items, so downstream nodes do not
+run on nothing. New nodes use version 3.
+
+## Connect log Status is the envelope status
+
+`connectLog.status` is the envelope status (Sent, Completed, Voided, ...). Failed deliveries are
+listed by Get Event Failures, so the Status description points there instead of suggesting Failed.

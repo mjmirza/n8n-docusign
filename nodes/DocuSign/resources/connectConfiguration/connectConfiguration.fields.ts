@@ -111,7 +111,7 @@ export const connectConfigurationFields: INodeProperties[] = [
 				name: 'status',
 				type: 'string',
 				default: '',
-				description: 'Keep only log entries with this status (e.g., "Failed", "Sent"), checked after DocuSign returns them',
+				description: 'Keep only log entries for envelopes in this status (e.g., "Sent", "Completed", "Voided"), checked after DocuSign returns them. For failed deliveries use Get Event Failures.',
 			},
 		],
 	},

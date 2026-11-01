@@ -1,6 +1,6 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-import { applyDeliveryMethod } from '../../utils/recipientDelivery';
+import { applyDeliveryMethod, buildRecipientEmailNotification } from '../../utils/recipientDelivery';
 import {
 	docuSignRequest,
 	docuSignGetAll,
@@ -8,7 +8,7 @@ import {
 	envelopePath,
 	accountPath,
 } from '../../transport';
-import { buildNotificationBody } from '../../utils/notification';
+import { buildNotificationBody, completeNotification } from '../../utils/notification';
 
 /**
  * Build the recipients object with signer tabs from node parameters.
@@ -116,14 +116,9 @@ export async function handleEnvelope(
 				if (s.requireIdLookup === 'true') signer.requireIdLookup = 'true';
 				if (s.requireSignOnPaper === 'true') signer.requireSignOnPaper = 'true';
 				if (s.embeddedRecipientStartURL) signer.embeddedRecipientStartURL = s.embeddedRecipientStartURL;
-				// Per-recipient email notification override
-				if (s.emailNotificationSubject || s.emailNotificationBody) {
-					signer.emailNotification = {
-						emailSubject: s.emailNotificationSubject || '',
-						emailBody: s.emailNotificationBody || '',
-						supportedLanguage: s.supportedLanguage || '',
-					};
-				}
+				// Per-recipient email notification override; a language alone is enough to send it.
+				const emailNotification = buildRecipientEmailNotification(s);
+				if (emailNotification) signer.emailNotification = emailNotification;
 				return signer;
 			});
 
@@ -246,7 +241,7 @@ export async function handleEnvelope(
 						reminderFrequency: String(additionalFields.reminderFrequency || 2),
 					};
 				}
-				body.notification = notification;
+				body.notification = completeNotification(notification);
 			}
 
 			// Event notification (per-envelope webhook)

@@ -407,10 +407,29 @@ export class DocuSignTrigger implements INodeType {
 			return { noWebhookResponse: true };
 		}
 
+		// A valid signature proves the account, not the subscription: DocuSign signs every
+		// configuration's events with the same keys. Skip events this trigger did not ask for.
+		if (!isForThisSubscription(this, body)) {
+			this.getResponseObject().status(200).json({ ignored: true });
+			return { noWebhookResponse: true };
+		}
+
 		return {
 			workflowData: [this.helpers.returnJsonArray(body)],
 		};
 	}
+}
+
+/** True when the event name and Connect configuration match this trigger's subscription. */
+export function isForThisSubscription(ctx: IWebhookFunctions, body: IDataObject): boolean {
+	const configured = ctx.getNodeParameter('events', []);
+	const events = Array.isArray(configured) ? (configured as string[]) : [];
+	if (typeof body.event === 'string' && events.length > 0 && !events.includes(body.event)) return false;
+	const connectId = ctx.getWorkflowStaticData('node').connectId;
+	if (body.configurationId !== undefined && connectId !== undefined && String(body.configurationId) !== String(connectId)) {
+		return false;
+	}
+	return true;
 }
 
 /** The HMAC credential wins; the deprecated node option is the fallback for older workflows. */

@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, envelopePath, templatePath, assertSafeId } from '../../transport';
 
 const VALID_SCOPES = ['envelope', 'template'] as const;
@@ -22,7 +23,7 @@ function parseBody(ctx: IExecuteFunctions, i: number): IDataObject {
 	try {
 		return JSON.parse(raw) as IDataObject;
 	} catch {
-		throw new Error('Request body must be valid JSON');
+		throw new NodeOperationError(ctx.getNode(), 'Request body must be valid JSON');
 	}
 }
 

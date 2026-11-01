@@ -6,7 +6,7 @@ export const documentOperations: INodeProperties[] = [
 		name: 'operation',
 		type: 'options',
 		noDataExpression: true,
-		displayOptions: { show: { resource: ['document'] } },
+		displayOptions: { show: { resource: ['document', 'envelopeDocument'] } },
 		options: [
 			{
 				name: 'Download',
@@ -17,7 +17,7 @@ export const documentOperations: INodeProperties[] = [
 			{
 				name: 'Get Many',
 				value: 'getAll',
-				description: 'List all documents in an envelope',
+				description: 'List many documents in an envelope',
 				action: 'Get many documents',
 			},
 		],

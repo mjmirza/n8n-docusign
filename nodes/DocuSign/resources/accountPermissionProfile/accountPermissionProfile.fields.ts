@@ -51,14 +51,34 @@ export const accountPermissionProfileFields: INodeProperties[] = [
 		},
 		options: [
 			{
-				displayName: 'Use New DocuSign Experience Interface',
-				name: 'useNewDocuSignExperienceInterface',
+				displayName: 'Allow API Access',
+				name: 'allowApiAccess',
 				type: 'options',
 				options: [
 					{ name: 'Yes', value: 'true' },
 					{ name: 'No', value: 'false' },
 				],
 				default: 'true',
+			},
+			{
+				displayName: 'Allow API Access to Account',
+				name: 'allowApiAccessToAccount',
+				type: 'options',
+				options: [
+					{ name: 'Yes', value: 'true' },
+					{ name: 'No', value: 'false' },
+				],
+				default: 'true',
+			},
+			{
+				displayName: 'Allow API Sending on Behalf of Others',
+				name: 'allowApiSendingOnBehalfOfOthers',
+				type: 'options',
+				options: [
+					{ name: 'Yes', value: 'true' },
+					{ name: 'No', value: 'false' },
+				],
+				default: 'false',
 			},
 			{
 				displayName: 'Allow Bulk Sending',
@@ -121,46 +141,6 @@ export const accountPermissionProfileFields: INodeProperties[] = [
 				default: 'true',
 			},
 			{
-				displayName: 'Allow API Access',
-				name: 'allowApiAccess',
-				type: 'options',
-				options: [
-					{ name: 'Yes', value: 'true' },
-					{ name: 'No', value: 'false' },
-				],
-				default: 'true',
-			},
-			{
-				displayName: 'Allow API Access to Account',
-				name: 'allowApiAccessToAccount',
-				type: 'options',
-				options: [
-					{ name: 'Yes', value: 'true' },
-					{ name: 'No', value: 'false' },
-				],
-				default: 'true',
-			},
-			{
-				displayName: 'Allow API Sending on Behalf of Others',
-				name: 'allowApiSendingOnBehalfOfOthers',
-				type: 'options',
-				options: [
-					{ name: 'Yes', value: 'true' },
-					{ name: 'No', value: 'false' },
-				],
-				default: 'false',
-			},
-			{
-				displayName: 'Enable Vaulting',
-				name: 'enableVaulting',
-				type: 'options',
-				options: [
-					{ name: 'Yes', value: 'true' },
-					{ name: 'No', value: 'false' },
-				],
-				default: 'false',
-			},
-			{
 				displayName: 'Enable Sequential Signing API',
 				name: 'enableSequentialSigningAPI',
 				type: 'options',
@@ -179,6 +159,26 @@ export const accountPermissionProfileFields: INodeProperties[] = [
 					{ name: 'No', value: 'false' },
 				],
 				default: 'false',
+			},
+			{
+				displayName: 'Enable Vaulting',
+				name: 'enableVaulting',
+				type: 'options',
+				options: [
+					{ name: 'Yes', value: 'true' },
+					{ name: 'No', value: 'false' },
+				],
+				default: 'false',
+			},
+			{
+				displayName: 'Use New DocuSign Experience Interface',
+				name: 'useNewDocuSignExperienceInterface',
+				type: 'options',
+				options: [
+					{ name: 'Yes', value: 'true' },
+					{ name: 'No', value: 'false' },
+				],
+				default: 'true',
 			},
 		],
 	},

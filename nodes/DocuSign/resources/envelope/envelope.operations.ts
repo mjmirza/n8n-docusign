@@ -39,16 +39,16 @@ export const envelopeOperations: INodeProperties[] = [
 				action: 'Get an envelope',
 			},
 			{
-				name: 'Get Many',
-				value: 'getAll',
-				description: 'Get many envelopes',
-				action: 'Get many envelopes',
-			},
-			{
 				name: 'Get Embedded Signing URL',
 				value: 'getSigningUrl',
 				description: 'Generate an embedded signing URL for a recipient',
 				action: 'Get embedded signing URL',
+			},
+			{
+				name: 'Get Many',
+				value: 'getAll',
+				description: 'Get many envelopes',
+				action: 'Get many envelopes',
 			},
 			{
 				name: 'Send',

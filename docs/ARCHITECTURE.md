@@ -16,7 +16,7 @@ n8n-docusign/
 │   └── DocuSign/
 │       ├── DocuSign.node.ts                # Main action node
 │       ├── DocuSignTrigger.node.ts         # Webhook trigger (DocuSign Connect)
-│       ├── docusign.svg                    # Node icon
+│       ├── docusign.{light,dark}.svg        # Node and credential icons
 │       ├── transport.ts                    # HTTP client, retry, pagination, CRUD factory
 │       ├── utils/
 │       │   ├── descriptions.ts             # Shared field definitions, category/resource maps

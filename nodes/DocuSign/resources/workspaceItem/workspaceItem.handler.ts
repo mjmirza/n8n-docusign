@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
 
 /**
@@ -118,7 +119,7 @@ export async function handleWorkspaceItem(
 					ctx.getNodeParameter('itemsJson', i) as string,
 				);
 			} catch {
-				throw new Error('Invalid JSON in items');
+				throw new NodeOperationError(ctx.getNode(), 'Invalid JSON in items');
 			}
 
 			// Validate itemIds

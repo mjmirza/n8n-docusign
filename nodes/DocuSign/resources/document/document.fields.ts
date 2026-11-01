@@ -13,7 +13,7 @@ export const documentFields: INodeProperties[] = [
 		description:
 			'The DocuSign Account ID (GUID). Find it in DocuSign Admin > Account > API.',
 		displayOptions: {
-			show: { resource: ['document'] },
+			show: { resource: ['document', 'envelopeDocument'] },
 		},
 	},
 
@@ -28,7 +28,7 @@ export const documentFields: INodeProperties[] = [
 		default: '',
 		description: 'The ID (GUID) of the envelope',
 		displayOptions: {
-			show: { resource: ['document'] },
+			show: { resource: ['document', 'envelopeDocument'] },
 		},
 	},
 
@@ -44,7 +44,7 @@ export const documentFields: INodeProperties[] = [
 		description:
 			'The numeric ID of the document to download. Use "combined" for all documents merged, "archive" for a ZIP, or "certificate" for the Certificate of Completion.',
 		displayOptions: {
-			show: { resource: ['document'], operation: ['download'] },
+			show: { resource: ['document', 'envelopeDocument'], operation: ['download'] },
 		},
 	},
 
@@ -58,7 +58,7 @@ export const documentFields: INodeProperties[] = [
 		default: 'data',
 		description: 'The name of the binary property to store the downloaded file',
 		displayOptions: {
-			show: { resource: ['document'], operation: ['download'] },
+			show: { resource: ['document', 'envelopeDocument'], operation: ['download'] },
 		},
 	},
 ];

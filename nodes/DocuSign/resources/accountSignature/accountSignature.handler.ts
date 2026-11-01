@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
 
 const VALID_IMAGE_TYPES = new Set(['signature_image', 'initials_image']);
@@ -35,7 +36,7 @@ export async function handleAccountSignature(
 					ctx.getNodeParameter('requestBody', i) as string,
 				) as IDataObject;
 			} catch {
-				throw new Error('Invalid JSON in request body');
+				throw new NodeOperationError(ctx.getNode(), 'Invalid JSON in request body');
 			}
 			return docuSignRequest(ctx, 'POST', basePath, body);
 		}
@@ -47,7 +48,7 @@ export async function handleAccountSignature(
 					ctx.getNodeParameter('requestBody', i) as string,
 				) as IDataObject;
 			} catch {
-				throw new Error('Invalid JSON in request body');
+				throw new NodeOperationError(ctx.getNode(), 'Invalid JSON in request body');
 			}
 			return docuSignRequest(ctx, 'PUT', basePath, body);
 		}
@@ -63,7 +64,7 @@ export async function handleAccountSignature(
 					ctx.getNodeParameter('requestBody', i) as string,
 				) as IDataObject;
 			} catch {
-				throw new Error('Invalid JSON in request body');
+				throw new NodeOperationError(ctx.getNode(), 'Invalid JSON in request body');
 			}
 			return docuSignRequest(ctx, 'PUT', `${basePath}/${signatureId}`, body);
 		}

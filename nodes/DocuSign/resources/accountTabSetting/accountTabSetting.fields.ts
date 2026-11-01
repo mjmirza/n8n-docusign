@@ -30,28 +30,6 @@ export const accountTabSettingFields: INodeProperties[] = [
 				description: 'Whether to allow tab ordering',
 			},
 			{
-				displayName: 'Tab Locking Enabled',
-				name: 'tabLockingEnabled',
-				type: 'options',
-				options: [
-					{ name: 'Yes', value: 'true' },
-					{ name: 'No', value: 'false' },
-				],
-				default: 'false',
-				description: 'Whether tab locking is enabled',
-			},
-			{
-				displayName: 'Tab Text Formatting Enabled',
-				name: 'tabTextFormattingEnabled',
-				type: 'options',
-				options: [
-					{ name: 'Yes', value: 'true' },
-					{ name: 'No', value: 'false' },
-				],
-				default: 'false',
-				description: 'Whether tab text formatting is enabled',
-			},
-			{
 				displayName: 'Confirm Initial Envelope Send',
 				name: 'confirmInitialEnvelopeSend',
 				type: 'options',
@@ -72,6 +50,28 @@ export const accountTabSettingFields: INodeProperties[] = [
 				],
 				default: 'true',
 				description: 'Whether automatic stamping is enabled',
+			},
+			{
+				displayName: 'Tab Locking Enabled',
+				name: 'tabLockingEnabled',
+				type: 'options',
+				options: [
+					{ name: 'Yes', value: 'true' },
+					{ name: 'No', value: 'false' },
+				],
+				default: 'false',
+				description: 'Whether tab locking is enabled',
+			},
+			{
+				displayName: 'Tab Text Formatting Enabled',
+				name: 'tabTextFormattingEnabled',
+				type: 'options',
+				options: [
+					{ name: 'Yes', value: 'true' },
+					{ name: 'No', value: 'false' },
+				],
+				default: 'false',
+				description: 'Whether tab text formatting is enabled',
 			},
 		],
 	},

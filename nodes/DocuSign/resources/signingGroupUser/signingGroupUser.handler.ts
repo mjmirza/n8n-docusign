@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
 
 /**
@@ -29,7 +30,7 @@ export async function handleSigningGroupUser(
 					ctx.getNodeParameter('requestBody', i) as string,
 				);
 			} catch {
-				throw new Error('Invalid JSON in request body');
+				throw new NodeOperationError(ctx.getNode(), 'Invalid JSON in request body');
 			}
 			return docuSignRequest(ctx, 'PUT', basePath, { users } as unknown as IDataObject);
 		}
@@ -41,7 +42,7 @@ export async function handleSigningGroupUser(
 					ctx.getNodeParameter('requestBody', i) as string,
 				);
 			} catch {
-				throw new Error('Invalid JSON in request body');
+				throw new NodeOperationError(ctx.getNode(), 'Invalid JSON in request body');
 			}
 			return docuSignRequest(ctx, 'DELETE', basePath, { users } as unknown as IDataObject);
 		}

@@ -1,9 +1,13 @@
-import type { ICredentialType, INodeProperties } from 'n8n-workflow';
+import type { Icon, ICredentialType, INodeProperties } from 'n8n-workflow';
 
 export class DocuSignOAuth2Api implements ICredentialType {
 	name = 'docuSignOAuth2Api';
 	extends = ['oAuth2Api'];
 	displayName = 'DocuSign OAuth2 API';
+	icon: Icon = {
+		light: 'file:../nodes/DocuSign/docusign.light.svg',
+		dark: 'file:../nodes/DocuSign/docusign.dark.svg',
+	};
 	documentationUrl = 'https://developers.docusign.com/platform/auth/authcode/';
 
 	properties: INodeProperties[] = [

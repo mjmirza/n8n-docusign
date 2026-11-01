@@ -72,6 +72,13 @@ export const userContactFields: INodeProperties[] = [
 				description: 'Array of phone number objects, e.g. [{"phoneNumber": "555-1234", "phoneType": "mobile"}]',
 			},
 			{
+				displayName: 'Shared Contact',
+				name: 'shared',
+				type: 'boolean',
+				default: false,
+				description: 'Whether the contact is shared',
+			},
+			{
 				displayName: 'Signing Group',
 				name: 'signingGroup',
 				type: 'string',
@@ -83,14 +90,6 @@ export const userContactFields: INodeProperties[] = [
 				name: 'signingGroupName',
 				type: 'string',
 				default: '',
-				description: 'The signing group name',
-			},
-			{
-				displayName: 'Shared Contact',
-				name: 'shared',
-				type: 'boolean',
-				default: false,
-				description: 'Whether the contact is shared',
 			},
 		],
 	},

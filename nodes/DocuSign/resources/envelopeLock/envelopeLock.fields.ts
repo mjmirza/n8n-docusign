@@ -57,6 +57,7 @@ export const envelopeLockFields: INodeProperties[] = [
 		displayName: 'Lock Token',
 		name: 'lockToken',
 		type: 'string',
+		typeOptions: { password: true },
 		default: '',
 		description: 'The lock token received when the lock was created (required for update/delete)',
 		displayOptions: {

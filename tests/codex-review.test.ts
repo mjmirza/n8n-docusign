@@ -54,6 +54,7 @@ import { handleBillingPlan } from '../nodes/DocuSign/resources/billingPlan/billi
 import { handleEnvelopeCustomField } from '../nodes/DocuSign/resources/envelopeCustomField/envelopeCustomField.handler';
 import { handleTemplateCustomField } from '../nodes/DocuSign/resources/templateCustomField/templateCustomField.handler';
 import { handleAccount } from '../nodes/DocuSign/resources/account/account.handler';
+import { handleAccountWatermark } from '../nodes/DocuSign/resources/accountWatermark/accountWatermark.handler';
 import { matchSpecRoute, unknownBodyKeys, unknownQueryParams } from './setup/spec-routes';
 import { toRecipientPhone } from '../nodes/DocuSign/utils/recipientDelivery';
 import { readFileSync, readdirSync } from 'fs';
@@ -2186,5 +2187,118 @@ describe('round 9j: workspace Update File matches the spec', () => {
 		expect(requests[0].options.method).toBe('PUT');
 		expect(requests[0].options.url).toBe(`${DEMO}/accounts/acct-1/workspaces/w-1/folders/f-1/files/file-1`);
 		expect(requests[0].options.body).toEqual({ fileBase64: 'cGRm', name: 'upload' });
+	});
+});
+
+describe('round 9k: review i findings', () => {
+	it.each([
+		[4, 'false', 'false'],
+		[1, 'false', undefined],
+		[2, 'false', undefined],
+		[3, 'false', undefined],
+		[4, '', undefined],
+		[4, undefined, undefined],
+		[4, 'true', 'true'],
+	] as const)('version %i creates a custom tab with flags %s as %s', async (typeVersion, value, expected) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({
+				accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'textTabs',
+				tabs: { tab: [{ customTabId: 'custom-1', required: value, locked: value }] },
+			}),
+			httpResponses: [{}],
+			typeVersion,
+		});
+		await handleEnvelopeRecipientTab(ctx, 'create', 0);
+		const tab = (getRecordedRequests(ctx)[0].options.body as { textTabs: IDataObject[] }).textTabs[0];
+		expect(tab.customTabId).toBe('custom-1');
+		for (const field of ['required', 'locked']) {
+			if (expected === undefined) expect(tab).not.toHaveProperty(field);
+			else expect(tab[field]).toBe(expected);
+		}
+	});
+
+	it.each([
+		['displayAngle', '-45', '0, 45, 90'],
+		['font', 'Arial', 'courier, helvetica, timesnewroman'],
+		['transparency', '0.5', '5, 10, 15, 20, 25, 30, 35, 40, 45'],
+		['transparency', '31', '5, 10, 15, 20, 25, 30, 35, 40, 45'],
+	])('version 4 rejects invalid watermark %s %s', async (field, value, allowed) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', watermarkSettings: { [field]: value } }),
+			httpResponses: [{}],
+			typeVersion: 4,
+		});
+		await expect(handleAccountWatermark(ctx, 'update', 0)).rejects.toMatchObject({
+			name: 'NodeOperationError',
+			message: `${field} must be one of ${allowed}`,
+			context: { itemIndex: 0 },
+		});
+		expect(getRecordedRequests(ctx)).toHaveLength(0);
+	});
+
+	it('version 4 sends a lowercase watermark font with valid settings', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', watermarkSettings: { displayAngle: '45', font: 'Helvetica', transparency: '30' } }),
+			httpResponses: [{}],
+			typeVersion: 4,
+		});
+		await handleAccountWatermark(ctx, 'update', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ displayAngle: '45', font: 'helvetica', transparency: '30' });
+	});
+
+	it.each([1, 2, 3])('version %i sends legacy watermark settings unchanged', async (typeVersion) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', watermarkSettings: { displayAngle: '-45', font: 'Helvetica', transparency: '0.5' } }),
+			httpResponses: [{}],
+			typeVersion,
+		});
+		await handleAccountWatermark(ctx, 'update', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ displayAngle: '-45', font: 'Helvetica', transparency: '0.5' });
+	});
+
+	it('truncates an existing NodeApiError description while keeping its message and status', async () => {
+		const httpResponses: unknown[] = [];
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1' }), httpResponses });
+		const original = new NodeApiError(ctx.getNode(), {}, {
+			message: 'Existing API failure', httpCode: '400', description: 'A'.repeat(5000),
+		});
+		httpResponses.push(original);
+		const error = await docuSignRequest(ctx, 'GET', 'accounts/acct-1').catch((e: unknown) => e) as NodeApiError;
+		expect(error).toBeInstanceOf(NodeApiError);
+		expect(error.description?.length).toBeLessThanOrEqual(1000);
+		expect(error.description).toBe('A'.repeat(1000));
+		expect(error.message).toBe('Existing API failure');
+		expect(error.httpCode).toBe('400');
+	});
+});
+
+describe('round 9l: documentation pins', () => {
+	const read = (f: string) => require('fs').readFileSync(require('path').join(__dirname, '..', f), 'utf8') as string;
+
+	it('JWT setup names both consent hosts and the redirect URI', () => {
+		const field = new DocuSignJwtApi().properties.map((p) => `${p.displayName} ${String(p.description ?? '')}`).join(' ');
+		expect(field).toContain('account-d.docusign.com');
+		expect(field).toContain('account.docusign.com for Production');
+		expect(field).toContain('redirect_uri');
+		const readme = read('README.md');
+		expect(readme).toContain('`account-d.docusign.com` for Demo and `account.docusign.com` for Production');
+		expect(readme).toContain('Redirect URI');
+	});
+
+	it('README claims most of the API, not all of it', () => {
+		const readme = read('README.md');
+		expect(readme).toContain('Most of the eSignature API');
+		expect(readme).not.toMatch(/(entire|whole|full|complete) eSignature API/i);
+	});
+
+	it('package version matches the newest changelog entry and an upgrade section', () => {
+		const version = JSON.parse(read('package.json')).version as string;
+		expect(read('CHANGELOG.md').match(/## \[([0-9.]+)\]/)?.[1]).toBe(version);
+		expect(read('README.md')).toContain(`## Upgrading to ${version.split('.').slice(0, 2).join('.')}`);
+		expect(JSON.parse(read('package-lock.json')).version).toBe(version);
 	});
 });

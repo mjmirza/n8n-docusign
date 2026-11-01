@@ -131,6 +131,12 @@ export function buildTabList(ctx: IExecuteFunctions, i: number, sendEmptyValues 
 		if (t.formula) tab.formula = t.formula;
 
 		if (sendEmptyValues) applyExplicitValues(tab, t);
+		if (v4) {
+			for (const key of ['required', 'locked']) {
+				if (t[key] === 'true' || t[key] === 'false') tab[key] = t[key];
+				else delete tab[key];
+			}
+		}
 		return tab;
 	});
 }

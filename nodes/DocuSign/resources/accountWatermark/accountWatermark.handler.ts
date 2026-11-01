@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath } from '../../transport';
 
 /**
@@ -18,14 +19,25 @@ export async function handleAccountWatermark(
 			return docuSignRequest(ctx, 'GET', basePath);
 		}
 
-		case 'preview': {
-			const watermarkSettings = ctx.getNodeParameter('watermarkSettings', i, {}) as IDataObject;
-			return docuSignRequest(ctx, 'PUT', `${basePath}/preview`, watermarkSettings);
-		}
-
+		case 'preview':
 		case 'update': {
-			const watermarkSettings = ctx.getNodeParameter('watermarkSettings', i, {}) as IDataObject;
-			return docuSignRequest(ctx, 'PUT', basePath, watermarkSettings);
+			const watermarkSettings = { ...ctx.getNodeParameter('watermarkSettings', i, {}) as IDataObject };
+			if (ctx.getNode().typeVersion >= 4) {
+				const allowedValues: Record<string, string[]> = {
+					displayAngle: ['0', '45', '90'],
+					font: ['courier', 'helvetica', 'timesnewroman'],
+					transparency: ['5', '10', '15', '20', '25', '30', '35', '40', '45'],
+				};
+				for (const [field, allowed] of Object.entries(allowedValues)) {
+					if (watermarkSettings[field] === undefined) continue;
+					const value = field === 'font' ? String(watermarkSettings[field]).toLowerCase() : String(watermarkSettings[field]);
+					if (!allowed.includes(value)) {
+						throw new NodeOperationError(ctx.getNode(), `${field} must be one of ${allowed.join(', ')}`, { itemIndex: i });
+					}
+					if (field === 'font') watermarkSettings[field] = value;
+				}
+			}
+			return docuSignRequest(ctx, 'PUT', operation === 'preview' ? `${basePath}/preview` : basePath, watermarkSettings);
 		}
 
 		default:

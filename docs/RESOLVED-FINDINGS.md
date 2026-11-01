@@ -1,6 +1,6 @@
 # Resolved findings
 
-Each row in the main table is a review finding that is fixed in the current code and pinned by a regression test. Reviews must not raise it again unless they show that the pinned test is wrong. Documented decisions and fixes without a pinned test are listed separately below.
+Each row in the main table is a review finding that is fixed in the current code and pinned by a regression test. Reviews must not raise it again unless they show that the pinned test is wrong. Documented decisions are listed separately below.
 
 Sources were read in order: after.md through after8.md, pr5.md through pr8.md, then branch9-a.md through branch9-h.md. IDs use the report name without its extension or the hyphen before a branch letter. For PR summaries, the number is the Summary bullet, excluding Test plan bullets; a bullet covering two fixes can appear beside both findings. Parameterised test names are the exact source templates, including placeholders. Commit hashes identify the repair and any later refinement needed for the current behavior.
 

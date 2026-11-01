@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.1.0] - 2026-11-01
+
+### Fixed
+- Envelope Attachment Get returns the file as binary data on node version 1 again, the output 2.1.0 shipped. 3.0.0 had put version 1 back on JSON, which broke 2.1.0 workflows.
+- Template Update Notification Settings sends any expiration or reminder field set on its own, and keeps 0 as 0 instead of replacing it with a default.
+- Template Create SMS signers send `SMS` and the structured phone number.
+- Return All follows every page, and raises an error at a 10,000-page ceiling instead of silently returning part of the list.
+- When the trigger's webhook URL changes, it deletes the old Connect subscription before creating the new one, so the old URL stops receiving events.
+- The test setup's spec-route check throws instead of calling `expect`, so `expect.hasAssertions()` still catches a test whose error path never ran. Catch-only tests that had no guard now declare `expect.assertions(1)`.
+
+### Added
+- Phone Number on the template Create signer.
+- List Items, Radios, Group Name and Formula on envelope and template recipient tabs, sent through to DocuSign.
+
+
 ## [3.0.0] - 2026-11-01
 
 ### Breaking

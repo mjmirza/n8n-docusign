@@ -715,6 +715,8 @@ describe('Branch: transport credential resolution', () => {
 	});
 
 	it('error without statusCode (statusCode=undefined)', async () => {
+		// Fails if the request resolves, so the catch block can never be skipped silently.
+		expect.assertions(1);
 		const err = new Error('Network error');
 		(err as any).body = { message: 'Connection refused' };
 		// No statusCode property at all
@@ -744,6 +746,8 @@ describe('Branch: transport credential resolution', () => {
 
 describe('Branch: transport parseErrorResponse', () => {
 	it('error with errorCode but no message', async () => {
+		// Fails if the request resolves, so the catch block can never be skipped silently.
+		expect.assertions(1);
 		const ctx = createMockContext({
 			credentials: C,
 			httpResponses: [createHttpError(400, { errorCode: 'E001' })],
@@ -758,6 +762,8 @@ describe('Branch: transport parseErrorResponse', () => {
 	});
 
 	it('error with only error field (no error_description)', async () => {
+		// Fails if the request resolves, so the catch block can never be skipped silently.
+		expect.assertions(1);
 		const ctx = createMockContext({
 			credentials: C,
 			httpResponses: [createHttpError(400, { error: 'bad_request' })],
@@ -771,6 +777,8 @@ describe('Branch: transport parseErrorResponse', () => {
 	});
 
 	it('error with title but no detail', async () => {
+		// Fails if the request resolves, so the catch block can never be skipped silently.
+		expect.assertions(1);
 		const ctx = createMockContext({
 			credentials: C,
 			httpResponses: [createHttpError(400, { title: 'Bad Request' })],
@@ -784,6 +792,8 @@ describe('Branch: transport parseErrorResponse', () => {
 	});
 
 	it('error with empty errors array', async () => {
+		// Fails if the request resolves, so the catch block can never be skipped silently.
+		expect.assertions(1);
 		const ctx = createMockContext({
 			credentials: C,
 			httpResponses: [createHttpError(422, { errors: [] })],
@@ -796,6 +806,8 @@ describe('Branch: transport parseErrorResponse', () => {
 	});
 
 	it('error with errors array containing only nulls', async () => {
+		// Fails if the request resolves, so the catch block can never be skipped silently.
+		expect.assertions(1);
 		const ctx = createMockContext({
 			credentials: C,
 			httpResponses: [createHttpError(422, { errors: [null, undefined] })],

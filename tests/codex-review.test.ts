@@ -972,14 +972,16 @@ describe('round 4: node versions keep saved workflows stable', () => {
 		expect(d.defaultVersion).toBe(2);
 	});
 
-	it('version 1 Attachment Get returns the JSON response as before', async () => {
+	it('version 1 Attachment Get keeps the binary output 2.1.0 shipped', async () => {
 		const ctx = createMockContext({
 			credentials: C,
 			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', attachmentId: 'a-1' }),
-			httpResponses: [{ attachmentId: 'a-1', name: 'x' }],
+			httpResponses: [Uint8Array.from([7, 8]).buffer],
+			typeVersion: 1,
 		});
-		expect(await handleEnvelopeAttachment(ctx, 'get', 0)).toEqual({ attachmentId: 'a-1', name: 'x' });
-		expect(getRecordedRequests(ctx)[0].options.encoding).toBeUndefined();
+		const out = (await handleEnvelopeAttachment(ctx, 'get', 0)) as { binary: { data: { data: string } } };
+		expect(getRecordedRequests(ctx)[0].options.encoding).toBe('arraybuffer');
+		expect(Buffer.from(out.binary.data.data, 'base64')).toEqual(Buffer.from([7, 8]));
 	});
 });
 
@@ -1059,5 +1061,123 @@ describe('README operations table matches the picker', () => {
 		const ops = ((picker?.options ?? []) as Array<{ name: string }>).map((o) => o.name).sort();
 		const row = rows.find((r) => r.resource === name);
 		expect(row?.ops).toEqual(ops);
+	});
+});
+
+// Round 5: findings from the Codex review of 3.0.0.
+
+describe('round 5: template notification settings', () => {
+	const run = async (settings: IDataObject) => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', templateId: 'tp-1', notificationSettings: settings }), httpResponses: [{}] });
+		await handleTemplate(ctx, 'updateNotificationSettings', 0);
+		return getRecordedRequests(ctx)[0].options.body as IDataObject;
+	};
+
+	it('sends an expiration period set on its own', async () => {
+		expect(await run({ expireAfter: 10 })).toEqual({ expirations: { expireAfter: '10' } });
+	});
+
+	it('keeps 0 as 0 instead of replacing it with a default', async () => {
+		expect(await run({ expireEnabled: 'true', expireWarn: 0 })).toEqual({ expirations: { expireEnabled: 'true', expireWarn: '0' } });
+		expect(await run({ reminderEnabled: 'true', reminderDelay: 0 })).toEqual({ reminders: { reminderEnabled: 'true', reminderDelay: '0' } });
+	});
+});
+
+describe('round 5: template create SMS signer', () => {
+	it('sends SMS with a structured phone number', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({
+				accountId: 'acct-1',
+				templateName: 'T',
+				emailSubject: 'S',
+				name: 'T',
+				description: '',
+				additionalFields: {},
+				documents: { document: [] },
+				recipients: { signer: [{ roleName: 'R', deliveryMethod: 'sms', phoneNumber: '+44 7700900123' }] },
+			}),
+			httpResponses: [{ templateId: 't-1' }],
+		});
+		await handleTemplate(ctx, 'create', 0);
+		const body = getRecordedRequests(ctx)[0].options.body as { recipients: { signers: IDataObject[] } };
+		expect(body.recipients.signers[0]).toMatchObject({ deliveryMethod: 'SMS', phoneNumber: { countryCode: '44', number: '7700900123' } });
+	});
+
+	it('offers a phone number field on the template signer', () => {
+		const field = new DocuSign().description.properties.find((p) => p.name === 'recipients' && (p.displayOptions?.show?.resource as string[]).includes('template'));
+		expect(JSON.stringify(field)).toContain('"phoneNumber"');
+	});
+});
+
+describe('round 5: list, radio and formula tabs keep their configuration', () => {
+	it.each([
+		['envelope', handleEnvelopeRecipientTab, { envelopeId: 'e-1' }],
+		['template', handleTemplateRecipientTab, { templateId: 'tp-1' }],
+	])('%s tabs pass listItems, radios, groupName and formula', async (_k, handler, ids) => {
+		const listItems = [{ text: 'A', value: 'a' }];
+		const radios = [{ value: 'yes', pageNumber: '1', xPosition: '10', yPosition: '20' }];
+		const tab = { documentId: '1', pageNumber: '1', listItems: JSON.stringify(listItems), radios, groupName: 'g1', formula: '[Price]*2' };
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', ...ids, recipientId: '1', tabType: 'listTabs', tabs: { tab: [tab] } }),
+			httpResponses: [{}],
+		});
+		await (handler as (c: IExecuteFunctions, o: string, i: number) => Promise<unknown>)(ctx, 'create', 0);
+		const sent = (getRecordedRequests(ctx)[0].options.body as { listTabs: IDataObject[] }).listTabs[0];
+		expect(sent).toMatchObject({ listItems, radios, groupName: 'g1', formula: '[Price]*2' });
+	});
+
+	it('rejects list items that are not a JSON array', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', recipientId: '1', tabType: 'listTabs', tabs: { tab: [{ listItems: '{oops' }] } }),
+			httpResponses: [{}],
+		});
+		await expect(handleEnvelopeRecipientTab(ctx, 'create', 0)).rejects.toThrow('List Items must be a JSON array');
+	});
+});
+
+describe('round 5: Return All never silently truncates', () => {
+	it('reads every group past the old 50-page limit', async () => {
+		const pages = Array.from({ length: 52 }, (_, p) => ({
+			groups: Array.from({ length: 100 }, (_, k) => ({ groupId: String(p * 100 + k) })),
+			resultSetSize: '100',
+			totalSetSize: '5200',
+			...(p < 51 ? { nextUri: '/next' } : {}),
+		}));
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', returnAll: true, groupFilters: {} }), httpResponses: pages });
+		expect(await handleGroup(ctx, 'list', 0)).toHaveLength(5200);
+	});
+});
+
+describe('round 5: a changed webhook URL removes the old subscription', () => {
+	const methods = new DocuSignTrigger().webhookMethods.default;
+	it('deletes the stale Connect configuration and forgets its ID', async () => {
+		const staticData: IDataObject = { connectId: 'c-1' };
+		const ctx = Object.assign(
+			createMockContext({ credentials: C, httpResponses: [{ configurations: [{ connectId: 'c-1', urlToPublishTo: 'https://old.example.com/webhook/x' }] }, {}] }),
+			{
+				getWorkflowStaticData: () => staticData,
+				getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/abc',
+				getNodeParameter: () => 'acct-1',
+				logger: { warn: jest.fn() },
+			},
+		) as unknown as IHookFunctions;
+		await expect(methods.checkExists.call(ctx)).resolves.toBe(false);
+		const reqs = getRecordedRequests(ctx as unknown as IExecuteFunctions);
+		expect(reqs.map((r) => `${r.options.method} ${r.options.url}`)).toEqual([
+			`GET ${DEMO}/accounts/acct-1/connect/c-1`,
+			`DELETE ${DEMO}/accounts/acct-1/connect/c-1`,
+		]);
+		expect(staticData.connectId).toBeUndefined();
+	});
+});
+
+describe('round 5: the spec-route check never counts as an assertion', () => {
+	it('the setup hook throws rather than calling expect', () => {
+		const src = readFileSync(`${__dirname}/setup/spec-routes.ts`, 'utf8');
+		expect(src).not.toMatch(/\bexpect\(/);
+		expect(src).toContain('throw new Error');
 	});
 });

@@ -1,6 +1,6 @@
 // Every request a test sends must exist in the DocuSign eSignature v2.1 OpenAPI spec,
 // so a handler with a wrong method or path fails even when its test only awaits a canned reply.
-import { afterEach, expect } from '@jest/globals';
+import { afterEach } from '@jest/globals';
 import { drainAllRequests, offSpecAllowed } from '../helpers/mockContext';
 import spec from '../fixtures/esign-v2.1-routes.json';
 
@@ -23,5 +23,6 @@ afterEach(() => {
 		.map((r) => ({ method: String(r.options.method ?? 'GET'), url: String(r.options.url ?? '') }))
 		.filter((r) => r.url.startsWith('https://') && !matchSpecRoute(r.method, r.url))
 		.map((r) => `${r.method} ${r.url}`);
-	expect(unknown).toEqual([]);
+	// A plain throw keeps this hook from counting toward a test's hasAssertions guard.
+	if (unknown.length > 0) throw new Error(`Requests not in the DocuSign spec:\n${unknown.join('\n')}`);
 });

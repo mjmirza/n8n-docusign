@@ -92,6 +92,7 @@ export const templateFields: INodeProperties[] = [
 					{ displayName: 'Email Notification Body', name: 'emailNotificationBody', type: 'string', default: '' },
 					{ displayName: 'Email Notification Subject', name: 'emailNotificationSubject', type: 'string', default: '' },
 					{ displayName: 'ID Check Config Name', name: 'idCheckConfigurationName', type: 'options', options: [{ name: 'None', value: '' }, { name: 'ID Check $', value: 'ID Check $' }, { name: 'ID Check $$', value: 'ID Check $$' }], default: '' },
+					{ displayName: 'Phone Number', name: 'phoneNumber', type: 'string', default: '', placeholder: '+14155550100', description: 'Phone number in international format, used when the delivery method is SMS' },
 					{ displayName: 'Recipient ID', name: 'recipientId', type: 'string', default: '1' },
 					{ displayName: 'Role Name', name: 'roleName', type: 'string', default: '', required: true, description: 'Role name (e.g., "Signer 1", "Manager")' },
 					{ displayName: 'Routing Order', name: 'routingOrder', type: 'string', default: '1' },

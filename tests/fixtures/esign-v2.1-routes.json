@@ -1669,5 +1669,919 @@
 "/v2/accounts/{accountId}/recipient_names"
 ]
 ]
+},
+"queryParams": {
+"DELETE /v2.1/accounts/{accountId}": [
+"redact_user_data"
+],
+"DELETE /v2.1/accounts/{accountId}/brands": [],
+"DELETE /v2.1/accounts/{accountId}/brands/{brandId}": [],
+"DELETE /v2.1/accounts/{accountId}/brands/{brandId}/logos/{logoType}": [],
+"DELETE /v2.1/accounts/{accountId}/bulk_send_lists/{bulkSendListId}": [],
+"DELETE /v2.1/accounts/{accountId}/captive_recipients/{recipientPart}": [],
+"DELETE /v2.1/accounts/{accountId}/chunked_uploads/{chunkedUploadId}": [],
+"DELETE /v2.1/accounts/{accountId}/connect/failures/{failureId}": [],
+"DELETE /v2.1/accounts/{accountId}/connect/logs": [],
+"DELETE /v2.1/accounts/{accountId}/connect/logs/{logId}": [],
+"DELETE /v2.1/accounts/{accountId}/connect/oauth": [],
+"DELETE /v2.1/accounts/{accountId}/connect/secret/{keyId}": [],
+"DELETE /v2.1/accounts/{accountId}/connect/{connectId}": [],
+"DELETE /v2.1/accounts/{accountId}/contacts": [],
+"DELETE /v2.1/accounts/{accountId}/contacts/{contactId}": [],
+"DELETE /v2.1/accounts/{accountId}/custom_fields/{customFieldId}": [
+"apply_to_templates"
+],
+"DELETE /v2.1/accounts/{accountId}/envelopes/transfer_rules/{envelopeTransferRuleId}": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/attachments": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/custom_fields": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/fields": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/pages/{pageNumber}": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/tabs": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/templates/{templateId}": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/email_settings": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/lock": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/tabs": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/shares": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/shares/{shareId}": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/views/correct": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/workflow": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/workflow/scheduledSending": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/workflow/steps/{workflowStepId}": [],
+"DELETE /v2.1/accounts/{accountId}/envelopes/{envelopeId}/workflow/steps/{workflowStepId}/delayedRouting": [],
+"DELETE /v2.1/accounts/{accountId}/favorite_templates": [],
+"DELETE /v2.1/accounts/{accountId}/groups": [],
+"DELETE /v2.1/accounts/{accountId}/groups/{groupId}/brands": [],
+"DELETE /v2.1/accounts/{accountId}/groups/{groupId}/users": [],
+"DELETE /v2.1/accounts/{accountId}/permission_profiles/{permissionProfileId}": [
+"move_users_to"
+],
+"DELETE /v2.1/accounts/{accountId}/powerforms": [],
+"DELETE /v2.1/accounts/{accountId}/powerforms/{powerFormId}": [],
+"DELETE /v2.1/accounts/{accountId}/settings/bcc_email_archives/{bccEmailArchiveId}": [],
+"DELETE /v2.1/accounts/{accountId}/settings/enote_configuration": [],
+"DELETE /v2.1/accounts/{accountId}/signatures/{signatureId}": [],
+"DELETE /v2.1/accounts/{accountId}/signatures/{signatureId}/{imageType}": [],
+"DELETE /v2.1/accounts/{accountId}/signing_groups": [],
+"DELETE /v2.1/accounts/{accountId}/signing_groups/{signingGroupId}/users": [],
+"DELETE /v2.1/accounts/{accountId}/tab_definitions/{customTabId}": [],
+"DELETE /v2.1/accounts/{accountId}/templates/{templateId}/custom_fields": [],
+"DELETE /v2.1/accounts/{accountId}/templates/{templateId}/documents": [],
+"DELETE /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/fields": [],
+"DELETE /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/pages/{pageNumber}": [],
+"DELETE /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/tabs": [],
+"DELETE /v2.1/accounts/{accountId}/templates/{templateId}/lock": [],
+"DELETE /v2.1/accounts/{accountId}/templates/{templateId}/recipients": [],
+"DELETE /v2.1/accounts/{accountId}/templates/{templateId}/recipients/{recipientId}": [],
+"DELETE /v2.1/accounts/{accountId}/templates/{templateId}/recipients/{recipientId}/tabs": [],
+"DELETE /v2.1/accounts/{accountId}/templates/{templateId}/workflow": [],
+"DELETE /v2.1/accounts/{accountId}/templates/{templateId}/workflow/scheduledSending": [],
+"DELETE /v2.1/accounts/{accountId}/templates/{templateId}/workflow/steps/{workflowStepId}": [],
+"DELETE /v2.1/accounts/{accountId}/templates/{templateId}/workflow/steps/{workflowStepId}/delayedRouting": [],
+"DELETE /v2.1/accounts/{accountId}/templates/{templateId}/{templatePart}": [],
+"DELETE /v2.1/accounts/{accountId}/users": [
+"delete"
+],
+"DELETE /v2.1/accounts/{accountId}/users/{userId}/authorization/{authorizationId}": [],
+"DELETE /v2.1/accounts/{accountId}/users/{userId}/authorizations": [],
+"DELETE /v2.1/accounts/{accountId}/users/{userId}/cloud_storage": [],
+"DELETE /v2.1/accounts/{accountId}/users/{userId}/cloud_storage/{serviceId}": [],
+"DELETE /v2.1/accounts/{accountId}/users/{userId}/custom_settings": [],
+"DELETE /v2.1/accounts/{accountId}/users/{userId}/profile/image": [],
+"DELETE /v2.1/accounts/{accountId}/users/{userId}/signatures/{signatureId}": [],
+"DELETE /v2.1/accounts/{accountId}/users/{userId}/signatures/{signatureId}/{imageType}": [],
+"DELETE /v2.1/accounts/{accountId}/workspaces/{workspaceId}": [],
+"DELETE /v2.1/accounts/{accountId}/workspaces/{workspaceId}/folders/{folderId}": [],
+"DELETE /v2.1/current_user/notary/jurisdictions/{jurisdictionId}": [],
+"DELETE /v2.1/diagnostics/request_logs": [],
+"GET /service_information": [],
+"GET /v2.1": [],
+"GET /v2.1/accounts/provisioning": [],
+"GET /v2.1/accounts/{accountId}": [
+"include_account_settings",
+"include_trial_eligibility"
+],
+"GET /v2.1/accounts/{accountId}/billing_charges": [
+"include_charges"
+],
+"GET /v2.1/accounts/{accountId}/billing_invoices": [
+"from_date",
+"to_date"
+],
+"GET /v2.1/accounts/{accountId}/billing_invoices/{invoiceId}": [],
+"GET /v2.1/accounts/{accountId}/billing_invoices_past_due": [],
+"GET /v2.1/accounts/{accountId}/billing_payments": [
+"from_date",
+"to_date"
+],
+"GET /v2.1/accounts/{accountId}/billing_payments/{paymentId}": [],
+"GET /v2.1/accounts/{accountId}/billing_plan": [
+"include_credit_card_information",
+"include_downgrade_information",
+"include_metadata",
+"include_successor_plans",
+"include_tax_exempt_id"
+],
+"GET /v2.1/accounts/{accountId}/billing_plan/credit_card": [],
+"GET /v2.1/accounts/{accountId}/billing_plan/downgrade": [],
+"GET /v2.1/accounts/{accountId}/brands": [
+"exclude_distributor_brand",
+"include_logos"
+],
+"GET /v2.1/accounts/{accountId}/brands/{brandId}": [
+"include_external_references",
+"include_logos"
+],
+"GET /v2.1/accounts/{accountId}/brands/{brandId}/file": [],
+"GET /v2.1/accounts/{accountId}/brands/{brandId}/logos/{logoType}": [],
+"GET /v2.1/accounts/{accountId}/brands/{brandId}/resources": [],
+"GET /v2.1/accounts/{accountId}/brands/{brandId}/resources/{resourceContentType}": [
+"langcode",
+"return_master"
+],
+"GET /v2.1/accounts/{accountId}/bulk_send_batch": [
+"batch_ids",
+"count",
+"from_date",
+"search_text",
+"start_position",
+"status",
+"to_date",
+"user_id"
+],
+"GET /v2.1/accounts/{accountId}/bulk_send_batch/{bulkSendBatchId}": [],
+"GET /v2.1/accounts/{accountId}/bulk_send_batch/{bulkSendBatchId}/envelopes": [
+"count",
+"include",
+"order",
+"order_by",
+"search_text",
+"start_position",
+"status"
+],
+"GET /v2.1/accounts/{accountId}/bulk_send_lists": [],
+"GET /v2.1/accounts/{accountId}/bulk_send_lists/{bulkSendListId}": [],
+"GET /v2.1/accounts/{accountId}/chunked_uploads/{chunkedUploadId}": [
+"include"
+],
+"GET /v2.1/accounts/{accountId}/connect": [],
+"GET /v2.1/accounts/{accountId}/connect/failures": [
+"from_date",
+"to_date"
+],
+"GET /v2.1/accounts/{accountId}/connect/logs": [
+"from_date",
+"to_date"
+],
+"GET /v2.1/accounts/{accountId}/connect/logs/{logId}": [
+"additional_info"
+],
+"GET /v2.1/accounts/{accountId}/connect/oauth": [],
+"GET /v2.1/accounts/{accountId}/connect/secret": [],
+"GET /v2.1/accounts/{accountId}/connect/{connectId}": [],
+"GET /v2.1/accounts/{accountId}/connect/{connectId}/all/users": [
+"count",
+"domain_users_only",
+"email_substring",
+"start_position",
+"status",
+"user_name_substring"
+],
+"GET /v2.1/accounts/{accountId}/connect/{connectId}/users": [
+"count",
+"email_substring",
+"list_included_users",
+"start_position",
+"status",
+"user_name_substring"
+],
+"GET /v2.1/accounts/{accountId}/consumer_disclosure": [
+"langCode"
+],
+"GET /v2.1/accounts/{accountId}/consumer_disclosure/{langCode}": [],
+"GET /v2.1/accounts/{accountId}/contacts/{contactId}": [
+"cloud_provider"
+],
+"GET /v2.1/accounts/{accountId}/custom_fields": [],
+"GET /v2.1/accounts/{accountId}/envelopes": [
+"ac_status",
+"block",
+"cdse_mode",
+"continuation_token",
+"count",
+"custom_field",
+"email",
+"envelope_ids",
+"exclude",
+"folder_ids",
+"folder_types",
+"from_date",
+"from_to_status",
+"include",
+"include_purge_information",
+"intersecting_folder_ids",
+"last_queried_date",
+"order",
+"order_by",
+"powerformids",
+"query_budget",
+"requester_date_format",
+"search_mode",
+"search_text",
+"start_position",
+"status",
+"to_date",
+"transaction_ids",
+"user_filter",
+"user_id",
+"user_name"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/shared": [
+"count",
+"from_date",
+"include",
+"order",
+"order_by",
+"search_text",
+"start_position",
+"status",
+"to_date"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/transfer_rules": [
+"count",
+"start_position"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}": [
+"advanced_update",
+"include",
+"include_anchor_tab_locations",
+"user_id"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/attachments": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/attachments/{attachmentId}": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/audit_events": [
+"locale"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/comments/transcript": [
+"encoding"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/custom_fields": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/docGenFormFields": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents": [
+"documents_by_userid",
+"include_agreement_type",
+"include_docgen_formfields",
+"include_is_edited",
+"include_metadata",
+"include_tabs",
+"recipient_id",
+"shared_user_id"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}": [
+"certificate",
+"documents_by_userid",
+"encoding",
+"encrypt",
+"language",
+"recipient_id",
+"shared_user_id",
+"show_changes",
+"watermark"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/fields": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/html_definitions": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/pages": [
+"count",
+"dpi",
+"max_height",
+"max_width",
+"nocache",
+"show_changes",
+"start_position"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/pages/{pageNumber}/page_image": [
+"dpi",
+"max_height",
+"max_width",
+"show_changes"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/pages/{pageNumber}/tabs": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/tabs": [
+"include_metadata",
+"page_numbers"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/templates": [
+"include"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/email_settings": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/form_data": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/html_definitions": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/lock": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/notification": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients": [
+"include_anchor_tab_locations",
+"include_extended",
+"include_metadata",
+"include_tabs"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/consumer_disclosure": [
+"langCode"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/consumer_disclosure/{langCode}": [
+"langCode"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/document_visibility": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/initials_image": [
+"include_chrome"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/signature": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/signature_image": [
+"include_chrome"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/tabs": [
+"include_anchor_tab_locations",
+"include_metadata"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/shares": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/shares/{shareId}": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/tabs_blob": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/templates": [
+"include"
+],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/workflow": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/workflow/scheduledSending": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/workflow/steps/{workflowStepId}": [],
+"GET /v2.1/accounts/{accountId}/envelopes/{envelopeId}/workflow/steps/{workflowStepId}/delayedRouting": [],
+"GET /v2.1/accounts/{accountId}/favorite_templates": [],
+"GET /v2.1/accounts/{accountId}/folders": [
+"count",
+"include",
+"include_items",
+"start_position",
+"sub_folder_depth",
+"template",
+"user_filter"
+],
+"GET /v2.1/accounts/{accountId}/folders/{folderId}": [
+"from_date",
+"include_items",
+"owner_email",
+"owner_name",
+"search_text",
+"start_position",
+"status",
+"to_date"
+],
+"GET /v2.1/accounts/{accountId}/groups": [
+"count",
+"group_type",
+"include_usercount",
+"search_text",
+"start_position"
+],
+"GET /v2.1/accounts/{accountId}/groups/{groupId}/brands": [],
+"GET /v2.1/accounts/{accountId}/groups/{groupId}/users": [
+"count",
+"start_position"
+],
+"GET /v2.1/accounts/{accountId}/identity_verification": [
+"identity_verification_workflow_status"
+],
+"GET /v2.1/accounts/{accountId}/payment_gateway_accounts": [],
+"GET /v2.1/accounts/{accountId}/permission_profiles": [
+"include"
+],
+"GET /v2.1/accounts/{accountId}/permission_profiles/{permissionProfileId}": [
+"include"
+],
+"GET /v2.1/accounts/{accountId}/powerforms": [
+"count",
+"from_date",
+"order",
+"order_by",
+"search_fields",
+"search_text",
+"start_position",
+"to_date"
+],
+"GET /v2.1/accounts/{accountId}/powerforms/senders": [
+"start_position"
+],
+"GET /v2.1/accounts/{accountId}/powerforms/{powerFormId}": [],
+"GET /v2.1/accounts/{accountId}/powerforms/{powerFormId}/form_data": [
+"data_layout",
+"from_date",
+"to_date"
+],
+"GET /v2.1/accounts/{accountId}/seals": [],
+"GET /v2.1/accounts/{accountId}/search_folders/{searchFolderId}": [
+"all",
+"count",
+"from_date",
+"include_recipients",
+"order",
+"order_by",
+"start_position",
+"to_date"
+],
+"GET /v2.1/accounts/{accountId}/settings": [],
+"GET /v2.1/accounts/{accountId}/settings/bcc_email_archives": [
+"count",
+"start_position"
+],
+"GET /v2.1/accounts/{accountId}/settings/bcc_email_archives/{bccEmailArchiveId}": [
+"count",
+"start_position"
+],
+"GET /v2.1/accounts/{accountId}/settings/enote_configuration": [],
+"GET /v2.1/accounts/{accountId}/settings/envelope_purge_configuration": [],
+"GET /v2.1/accounts/{accountId}/settings/notification_defaults": [],
+"GET /v2.1/accounts/{accountId}/settings/password_rules": [],
+"GET /v2.1/accounts/{accountId}/settings/tabs": [],
+"GET /v2.1/accounts/{accountId}/shared_access": [
+"count",
+"envelopes_not_shared_user_status",
+"folder_ids",
+"item_type",
+"search_text",
+"shared",
+"start_position",
+"user_ids"
+],
+"GET /v2.1/accounts/{accountId}/signatureProviders": [],
+"GET /v2.1/accounts/{accountId}/signatures": [
+"stamp_format",
+"stamp_name",
+"stamp_type"
+],
+"GET /v2.1/accounts/{accountId}/signatures/{signatureId}": [],
+"GET /v2.1/accounts/{accountId}/signatures/{signatureId}/{imageType}": [
+"include_chrome"
+],
+"GET /v2.1/accounts/{accountId}/signing_groups": [
+"group_type",
+"include_users"
+],
+"GET /v2.1/accounts/{accountId}/signing_groups/{signingGroupId}": [],
+"GET /v2.1/accounts/{accountId}/signing_groups/{signingGroupId}/users": [],
+"GET /v2.1/accounts/{accountId}/supported_languages": [],
+"GET /v2.1/accounts/{accountId}/tab_definitions": [
+"custom_tab_only"
+],
+"GET /v2.1/accounts/{accountId}/tab_definitions/{customTabId}": [],
+"GET /v2.1/accounts/{accountId}/templates": [
+"count",
+"created_from_date",
+"created_to_date",
+"folder_ids",
+"folder_types",
+"from_date",
+"include",
+"is_deleted_template_only",
+"is_download",
+"link_configuration_id",
+"modified_from_date",
+"modified_to_date",
+"order",
+"order_by",
+"search_fields",
+"search_text",
+"shared_by_me",
+"start_position",
+"template_ids",
+"to_date",
+"used_from_date",
+"used_to_date",
+"user_filter",
+"user_id"
+],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}": [
+"include"
+],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/custom_fields": [],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/documents": [
+"include_agreement_type",
+"include_is_edited",
+"include_tabs"
+],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}": [
+"encrypt",
+"file_type",
+"show_changes"
+],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/fields": [],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/html_definitions": [],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/pages": [
+"count",
+"dpi",
+"max_height",
+"max_width",
+"nocache",
+"show_changes",
+"start_position"
+],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/pages/{pageNumber}/page_image": [
+"dpi",
+"max_height",
+"max_width",
+"show_changes"
+],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/pages/{pageNumber}/tabs": [],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/tabs": [
+"page_numbers"
+],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/html_definitions": [],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/lock": [],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/notification": [],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/recipients": [
+"include_anchor_tab_locations",
+"include_extended",
+"include_tabs"
+],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/recipients/{recipientId}/document_visibility": [],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/recipients/{recipientId}/tabs": [
+"include_anchor_tab_locations",
+"include_metadata"
+],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/workflow": [],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/workflow/scheduledSending": [],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/workflow/steps/{workflowStepId}": [],
+"GET /v2.1/accounts/{accountId}/templates/{templateId}/workflow/steps/{workflowStepId}/delayedRouting": [],
+"GET /v2.1/accounts/{accountId}/unsupported_file_types": [],
+"GET /v2.1/accounts/{accountId}/users": [
+"additional_info",
+"alternate_admins_only",
+"count",
+"domain_users_only",
+"email",
+"email_substring",
+"group_id",
+"include_license",
+"include_usersettings_for_csv",
+"login_status",
+"not_group_id",
+"start_position",
+"status",
+"user_name_substring"
+],
+"GET /v2.1/accounts/{accountId}/users/{userId}": [
+"additional_info",
+"email",
+"include_license"
+],
+"GET /v2.1/accounts/{accountId}/users/{userId}/authorization/{authorizationId}": [],
+"GET /v2.1/accounts/{accountId}/users/{userId}/authorizations": [
+"active_only",
+"count",
+"email_substring",
+"include_closed_users",
+"permissions",
+"start_position",
+"task_source",
+"task_type",
+"user_name_substring"
+],
+"GET /v2.1/accounts/{accountId}/users/{userId}/authorizations/agent": [
+"active_only",
+"count",
+"email_substring",
+"include_closed_users",
+"permissions",
+"start_position",
+"task_source",
+"task_type",
+"user_name_substring"
+],
+"GET /v2.1/accounts/{accountId}/users/{userId}/cloud_storage": [
+"redirectUrl"
+],
+"GET /v2.1/accounts/{accountId}/users/{userId}/cloud_storage/{serviceId}": [
+"redirectUrl"
+],
+"GET /v2.1/accounts/{accountId}/users/{userId}/cloud_storage/{serviceId}/folders": [
+"cloud_storage_folder_path",
+"count",
+"order",
+"order_by",
+"search_text",
+"start_position"
+],
+"GET /v2.1/accounts/{accountId}/users/{userId}/cloud_storage/{serviceId}/folders/{folderId}": [
+"cloud_storage_folder_path",
+"cloud_storage_folderid_plain",
+"count",
+"order",
+"order_by",
+"search_text",
+"sky_drive_skip_token",
+"start_position"
+],
+"GET /v2.1/accounts/{accountId}/users/{userId}/custom_settings": [],
+"GET /v2.1/accounts/{accountId}/users/{userId}/profile": [],
+"GET /v2.1/accounts/{accountId}/users/{userId}/profile/image": [
+"encoding"
+],
+"GET /v2.1/accounts/{accountId}/users/{userId}/settings": [],
+"GET /v2.1/accounts/{accountId}/users/{userId}/signatures": [
+"stamp_type"
+],
+"GET /v2.1/accounts/{accountId}/users/{userId}/signatures/{signatureId}": [],
+"GET /v2.1/accounts/{accountId}/users/{userId}/signatures/{signatureId}/{imageType}": [
+"include_chrome"
+],
+"GET /v2.1/accounts/{accountId}/watermark": [],
+"GET /v2.1/accounts/{accountId}/workspaces": [],
+"GET /v2.1/accounts/{accountId}/workspaces/{workspaceId}": [],
+"GET /v2.1/accounts/{accountId}/workspaces/{workspaceId}/folders/{folderId}": [
+"count",
+"include_files",
+"include_sub_folders",
+"include_thumbnails",
+"include_user_detail",
+"start_position",
+"workspace_user_id"
+],
+"GET /v2.1/accounts/{accountId}/workspaces/{workspaceId}/folders/{folderId}/files/{fileId}": [
+"is_download",
+"pdf_version"
+],
+"GET /v2.1/accounts/{accountId}/workspaces/{workspaceId}/folders/{folderId}/files/{fileId}/pages": [
+"count",
+"dpi",
+"max_height",
+"max_width",
+"start_position"
+],
+"GET /v2.1/billing_plans": [],
+"GET /v2.1/billing_plans/{billingPlanId}": [],
+"GET /v2.1/current_user/notary": [
+"include_jurisdictions"
+],
+"GET /v2.1/current_user/notary/journals": [
+"count",
+"search_text",
+"start_position"
+],
+"GET /v2.1/current_user/notary/jurisdictions": [],
+"GET /v2.1/current_user/notary/jurisdictions/{jurisdictionId}": [],
+"GET /v2.1/current_user/password_rules": [],
+"GET /v2.1/diagnostics/request_logs": [
+"encoding"
+],
+"GET /v2.1/diagnostics/request_logs/{requestLogId}": [],
+"GET /v2.1/diagnostics/settings": [],
+"GET /v2/accounts/{accountId}/recipient_names": [
+"email"
+],
+"POST /v2.1/accounts": [],
+"POST /v2.1/accounts/{accountId}/billing_payments": [],
+"POST /v2.1/accounts/{accountId}/brands": [],
+"POST /v2.1/accounts/{accountId}/bulk_send_lists": [],
+"POST /v2.1/accounts/{accountId}/bulk_send_lists/{bulkSendListId}/send": [],
+"POST /v2.1/accounts/{accountId}/bulk_send_lists/{bulkSendListId}/test": [],
+"POST /v2.1/accounts/{accountId}/chunked_uploads": [],
+"POST /v2.1/accounts/{accountId}/connect": [],
+"POST /v2.1/accounts/{accountId}/connect/envelopes/publish/historical": [],
+"POST /v2.1/accounts/{accountId}/connect/oauth": [],
+"POST /v2.1/accounts/{accountId}/connect/secret": [],
+"POST /v2.1/accounts/{accountId}/contacts": [],
+"POST /v2.1/accounts/{accountId}/custom_fields": [
+"apply_to_templates"
+],
+"POST /v2.1/accounts/{accountId}/envelopes": [
+"cdse_mode",
+"change_routing_order",
+"completed_documents_only",
+"merge_roles_on_draft"
+],
+"POST /v2.1/accounts/{accountId}/envelopes/transfer_rules": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/custom_fields": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/fields": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/responsive_html_preview": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/tabs": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/templates": [
+"preserve_template_recipient"
+],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/email_settings": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/lock": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients": [
+"resend_envelope"
+],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/identity_proof_token": [
+"token_scopes"
+],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/tabs": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/views/identity_manual_review": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/responsive_html_preview": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/shares": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/templates": [
+"preserve_template_recipient"
+],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/views/correct": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/views/edit": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/views/recipient": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/views/recipient_preview": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/views/sender": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/views/shared": [],
+"POST /v2.1/accounts/{accountId}/envelopes/{envelopeId}/workflow/steps": [],
+"POST /v2.1/accounts/{accountId}/groups": [],
+"POST /v2.1/accounts/{accountId}/permission_profiles": [
+"include"
+],
+"POST /v2.1/accounts/{accountId}/powerforms": [],
+"POST /v2.1/accounts/{accountId}/settings/bcc_email_archives": [],
+"POST /v2.1/accounts/{accountId}/signatures": [
+"decode_only"
+],
+"POST /v2.1/accounts/{accountId}/signing_groups": [],
+"POST /v2.1/accounts/{accountId}/tab_definitions": [],
+"POST /v2.1/accounts/{accountId}/templates": [],
+"POST /v2.1/accounts/{accountId}/templates/{templateId}/custom_fields": [],
+"POST /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/fields": [],
+"POST /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/responsive_html_preview": [],
+"POST /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/tabs": [],
+"POST /v2.1/accounts/{accountId}/templates/{templateId}/lock": [],
+"POST /v2.1/accounts/{accountId}/templates/{templateId}/recipients": [
+"resend_envelope"
+],
+"POST /v2.1/accounts/{accountId}/templates/{templateId}/recipients/{recipientId}/tabs": [],
+"POST /v2.1/accounts/{accountId}/templates/{templateId}/responsive_html_preview": [],
+"POST /v2.1/accounts/{accountId}/templates/{templateId}/views/edit": [],
+"POST /v2.1/accounts/{accountId}/templates/{templateId}/views/recipient_preview": [],
+"POST /v2.1/accounts/{accountId}/templates/{templateId}/workflow/steps": [],
+"POST /v2.1/accounts/{accountId}/users": [],
+"POST /v2.1/accounts/{accountId}/users/{userId}/authorization": [],
+"POST /v2.1/accounts/{accountId}/users/{userId}/authorizations": [],
+"POST /v2.1/accounts/{accountId}/users/{userId}/cloud_storage": [],
+"POST /v2.1/accounts/{accountId}/users/{userId}/signatures": [],
+"POST /v2.1/accounts/{accountId}/views/console": [],
+"POST /v2.1/accounts/{accountId}/workspaces": [],
+"POST /v2.1/accounts/{accountId}/workspaces/{workspaceId}/folders/{folderId}/files": [],
+"POST /v2.1/current_user/notary": [],
+"POST /v2.1/current_user/notary/jurisdictions": [],
+"PUT /v2.1/accounts/{accountId}/billing_plan": [
+"preview_billing_plan"
+],
+"PUT /v2.1/accounts/{accountId}/billing_plan/downgrade": [],
+"PUT /v2.1/accounts/{accountId}/billing_plan/purchased_envelopes": [],
+"PUT /v2.1/accounts/{accountId}/brands/{brandId}": [
+"replace_brand"
+],
+"PUT /v2.1/accounts/{accountId}/brands/{brandId}/logos/{logoType}": [],
+"PUT /v2.1/accounts/{accountId}/brands/{brandId}/resources/{resourceContentType}": [],
+"PUT /v2.1/accounts/{accountId}/bulk_send_batch/{bulkSendBatchId}": [],
+"PUT /v2.1/accounts/{accountId}/bulk_send_batch/{bulkSendBatchId}/{bulkAction}": [],
+"PUT /v2.1/accounts/{accountId}/bulk_send_lists/{bulkSendListId}": [],
+"PUT /v2.1/accounts/{accountId}/chunked_uploads/{chunkedUploadId}": [
+"action"
+],
+"PUT /v2.1/accounts/{accountId}/chunked_uploads/{chunkedUploadId}/{chunkedUploadPartSeq}": [],
+"PUT /v2.1/accounts/{accountId}/connect": [],
+"PUT /v2.1/accounts/{accountId}/connect/envelopes/retry_queue": [],
+"PUT /v2.1/accounts/{accountId}/connect/envelopes/{envelopeId}/retry_queue": [],
+"PUT /v2.1/accounts/{accountId}/connect/oauth": [],
+"PUT /v2.1/accounts/{accountId}/consumer_disclosure/{langCode}": [
+"include_metadata"
+],
+"PUT /v2.1/accounts/{accountId}/contacts": [],
+"PUT /v2.1/accounts/{accountId}/custom_fields/{customFieldId}": [
+"apply_to_templates"
+],
+"PUT /v2.1/accounts/{accountId}/envelopes/status": [
+"ac_status",
+"block",
+"count",
+"email",
+"envelope_ids",
+"from_date",
+"from_to_status",
+"start_position",
+"status",
+"to_date",
+"transaction_ids",
+"user_name"
+],
+"PUT /v2.1/accounts/{accountId}/envelopes/transfer_rules": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/transfer_rules/{envelopeTransferRuleId}": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}": [
+"advanced_update",
+"recycle_on_void",
+"resend_envelope"
+],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/attachments": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/attachments/{attachmentId}": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/custom_fields": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/docGenFormFields": [
+"update_docgen_formfields_only"
+],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/fields": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/pages/{pageNumber}/page_image": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents/{documentId}/tabs": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/email_settings": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/lock": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/notification": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients": [
+"combine_same_order_recipients",
+"offline_signing",
+"resend_envelope"
+],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/document_visibility": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/document_visibility": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/initials_image": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/signature_image": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/recipients/{recipientId}/tabs": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/shares": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/shares/{shareId}": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/tabs_blob": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/workflow": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/workflow/scheduledSending": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/workflow/steps/{workflowStepId}": [],
+"PUT /v2.1/accounts/{accountId}/envelopes/{envelopeId}/workflow/steps/{workflowStepId}/delayedRouting": [],
+"PUT /v2.1/accounts/{accountId}/favorite_templates": [],
+"PUT /v2.1/accounts/{accountId}/folders/{folderId}": [],
+"PUT /v2.1/accounts/{accountId}/groups": [],
+"PUT /v2.1/accounts/{accountId}/groups/{groupId}/brands": [],
+"PUT /v2.1/accounts/{accountId}/groups/{groupId}/users": [],
+"PUT /v2.1/accounts/{accountId}/permission_profiles/{permissionProfileId}": [
+"include"
+],
+"PUT /v2.1/accounts/{accountId}/powerforms/{powerFormId}": [],
+"PUT /v2.1/accounts/{accountId}/settings": [],
+"PUT /v2.1/accounts/{accountId}/settings/enote_configuration": [],
+"PUT /v2.1/accounts/{accountId}/settings/envelope_purge_configuration": [],
+"PUT /v2.1/accounts/{accountId}/settings/notification_defaults": [],
+"PUT /v2.1/accounts/{accountId}/settings/password_rules": [],
+"PUT /v2.1/accounts/{accountId}/settings/tabs": [],
+"PUT /v2.1/accounts/{accountId}/shared_access": [
+"item_type",
+"preserve_existing_shared_access",
+"user_ids"
+],
+"PUT /v2.1/accounts/{accountId}/signatures": [],
+"PUT /v2.1/accounts/{accountId}/signatures/{signatureId}": [
+"close_existing_signature"
+],
+"PUT /v2.1/accounts/{accountId}/signatures/{signatureId}/{imageType}": [
+"transparent_png"
+],
+"PUT /v2.1/accounts/{accountId}/signing_groups": [],
+"PUT /v2.1/accounts/{accountId}/signing_groups/{signingGroupId}": [],
+"PUT /v2.1/accounts/{accountId}/signing_groups/{signingGroupId}/users": [],
+"PUT /v2.1/accounts/{accountId}/tab_definitions/{customTabId}": [],
+"PUT /v2.1/accounts/{accountId}/templates": [],
+"PUT /v2.1/accounts/{accountId}/templates/auto_match": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/custom_fields": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/documents": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}": [
+"is_envelope_definition"
+],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/fields": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/pages/{pageNumber}/page_image": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/documents/{documentId}/tabs": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/lock": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/notification": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/recipients": [
+"resend_envelope"
+],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/recipients/document_visibility": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/recipients/{recipientId}/document_visibility": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/recipients/{recipientId}/tabs": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/workflow": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/workflow/scheduledSending": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/workflow/steps/{workflowStepId}": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/workflow/steps/{workflowStepId}/delayedRouting": [],
+"PUT /v2.1/accounts/{accountId}/templates/{templateId}/{templatePart}": [],
+"PUT /v2.1/accounts/{accountId}/users": [
+"allow_all_languages"
+],
+"PUT /v2.1/accounts/{accountId}/users/{userId}": [
+"allow_all_languages"
+],
+"PUT /v2.1/accounts/{accountId}/users/{userId}/authorization/{authorizationId}": [],
+"PUT /v2.1/accounts/{accountId}/users/{userId}/custom_settings": [],
+"PUT /v2.1/accounts/{accountId}/users/{userId}/profile": [],
+"PUT /v2.1/accounts/{accountId}/users/{userId}/profile/image": [],
+"PUT /v2.1/accounts/{accountId}/users/{userId}/settings": [
+"allow_all_languages"
+],
+"PUT /v2.1/accounts/{accountId}/users/{userId}/signatures": [],
+"PUT /v2.1/accounts/{accountId}/users/{userId}/signatures/{signatureId}": [
+"close_existing_signature"
+],
+"PUT /v2.1/accounts/{accountId}/users/{userId}/signatures/{signatureId}/{imageType}": [
+"transparent_png"
+],
+"PUT /v2.1/accounts/{accountId}/watermark": [],
+"PUT /v2.1/accounts/{accountId}/watermark/preview": [],
+"PUT /v2.1/accounts/{accountId}/workspaces/{workspaceId}": [],
+"PUT /v2.1/accounts/{accountId}/workspaces/{workspaceId}/folders/{folderId}/files/{fileId}": [],
+"PUT /v2.1/current_user/notary": [],
+"PUT /v2.1/current_user/notary/jurisdictions/{jurisdictionId}": [],
+"PUT /v2.1/diagnostics/settings": []
 }
 }

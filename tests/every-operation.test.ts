@@ -80,7 +80,10 @@ describe('every picker operation calls a route DocuSign defines', () => {
 		const sent = getRecordedRequests(ctx).length;
 		if (process.env.SWEEP_REPORT) console.log(`SWEEP ${resource}/${operation} sent=${sent} out=${JSON.stringify(out[0]?.[0]?.json ?? {}).slice(0, 160)}`);
 		// Every operation must reach DocuSign with placeholder input, except the ones listed below.
-		expect(sent).toBe(NEEDS_REAL_INPUT.has(`${resource}/${operation}`) ? 0 : 1);
+		const needsInput = NEEDS_REAL_INPUT.has(`${resource}/${operation}`);
+		expect(sent).toBe(needsInput ? 0 : 1);
+		// continueOnFail turns a failure into an error item; a passing operation must not produce one.
+		if (!needsInput) expect(out[0]?.[0]?.json).not.toHaveProperty('error');
 	});
 });
 

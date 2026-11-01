@@ -117,7 +117,7 @@ export const workspaceItemFields: INodeProperties[] = [
 		type: 'json',
 		default: '[]',
 		required: true,
-		description: 'Array of items to delete: [{"itemId": "id1", "itemType": "file"}, ...]',
+		description: 'JSON array of workspace items to delete, each with the DocuSign keys for the item ID and its type (file or folder). Older itemId and itemType keys are converted.',
 		displayOptions: {
 			show: {
 				resource: ['workspaceItem'],
@@ -150,6 +150,20 @@ export const workspaceItemFields: INodeProperties[] = [
 				description: 'Number of items to return',
 			},
 			{
+				displayName: 'Include Files',
+				name: 'includeFiles',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to return the files in the folder',
+			},
+			{
+				displayName: 'Include Sub Folders',
+				name: 'includeSubFolders',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to return the sub folders in the folder',
+			},
+			{
 				displayName: 'Start Position',
 				name: 'start_position',
 				type: 'number',
@@ -161,7 +175,7 @@ export const workspaceItemFields: INodeProperties[] = [
 				name: 'type',
 				type: 'string',
 				default: '',
-				description: 'Filter by item type (e.g., "file", "folder")',
+				description: 'Older shortcut: "file" turns on Include Files, "folder" turns on Include Sub Folders',
 			},
 		],
 	},

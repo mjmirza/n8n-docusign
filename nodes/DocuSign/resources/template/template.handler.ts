@@ -125,15 +125,16 @@ export async function handleTemplate(
 			}
 
 			// Notification
-			if (additionalFields.expireAfter || additionalFields.reminderDelay) {
+			if (additionalFields.expireAfter || additionalFields.reminderDelay || additionalFields.reminderFrequency) {
 				const notification: IDataObject = {};
 				if (additionalFields.expireAfter) {
 					notification.expirations = { expireEnabled: 'true', expireAfter: String(additionalFields.expireAfter) };
 				}
-				if (additionalFields.reminderDelay) {
+				// Either value turns reminders on; an unset one keeps its earlier default.
+				if (additionalFields.reminderDelay || additionalFields.reminderFrequency) {
 					notification.reminders = {
 						reminderEnabled: 'true',
-						reminderDelay: String(additionalFields.reminderDelay),
+						reminderDelay: String(additionalFields.reminderDelay || 3),
 						reminderFrequency: String(additionalFields.reminderFrequency || 2),
 					};
 				}

@@ -401,9 +401,10 @@ export class DocuSign implements INodeType {
 		name: 'docuSign',
 		icon: { light: 'file:docusign.light.svg', dark: 'file:docusign.dark.svg' },
 		group: ['transform'],
-		// Version 3: a list with no results outputs no items. Versions 1 and 2 keep one count item.
-		version: [1, 2, 3],
-		defaultVersion: 3,
+		// Version 3: an empty array outputs no items. Version 4 also drops list responses whose
+		// result arrays are all empty. Versions 1 and 2 keep one count item.
+		version: [1, 2, 3, 4],
+		defaultVersion: 4,
 		subtitle:
 			'={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description:
@@ -648,8 +649,8 @@ export class DocuSign implements INodeType {
 								});
 							}
 						}
-					} else if (emptyMeansNoItems && isEmptyListResponse(operation, obj)) {
-						// Version 3: a list operation whose result arrays are all empty outputs no items.
+					} else if (this.getNode().typeVersion >= 4 && isEmptyListResponse(operation, obj)) {
+						// Version 4: a list operation whose result arrays are all empty outputs no items.
 					} else {
 						returnData.push({ json: result as IDataObject, pairedItem: { item: i } });
 					}

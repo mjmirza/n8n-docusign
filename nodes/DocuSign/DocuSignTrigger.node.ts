@@ -14,6 +14,17 @@ import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workf
 import crypto from 'crypto';
 import { docuSignRequest, assertSafeId } from './transport';
 
+/** Refuses activation without a Connect HMAC key; DocuSign keys cannot be created through the API. */
+async function requireHmacKey(ctx: IHookFunctions, options?: IDataObject): Promise<void> {
+	const opts = options ?? (ctx.getNodeParameter('options', {}) as IDataObject);
+	if ((await resolveHmacSecrets(ctx, opts)).length === 0) {
+		throw new NodeOperationError(
+			ctx.getNode(),
+			'Add a DocuSign Connect HMAC credential with the key from DocuSign Admin > Connect > Connect Keys',
+		);
+	}
+}
+
 /** Deletes a Connect configuration; a 404 means it is already gone. */
 async function deleteStaleSubscription(
 	ctx: IHookFunctions,
@@ -238,6 +249,8 @@ export class DocuSignTrigger implements INodeType {
 	webhookMethods = {
 		default: {
 			async checkExists(this: IHookFunctions): Promise<boolean> {
+				// n8n skips create() for an existing subscription, so the key requirement is checked here too.
+				await requireHmacKey(this);
 				const webhookData = this.getWorkflowStaticData('node');
 				const webhookUrl = this.getNodeWebhookUrl('default') as string;
 
@@ -293,12 +306,7 @@ export class DocuSignTrigger implements INodeType {
 				// Connect HMAC keys are created in DocuSign Admin and cannot be set through the API,
 				// so a secret generated here could never match. Without a key the trigger cannot
 				// verify events, so it refuses to activate instead of accepting unsigned calls.
-				if ((await resolveHmacSecrets(this, options)).length === 0) {
-					throw new NodeOperationError(
-						this.getNode(),
-						'Add a DocuSign Connect HMAC credential with the key from DocuSign Admin > Connect > Connect Keys',
-					);
-				}
+				await requireHmacKey(this, options);
 
 				// includeHMAC makes DocuSign sign each event with the account's Connect keys.
 				const connectConfig: IDataObject = {

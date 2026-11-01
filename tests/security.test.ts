@@ -411,19 +411,23 @@ describe('Security: Allowlist Validation', () => {
 		});
 	}
 
-	it('logo type allowlist: only primary, secondary, email', () => {
-		const VALID = ['primary', 'secondary', 'email'];
-		const INVALID_LOGOS = ['__proto__', 'constructor', 'admin', '', 'Primary'];
-
-		for (const logo of VALID) {
-			// These should not throw on their own — tested via handler
-			expect(['primary', 'secondary', 'email']).toContain(logo);
-		}
-
-		for (const logo of INVALID_LOGOS) {
-			expect(['primary', 'secondary', 'email']).not.toContain(logo);
+	it('logo type allowlist: the handler accepts primary, secondary, email and rejects the rest', async () => {
+		const run = (logoType: string) =>
+			handleAccountBrand(
+				createMockContext({
+					credentials: { docuSignOAuth2Api: { environment: 'demo' } },
+					parameters: { accountId: { 0: 'acct-1' }, brandId: { 0: 'b-1' }, logoType: { 0: logoType } },
+					httpResponses: [{}],
+				}),
+				'deleteLogo',
+				0,
+			);
+		for (const logo of ['primary', 'secondary', 'email']) await expect(run(logo)).resolves.toBeDefined();
+		for (const logo of ['__proto__', 'constructor', 'admin', '', 'Primary']) {
+			await expect(run(logo)).rejects.toThrow('Invalid logo type');
 		}
 	});
+
 });
 
 // Import handleAccount for credential leakage test

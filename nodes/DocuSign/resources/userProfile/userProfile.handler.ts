@@ -41,7 +41,8 @@ export async function handleUserProfile(
 				body.address = address;
 			}
 
-			if (additionalFields.company) body.company = additionalFields.company;
+			// userProfile names the field companyName.
+			if (additionalFields.company) body.companyName = additionalFields.company;
 			if (additionalFields.title) body.title = additionalFields.title;
 			if (additionalFields.userDetails) {
 				body.userDetails = JSON.parse(additionalFields.userDetails as string);

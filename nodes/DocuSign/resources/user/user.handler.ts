@@ -47,7 +47,8 @@ export async function handleUser(
 			if (createFields.jobTitle) newUser.jobTitle = createFields.jobTitle;
 			if (createFields.password) newUser.password = createFields.password;
 			if (createFields.activationAccessCode) newUser.activationAccessCode = createFields.activationAccessCode;
-			if (createFields.groupId) newUser.groupId = createFields.groupId;
+			// userInformation has no groupId; DocuSign takes the group through groupList.
+			if (createFields.groupId) newUser.groupList = [{ groupId: createFields.groupId }];
 			if (createFields.sendActivationEmail !== undefined) newUser.sendActivationEmail = createFields.sendActivationEmail;
 			if (createFields.userSettings) {
 				newUser.userSettings = JSON.parse(createFields.userSettings as string);

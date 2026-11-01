@@ -29,6 +29,7 @@ import { handleTemplateLock } from '../nodes/DocuSign/resources/templateLock/tem
 import { handleFolder } from '../nodes/DocuSign/resources/folder/folder.handler';
 import { handleWorkspaceItem } from '../nodes/DocuSign/resources/workspaceItem/workspaceItem.handler';
 import { handleUser } from '../nodes/DocuSign/resources/user/user.handler';
+import { handleUserProfile } from '../nodes/DocuSign/resources/userProfile/userProfile.handler';
 import { handleEnvelopeTemplate } from '../nodes/DocuSign/resources/envelopeTemplate/envelopeTemplate.handler';
 import { handleEnvelopeComment } from '../nodes/DocuSign/resources/envelopeComment/envelopeComment.handler';
 import { handleAccountPasswordRule } from '../nodes/DocuSign/resources/accountPasswordRule/accountPasswordRule.handler';
@@ -697,7 +698,7 @@ describe('round 3: trigger keeps track of its subscription', () => {
 		Object.assign(createMockContext({ credentials: C, httpResponses: responses }), {
 			getWorkflowStaticData: () => staticData,
 			getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/abc',
-			getNodeParameter: () => 'acct-1',
+			getNodeParameter: (name: string) => (name === 'options' ? { hmacSecret: 'k' } : 'acct-1'),
 			logger: { warn: jest.fn() },
 		}) as unknown as IHookFunctions;
 
@@ -971,10 +972,10 @@ describe('round 4: envelope operations are in the picker', () => {
 });
 
 describe('round 4: node versions keep saved workflows stable', () => {
-	it('the node offers versions 1, 2 and 3, new nodes get 3; saved versions stay', () => {
+	it('the node offers versions 1 to 4, new nodes get 4; saved versions stay', () => {
 		const d = new DocuSign().description;
-		expect(d.version).toEqual([1, 2, 3]);
-		expect(d.defaultVersion).toBe(3);
+		expect(d.version).toEqual([1, 2, 3, 4]);
+		expect(d.defaultVersion).toBe(4);
 	});
 
 	it('version 1 Attachment Get keeps the binary output 2.1.0 shipped', async () => {
@@ -1170,7 +1171,7 @@ describe('round 5: a changed webhook URL removes the old subscription', () => {
 			{
 				getWorkflowStaticData: () => staticData,
 				getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/abc',
-				getNodeParameter: () => 'acct-1',
+				getNodeParameter: (name: string) => (name === 'options' ? { hmacSecret: 'k' } : 'acct-1'),
 				logger: { warn: jest.fn() },
 			},
 		) as unknown as IHookFunctions;
@@ -1478,8 +1479,8 @@ describe('round 8: an empty list response outputs no items on version 3', () => 
 		return (await new DocuSign().execute.call(ctx))[0];
 	};
 
-	it('Group Get Many without Return All returns no items for an empty groups list', async () => {
-		expect(await run(3, 'group', 'list', { returnAll: false, groupFilters: {} }, { groups: [], resultSetSize: '0' })).toEqual([]);
+	it('Group Get Many without Return All returns no items for an empty groups list (version 4)', async () => {
+		expect(await run(4, 'group', 'list', { returnAll: false, groupFilters: {} }, { groups: [], resultSetSize: '0' })).toEqual([]);
 	});
 
 	it('version 2 keeps the response item saved workflows rely on', async () => {
@@ -1516,5 +1517,71 @@ describe('round 8: anchor options go out exactly as chosen', () => {
 	it('the picker offers only Left and Right', () => {
 		const tabs = new DocuSign().description.properties.filter((p) => p.name === 'tabs');
 		expect(JSON.stringify(tabs)).not.toContain('"center"');
+	});
+});
+
+// Round 9: findings from the confirming Codex review of the published 3.4.0.
+
+describe('round 9: version 3 keeps the 3.3.0 output for list responses', () => {
+	it('a saved version 3 Group Get Many still outputs the empty response item', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ resource: 'group', operation: 'list', accountId: 'acct-1', returnAll: false, groupFilters: {} }),
+			httpResponses: [{ groups: [] }],
+			typeVersion: 3,
+		});
+		expect((await new DocuSign().execute.call(ctx))[0]).toEqual([{ json: { groups: [] }, pairedItem: { item: 0 } }]);
+	});
+});
+
+describe('round 9: user and profile fields use DocuSign names', () => {
+	it('user create assigns the group through groupList', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', email: 'a@example.com', userName: 'A', createFields: { groupId: 'g-1' } }),
+			httpResponses: [{}],
+		});
+		await handleUser(ctx, 'create', 0);
+		const user = (getRecordedRequests(ctx)[0].options.body as { newUsers: IDataObject[] }).newUsers[0];
+		expect(user.groupList).toEqual([{ groupId: 'g-1' }]);
+		expect(user).not.toHaveProperty('groupId');
+	});
+
+	it('profile update sends Company as companyName', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', userId: 'u-1', additionalFields: { company: 'Example' } }), httpResponses: [{}] });
+		await handleUserProfile(ctx, 'update', 0);
+		const body = getRecordedRequests(ctx)[0].options.body as IDataObject;
+		expect(body.companyName).toBe('Example');
+		expect(body).not.toHaveProperty('company');
+	});
+});
+
+describe('round 9: Reminder Frequency on its own turns reminders on', () => {
+	it.each([
+		['envelope', handleEnvelope],
+		['template', handleTemplate],
+	])('%s create sends reminders for a frequency set without a delay', async (_k, handler) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', emailSubject: 'Sign', status: 'created', templateName: 'T', name: 'T', description: '', additionalFields: { reminderFrequency: 7 }, signers: {}, recipients: {}, documents: { document: [] } }),
+			httpResponses: [{}],
+		});
+		await (handler as (c: IExecuteFunctions, o: string, i: number) => Promise<unknown>)(ctx, 'create', 0);
+		const notification = (getRecordedRequests(ctx)[0].options.body as { notification: IDataObject }).notification;
+		expect(notification.reminders).toEqual({ reminderEnabled: 'true', reminderDelay: '3', reminderFrequency: '7' });
+	});
+});
+
+describe('round 9: an existing subscription still needs the HMAC key', () => {
+	it('checkExists refuses to report a subscription when no key is configured', async () => {
+		const methods = new DocuSignTrigger().webhookMethods.default;
+		const ctx = Object.assign(createMockContext({ credentials: C, httpResponses: [{ configurations: [{ urlToPublishTo: 'https://n8n.example.com/webhook/abc' }] }] }), {
+			getWorkflowStaticData: () => ({ connectId: 'c-1' }),
+			getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/abc',
+			getNodeParameter: (name: string) => (name === 'options' ? {} : 'acct-1'),
+			logger: { warn: jest.fn() },
+		}) as unknown as IHookFunctions;
+		await expect(methods.checkExists.call(ctx)).rejects.toThrow('HMAC');
+		expect(getRecordedRequests(ctx as unknown as IExecuteFunctions)).toHaveLength(0);
 	});
 });

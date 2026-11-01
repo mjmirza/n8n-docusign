@@ -3,9 +3,14 @@ import { NodeApiError } from 'n8n-workflow';
  * Tests for transport.ts runtime functions (docuSignRequest, docuSignGetAll,
  * resolveCredentials, createCrudHandler) using mocked n8n context.
  */
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { createMockContext, createHttpError } from './helpers/mockContext';
 import { docuSignRequest, docuSignGetAll, createCrudHandler } from '../nodes/DocuSign/transport';
+
+// Some tests assert inside catch; an unexpected success must fail them.
+beforeEach(() => {
+	expect.hasAssertions();
+});
 
 describe('transport runtime', () => {
 	describe('docuSignRequest', () => {

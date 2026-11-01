@@ -5,6 +5,9 @@ import type {
 	INodeTypeDescription,
 	IWebhookResponseData,
 	IDataObject,
+	ICredentialTestFunctions,
+	ICredentialsDecrypted,
+	INodeCredentialTestResult,
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 import crypto from 'crypto';
@@ -43,6 +46,12 @@ export class DocuSignTrigger implements INodeType {
 						authentication: ['jwt'],
 					},
 				},
+			},
+			{
+				// Preferred home for the Connect HMAC key: credentials are encrypted and not exported.
+				name: 'docuSignConnectHmacApi',
+				required: false,
+				testedBy: 'docuSignConnectHmacTest',
 			},
 		],
 		webhooks: [
@@ -190,11 +199,26 @@ export class DocuSignTrigger implements INodeType {
 						typeOptions: { password: true },
 						default: '',
 						description:
-							'Required. The HMAC key from DocuSign Admin > Connect > Connect Keys. DocuSign signs every event with it and unsigned or mismatched events are rejected. Separate several keys with commas during key rotation.',
+							'Deprecated, use the DocuSign Connect HMAC credential instead, which is encrypted and not included in workflow exports. Used only when no such credential is set. The HMAC key from DocuSign Admin > Connect > Connect Keys.',
 					},
 				],
 			},
 		],
+	};
+
+	methods = {
+		credentialTest: {
+			// DocuSign has no endpoint to check an HMAC key, so this checks it is usable locally.
+			async docuSignConnectHmacTest(
+				this: ICredentialTestFunctions,
+				credential: ICredentialsDecrypted,
+			): Promise<INodeCredentialTestResult> {
+				const keys = parseHmacSecrets(credential.data?.hmacSecret);
+				return keys.length > 0
+					? { status: 'OK', message: `${keys.length} key(s) ready. Events are verified when they arrive.` }
+					: { status: 'Error', message: 'Enter the key from DocuSign Admin > Connect > Connect Keys' };
+			},
+		},
 	};
 
 	webhookMethods = {
@@ -227,11 +251,13 @@ export class DocuSignTrigger implements INodeType {
 							return true;
 						}
 					} catch (error) {
-						// The Connect configuration was removed or is unreachable, so n8n recreates it.
 						this.logger.warn('DocuSign Connect configuration check failed', {
 							connectId: String(webhookData.connectId),
 							error: (error as Error).message,
 						});
+						// Only a confirmed 404 means the subscription is gone. Any other failure is
+						// raised, so a transient error never creates a second, duplicate subscription.
+						if (!isNotFound(error)) throw new NodeOperationError(this.getNode(), error as Error);
 					}
 				}
 
@@ -250,10 +276,10 @@ export class DocuSignTrigger implements INodeType {
 				// Connect HMAC keys are created in DocuSign Admin and cannot be set through the API,
 				// so a secret generated here could never match. Without a key the trigger cannot
 				// verify events, so it refuses to activate instead of accepting unsigned calls.
-				if (parseHmacSecrets(options.hmacSecret).length === 0) {
+				if ((await resolveHmacSecrets(this, options)).length === 0) {
 					throw new NodeOperationError(
 						this.getNode(),
-						'Add the HMAC key from DocuSign Admin > Connect > Connect Keys under Options > HMAC Secret',
+						'Add a DocuSign Connect HMAC credential with the key from DocuSign Admin > Connect > Connect Keys',
 					);
 				}
 
@@ -330,11 +356,13 @@ export class DocuSignTrigger implements INodeType {
 							`/accounts/${accountId}/connect/${connectId}`,
 						);
 					} catch (error) {
-						// Cleanup is best effort, the workflow still deactivates.
 						this.logger.warn('DocuSign Connect configuration cleanup failed', {
 							connectId: String(webhookData.connectId),
 							error: (error as Error).message,
 						});
+						// Keep the ID unless DocuSign confirmed it is gone, so the next
+						// deactivation can still remove the subscription instead of orphaning it.
+						if (!isNotFound(error)) return false;
 					}
 				}
 
@@ -350,7 +378,7 @@ export class DocuSignTrigger implements INodeType {
 		const body = this.getBodyData() as IDataObject;
 		const headers = this.getHeaderData() as IDataObject;
 		const options = this.getNodeParameter('options', {}) as IDataObject;
-		const secrets = parseHmacSecrets(options.hmacSecret);
+		const secrets = await resolveHmacSecrets(this, options);
 
 		const req = this.getRequestObject();
 		const rawBody = (req as unknown as { rawBody?: Buffer }).rawBody;
@@ -366,6 +394,21 @@ export class DocuSignTrigger implements INodeType {
 			workflowData: [this.helpers.returnJsonArray(body)],
 		};
 	}
+}
+
+/** The HMAC credential wins; the deprecated node option is the fallback for older workflows. */
+export async function resolveHmacSecrets(
+	ctx: IHookFunctions | IWebhookFunctions,
+	options: IDataObject,
+): Promise<string[]> {
+	try {
+		const credential = await ctx.getCredentials('docuSignConnectHmacApi');
+		const fromCredential = parseHmacSecrets(credential?.hmacSecret);
+		if (fromCredential.length > 0) return fromCredential;
+	} catch {
+		// No HMAC credential attached to this node.
+	}
+	return parseHmacSecrets(options.hmacSecret);
 }
 
 /** Splits the HMAC Secret option into keys; commas allow two keys during rotation. */
@@ -405,4 +448,10 @@ export function verifyDocuSignSignature(
 		}
 	}
 	return false;
+}
+
+/** True when a DocuSign call failed with HTTP 404. */
+function isNotFound(error: unknown): boolean {
+	const e = error as { httpCode?: string | number; statusCode?: number };
+	return Number(e?.httpCode ?? e?.statusCode) === 404;
 }

@@ -12,7 +12,8 @@ export async function handleDiagnosticService(
 ): Promise<unknown> {
 	switch (operation) {
 		case 'get': {
-			return docuSignRequest(ctx, 'GET', 'service_information');
+			// GET /restapi/service_information sits outside the versioned API.
+			return docuSignRequest(ctx, 'GET', 'service_information', undefined, undefined, { apiRoot: 'restapi' });
 		}
 
 		default:

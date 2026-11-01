@@ -32,7 +32,7 @@ export async function handleFolder(
 			if (filters.to_date) qs.to_date = filters.to_date;
 			if (filters.search_text) qs.search_text = filters.search_text;
 			if (filters.include_items !== undefined) qs.include_items = filters.include_items;
-			return docuSignRequest(ctx, 'GET', `${basePath}/${folderId}/items`, undefined, qs);
+			return docuSignRequest(ctx, 'GET', `${basePath}/${folderId}`, undefined, qs);
 		}
 
 		case 'moveEnvelopes': {

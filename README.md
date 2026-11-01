@@ -157,7 +157,7 @@ The **DocuSign Trigger** registers a DocuSign Connect configuration for the work
 - Recipient Delivered
 - Recipient Sent
 
-Set **Options > HMAC Secret** to a key from DocuSign Admin, **Connect**, **Connect Keys**. DocuSign signs every event with its active keys, and the trigger accepts a call only when one signature header matches one of your keys (constant time comparison). Separate two keys with a comma while you rotate. Calls without a valid signature get HTTP 401, and the trigger will not activate without a key.
+Create a **DocuSign Connect HMAC API** credential with a key from DocuSign Admin, **Connect**, **Connect Keys**, and attach it to the trigger. The credential is encrypted and not included in workflow exports. The older Options > HMAC Secret field still works when no credential is attached, but it is stored in the workflow, so move the key to the credential. DocuSign signs every event with its active keys, and the trigger accepts a call only when one signature header matches one of your keys (constant time comparison). Separate two keys with a comma while you rotate. Calls without a valid signature get HTTP 401, and the trigger will not activate without a key.
 
 ## Upgrading to 2.0
 
@@ -168,6 +168,15 @@ Set **Options > HMAC Secret** to a key from DocuSign Admin, **Connect**, **Conne
 | POST and PATCH are no longer retried after 502, 503 or 504 | Check the envelope list before retrying a failed create by hand, the first attempt may have succeeded |
 
 Saved workflows keep their parameters, no field was renamed or removed.
+
+### 2.1
+
+| Change | What to do |
+|---|---|
+| The HMAC key moves to the **DocuSign Connect HMAC API** credential | Create the credential, attach it to the trigger and clear Options > HMAC Secret. The old field keeps working until you do |
+| Envelope Template Delete needs a Document ID | Set the document the template was applied to |
+| Envelope Attachment Get and Envelope Comment Get return binary data in `data` | Read the file from the binary output instead of the JSON |
+| Password Rules Get For User returns the signed-in user's rules | DocuSign has no endpoint for another user's rules |
 
 ## Compatibility
 
@@ -180,7 +189,7 @@ Saved workflows keep their parameters, no field was renamed or removed.
 ### Structure
 
 ```
-credentials/                 OAuth2 and JWT credential types
+credentials/                 OAuth2, JWT and Connect HMAC credential types
 nodes/DocuSign/
   DocuSign.node.ts           action node, routes resources to handlers
   DocuSignTrigger.node.ts    Connect webhook trigger

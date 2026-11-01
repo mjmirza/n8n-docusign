@@ -9,8 +9,8 @@
  * - Input validation bypass
  * - Allowlist bypass attempts
  */
-import { describe, it, expect } from '@jest/globals';
-import { createMockContext, createHttpError } from './helpers/mockContext';
+import { describe, it, expect, beforeEach } from '@jest/globals';
+import { createMockContext, createHttpError, getRecordedRequests } from './helpers/mockContext';
 import { assertSafeId, sanitizeEndpoint, getBaseUrl, docuSignRequest } from '../nodes/DocuSign/transport';
 
 // Import ALL handlers to test security on each
@@ -299,13 +299,10 @@ describe('Security: Credential Leakage Prevention', () => {
 			],
 		});
 
-		try {
-			await handleAccount(ctx, 'get', 0);
-		} catch (e) {
-			const msg = (e as Error).message;
-			expect(msg).not.toContain('Bearer');
-			expect(msg).not.toContain('OAuth');
-		}
+		const error = (await handleAccount(ctx, 'get', 0).catch((e: unknown) => e)) as Error;
+		expect(error).toBeInstanceOf(Error);
+		expect(error.message).not.toContain('Bearer');
+		expect(error.message).not.toContain('OAuth');
 	});
 
 	it('error truncation prevents log bloat', async () => {
@@ -342,9 +339,9 @@ describe('Security: JSON Injection Prevention', () => {
 			},
 			httpResponses: [{}],
 		});
-		// This should parse but not cause pollution — the parsed JSON
-		// is sent to DocuSign, not used internally
+		// It parses and is sent to DocuSign, but must not pollute Object.prototype.
 		await handleEnvelopeDocumentVisibility(ctx, 'update', 0);
+		expect(({} as Record<string, unknown>).polluted).toBeUndefined();
 	});
 
 	it('rejects completely invalid JSON', async () => {
@@ -392,6 +389,7 @@ describe('Security: Allowlist Validation', () => {
 				httpResponses: [{}],
 			});
 			await handleRecipient(ctx, 'add', 0);
+			expect(Object.keys(getRecordedRequests(ctx)[0].options.body as object)).toEqual([type]);
 		});
 	}
 
@@ -430,3 +428,8 @@ describe('Security: Allowlist Validation', () => {
 
 // Import handleAccount for credential leakage test
 import { handleAccount } from '../nodes/DocuSign/resources/account/account.handler';
+
+// Some tests assert inside catch; an unexpected success must fail them.
+beforeEach(() => {
+	expect.hasAssertions();
+});

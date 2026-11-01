@@ -13,7 +13,7 @@ export const accountPasswordRuleFields: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'The ID (GUID) of the user to get password rules for',
+		description: 'Kept for older workflows. DocuSign returns the rules for the user the credential signs in as.',
 		displayOptions: {
 			show: { resource: ['accountPasswordRule'], operation: ['getForUser'] },
 		},

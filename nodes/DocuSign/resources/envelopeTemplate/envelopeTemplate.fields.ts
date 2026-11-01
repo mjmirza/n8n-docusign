@@ -5,5 +5,5 @@ export const envelopeTemplateFields: INodeProperties[] = [
 	accountIdField(['envelopeTemplate']),
 	envelopeIdField(['envelopeTemplate']),
 	templateIdField(['envelopeTemplate'], ['apply', 'applyToDocument', 'delete']),
-	documentIdField(['envelopeTemplate'], ['applyToDocument', 'listByDocument']),
+	documentIdField(['envelopeTemplate'], ['applyToDocument', 'delete', 'listByDocument']),
 ];

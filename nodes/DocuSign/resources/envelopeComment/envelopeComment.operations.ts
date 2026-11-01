@@ -8,7 +8,7 @@ export const envelopeCommentOperations: INodeProperties[] = [
 		noDataExpression: true,
 		displayOptions: { show: { resource: ['envelopeComment'] } },
 		options: [
-			{ name: 'Get', value: 'get', description: 'Get comments for an envelope', action: 'Get envelope comments' },
+			{ name: 'Get', value: 'get', description: 'Download the envelope comments transcript as a PDF', action: 'Get envelope comments' },
 		],
 		default: 'get',
 	},

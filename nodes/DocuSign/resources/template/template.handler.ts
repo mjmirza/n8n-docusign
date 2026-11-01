@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import {
 	docuSignRequest,
 	docuSignGetAll,
@@ -12,6 +13,13 @@ import { buildNotificationBody } from '../../utils/notification';
 /**
  * Handle all Template resource operations.
  */
+/** Maps the picker's rotation values to DocuSign's left/right turns; 180 degrees is two right turns. */
+const ROTATION_TURNS: Record<string, string[]> = {
+	clockwise90: ['right'],
+	clockwise180: ['right', 'right'],
+	counterclockwise90: ['left'],
+};
+
 export async function handleTemplate(
 	ctx: IExecuteFunctions,
 	operation: string,
@@ -148,8 +156,9 @@ export async function handleTemplate(
 			const filters = ctx.getNodeParameter('filters', i, {}) as IDataObject;
 			const qs: IDataObject = {};
 			if (filters.searchText) qs.search_text = filters.searchText;
-			if (filters.folder) qs.folder = filters.folder;
-			if (filters.folderIds) qs.folder_ids = filters.folderIds;
+			// DocuSign has no folder parameter; Folder is a single folder ID, so it joins folder_ids.
+			const folderIds = [filters.folder, filters.folderIds].filter(Boolean).map(String).join(',');
+			if (folderIds) qs.folder_ids = folderIds;
 			if (filters.sharedByMe) qs.shared_by_me = filters.sharedByMe;
 			if (filters.orderBy) qs.order_by = filters.orderBy;
 			if (filters.order) qs.order = filters.order;
@@ -213,10 +222,14 @@ export async function handleTemplate(
 			);
 			const documentId = assertSafeId(ctx.getNodeParameter('documentId', i) as string, 'Document ID');
 			const pageNumber = assertSafeId(ctx.getNodeParameter('pageNumber', i) as string, 'Page Number');
+			// DocuSign's pageRequest.rotate accepts only left or right, each a 90 degree turn.
 			const rotation = ctx.getNodeParameter('rotation', i) as string;
-			return docuSignRequest(ctx, 'PUT', `${tmplPath}/documents/${documentId}/pages/${pageNumber}/page_image`, {
-				rotate: rotation,
-			});
+			const turns = ROTATION_TURNS[rotation];
+			if (!turns) throw new NodeOperationError(ctx.getNode(), `Unsupported rotation: ${rotation}`, { itemIndex: i });
+			const pagePath = `${tmplPath}/documents/${documentId}/pages/${pageNumber}/page_image`;
+			let result: unknown;
+			for (const rotate of turns) result = await docuSignRequest(ctx, 'PUT', pagePath, { rotate });
+			return result;
 		}
 
 		case 'updateGroupShare': {

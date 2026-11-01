@@ -27,7 +27,11 @@ export async function handleWorkspaceItem(
 			const qs: IDataObject = {};
 			if (filters.count !== undefined) qs.count = filters.count;
 			if (filters.start_position !== undefined) qs.start_position = filters.start_position;
-			if (filters.type) qs.type = filters.type;
+			// DocuSign has no type filter; it takes include_files and include_sub_folders flags.
+			if (filters.includeFiles !== undefined) qs.include_files = String(filters.includeFiles);
+			if (filters.includeSubFolders !== undefined) qs.include_sub_folders = String(filters.includeSubFolders);
+			if (filters.type === 'file' && qs.include_files === undefined) qs.include_files = 'true';
+			if (filters.type === 'folder' && qs.include_sub_folders === undefined) qs.include_sub_folders = 'true';
 			// GET .../workspaces/{workspaceId}/folders/{folderId} lists the folder's items.
 			return docuSignRequest(ctx, 'GET', basePath, undefined, qs);
 		}
@@ -123,19 +127,20 @@ export async function handleWorkspaceItem(
 				throw new NodeOperationError(ctx.getNode(), 'Invalid JSON in items');
 			}
 
-			// Validate itemIds
-			if (Array.isArray(items)) {
-				for (const item of items) {
-					const obj = item as Record<string, unknown>;
-					if (obj.itemId) {
-						assertSafeId(obj.itemId as string, 'Item ID');
-					}
-				}
-			}
+			// DocuSign's workspaceItem uses id and type; the older itemId and itemType keys are mapped.
+			const list = Array.isArray(items) ? items : items && typeof items === 'object' ? [items] : [];
+			const mapped = list.map((item) => {
+				const { itemId, itemType, ...rest } = item as Record<string, unknown>;
+				const out: Record<string, unknown> = { ...rest };
+				if (out.id === undefined && itemId !== undefined) out.id = itemId;
+				if (out.type === undefined && itemType !== undefined) out.type = itemType;
+				if (out.id !== undefined) assertSafeId(String(out.id), 'Item ID');
+				return out;
+			});
 
 			// DELETE on the folder URL with a workspaceItemList body.
 			return docuSignRequest(ctx, 'DELETE', basePath, {
-				items,
+				items: mapped,
 			} as unknown as IDataObject);
 		}
 

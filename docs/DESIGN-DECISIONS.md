@@ -32,11 +32,30 @@ which returns a PDF. Get returns that PDF as binary data.
 v2.1 defines `GET /v2.1/current_user/password_rules` and no per-user variant. The User ID field
 is kept so saved workflows still validate, and the description says which rules come back.
 
-## Envelope Attachment: Get returns binary on every node version
+## Envelope Attachment: Get on version 1 returns both earlier outputs
 
-DocuSign returns the attachment file itself (`application/octet-stream`), so Get returns it
-as binary data. 2.1.0 shipped that output, and 3.0.0 briefly put version 1 back on JSON, which
-broke 2.1.0 workflows. Since 3.1.0 both versions return binary, the contract of 2.1.0.
+DocuSign returns the attachment file itself (`application/octet-stream`). 2.1.0 returned it as
+binary with `attachmentId` and `fileName`; 3.0.0 put node version 1 back on the parsed response
+(a JSON body as-is, otherwise the text under `data`). Each choice breaks workflows built on the
+other release. Since 3.2.0 version 1 returns the union: the binary, `attachmentId`, `fileName`,
+and 3.0.0's JSON fields. Version 2 returns the binary with `attachmentId` and `fileName` only.
+
+## Template page rotation sends left or right
+
+`pageRequest.rotate` accepts only `left` or `right`, each a 90 degree turn. The picker keeps its
+values: 90 degrees clockwise sends `right`, counter-clockwise sends `left`, and 180 degrees sends
+two `right` requests in order.
+
+## Workspace folder items use DocuSign's flags and keys
+
+`GET .../folders/{folderId}` takes `include_files` and `include_sub_folders`, not `type`, so the
+older Type filter turns on the matching flag. `workspaceItem` uses `id` and `type`; Delete maps
+the older `itemId` and `itemType` keys.
+
+## Filters the spec has no parameter for
+
+Template Get Many's Folder joins `folder_ids`. `GET connect/logs` has no status parameter, so the
+Connect event log Status filter is applied to the returned entries.
 
 ## Custom fields: Delete sends the field in both lists
 

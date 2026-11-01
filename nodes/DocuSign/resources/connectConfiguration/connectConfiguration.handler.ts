@@ -69,8 +69,12 @@ export async function handleConnectConfiguration(
 			const qs: IDataObject = {};
 			if (filters.from_date) qs.from_date = filters.from_date;
 			if (filters.to_date) qs.to_date = filters.to_date;
-			if (filters.status) qs.status = filters.status;
-			return docuSignRequest(ctx, 'GET', `${basePath}/logs`, undefined, qs);
+			// GET connect/logs has no status parameter, so Status filters the returned log entries.
+			const response = (await docuSignRequest(ctx, 'GET', `${basePath}/logs`, undefined, qs)) as IDataObject;
+			if (!filters.status || !Array.isArray(response?.logs)) return response;
+			const wanted = String(filters.status).toLowerCase();
+			const logs = (response.logs as IDataObject[]).filter((l) => String(l.status ?? '').toLowerCase() === wanted);
+			return { ...response, logs };
 		}
 
 		case 'getEventFailures': {

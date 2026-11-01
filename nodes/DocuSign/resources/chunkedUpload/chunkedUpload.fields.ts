@@ -48,8 +48,8 @@ export const chunkedUploadFields: INodeProperties[] = [
 		name: 'chunkIndex',
 		type: 'number',
 		required: true,
-		default: 0,
-		description: 'The zero-based index of the chunk being uploaded',
+		default: 1,
+		description: 'Zero-based index of the part being added. Create already uploads part 0, so the first Update is part 1.',
 		displayOptions: {
 			show: {
 				resource: ['chunkedUpload'],

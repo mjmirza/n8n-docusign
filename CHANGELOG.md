@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.2.0] - 2026-11-01
+
+### Fixed
+- Envelope Attachment Get on node version 1 returns the binary and fields of 2.1.0 plus the JSON fields of 3.0.0, so workflows built on either release keep working.
+- Template page rotation sends DocuSign's `left` or `right`; 180 degrees is two right turns.
+- Workspace folder list sends `include_files` and `include_sub_folders` instead of an unsupported `type`; Delete sends `id` and `type`, converting `itemId` and `itemType`.
+- Chunked Upload Update defaults Chunk Index to 1, since Create already uploads part 0.
+- Phone numbers written as `+14155550100` are split into country code and number without needing a space.
+- Retries read `Retry-After` from n8n's wrapped error (`error.cause.response.headers`) as well as raw errors.
+- Template Get Many sends Folder as `folder_ids`; the Connect event log Status filter is applied to the returned logs instead of an unsupported query parameter.
+- The npm package includes `docs/TRADEMARKS.md`.
+
+### Added
+- Include Files and Include Sub Folders filters on workspace folder list.
+
+### Changed
+- Tests reject query parameters the spec does not define for a route, and the every-operation sweep fails when an operation produces an error item.
+
+
 ## [3.1.0] - 2026-11-01
 
 ### Fixed

@@ -43,7 +43,8 @@ import { handleBillingPlan } from '../nodes/DocuSign/resources/billingPlan/billi
 import { handleEnvelopeCustomField } from '../nodes/DocuSign/resources/envelopeCustomField/envelopeCustomField.handler';
 import { handleTemplateCustomField } from '../nodes/DocuSign/resources/templateCustomField/templateCustomField.handler';
 import { handleAccount } from '../nodes/DocuSign/resources/account/account.handler';
-import { matchSpecRoute } from './setup/spec-routes';
+import { matchSpecRoute, unknownQueryParams } from './setup/spec-routes';
+import { toRecipientPhone } from '../nodes/DocuSign/utils/recipientDelivery';
 import { readFileSync } from 'fs';
 
 // Some tests assert inside catch; an unexpected success must fail them.
@@ -736,7 +737,8 @@ describe('round 3: routes from the v2.1 spec', () => {
 		const del = createMockContext({ credentials: C, parameters: params({ ...base, itemsJson: '[{"itemId":"i-1"}]' }), httpResponses: [{}] });
 		await handleWorkspaceItem(del, 'deleteFolderItems', 0);
 		expect(urlOf(del)).toBe(`${DEMO}/accounts/acct-1/workspaces/w-1/folders/f-1`);
-		expect(getRecordedRequests(del)[0].options.body).toEqual({ items: [{ itemId: 'i-1' }] });
+		// DocuSign's workspaceItem key is id; the older itemId input is converted.
+		expect(getRecordedRequests(del)[0].options.body).toEqual({ items: [{ id: 'i-1' }] });
 	});
 
 	it('user profile image uses users/{id}/profile/image', async () => {
@@ -1179,5 +1181,131 @@ describe('round 5: the spec-route check never counts as an assertion', () => {
 		const src = readFileSync(`${__dirname}/setup/spec-routes.ts`, 'utf8');
 		expect(src).not.toMatch(/\bexpect\(/);
 		expect(src).toContain('throw new Error');
+	});
+});
+
+// Round 6: findings from the Codex review of 3.1.0.
+
+describe('round 6: version 1 Attachment Get keeps both earlier outputs', () => {
+	const run = async (bytes: Buffer, typeVersion: number) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', envelopeId: 'e-1', attachmentId: 'a-1' }),
+			httpResponses: [bytes],
+			typeVersion,
+		});
+		return (await handleEnvelopeAttachment(ctx, 'get', 0)) as { json: IDataObject; binary: { data: { data: string } } };
+	};
+
+	it('version 1 returns the binary of 2.1.0 and the JSON fields of 3.0.0', async () => {
+		const out = await run(Buffer.from('{"name":"x","attachmentType":"pdf"}'), 1);
+		expect(out.json).toEqual({ attachmentId: 'a-1', fileName: 'attachment_a-1', name: 'x', attachmentType: 'pdf' });
+		expect(Buffer.from(out.binary.data.data, 'base64').toString()).toBe('{"name":"x","attachmentType":"pdf"}');
+	});
+
+	it('version 1 passes a non-JSON body as text under data, as 3.0.0 did', async () => {
+		const out = await run(Buffer.from('plain'), 1);
+		expect(out.json).toMatchObject({ data: 'plain', attachmentId: 'a-1' });
+	});
+
+	it('version 2 stays binary with the file name only', async () => {
+		const out = await run(Buffer.from('{"name":"x"}'), 2);
+		expect(out.json).toEqual({ attachmentId: 'a-1', fileName: 'attachment_a-1' });
+	});
+});
+
+describe('round 6: page rotation uses DocuSign left and right', () => {
+	it.each([
+		['clockwise90', ['right']],
+		['counterclockwise90', ['left']],
+		['clockwise180', ['right', 'right']],
+	])('%s sends %j', async (rotation, turns) => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', templateId: 'tp-1', documentId: '1', pageNumber: '2', rotation }),
+			httpResponses: [{}, {}],
+		});
+		await handleTemplate(ctx, 'rotateDocumentPage', 0);
+		expect(getRecordedRequests(ctx).map((r) => (r.options.body as IDataObject).rotate)).toEqual(turns);
+	});
+});
+
+describe('round 6: workspace folder items', () => {
+	const base = { accountId: 'acct-1', workspaceId: 'w-1', folderId: 'f-1' };
+	it.each([
+		[{ type: 'file' }, { include_files: 'true' }],
+		[{ type: 'folder' }, { include_sub_folders: 'true' }],
+		[{ includeFiles: true, includeSubFolders: false }, { include_files: 'true', include_sub_folders: 'false' }],
+	])('list filters %j send %j and never type', async (filters, qs) => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ ...base, filters }), httpResponses: [{}] });
+		await handleWorkspaceItem(ctx, 'listFolderItems', 0);
+		expect(getRecordedRequests(ctx)[0].options.qs).toEqual(qs);
+	});
+
+	it('delete converts itemId and itemType to id and type', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ ...base, itemsJson: '[{"itemId":"i-1","itemType":"file"},{"id":"i-2","type":"folder"}]' }), httpResponses: [{}] });
+		await handleWorkspaceItem(ctx, 'deleteFolderItems', 0);
+		expect(getRecordedRequests(ctx)[0].options.body).toEqual({ items: [{ id: 'i-1', type: 'file' }, { id: 'i-2', type: 'folder' }] });
+	});
+});
+
+describe('round 6: chunked upload update starts at part 1', () => {
+	it('Chunk Index defaults to 1, after the part Create uploads', () => {
+		const field = new DocuSign().description.properties.find((p) => p.name === 'chunkIndex');
+		expect(field?.default).toBe(1);
+	});
+});
+
+describe('round 6: phone numbers without a separator', () => {
+	it.each([
+		['+14155550100', { countryCode: '1', number: '4155550100' }],
+		['+447700900123', { countryCode: '44', number: '7700900123' }],
+		['+353871234567', { countryCode: '353', number: '871234567' }],
+		['+49 1701234567', { countryCode: '49', number: '1701234567' }],
+	])('%s', (input, expected) => {
+		expect(toRecipientPhone(input)).toEqual(expected);
+	});
+});
+
+describe('round 6: Retry-After on a wrapped n8n error', () => {
+	it('waits the server time read from error.cause.response.headers', async () => {
+		const spy = jest.spyOn(global, 'setTimeout');
+		const wrapped = Object.assign(new Error('slow down'), { httpCode: '429', cause: { response: { headers: { 'retry-after': '2' } } } });
+		const ctx = createMockContext({ credentials: C, httpResponses: [wrapped, { ok: true }] });
+		await expect(docuSignRequest(ctx, 'GET', 'accounts/a')).resolves.toEqual({ ok: true });
+		expect(spy.mock.calls.some((call) => call[1] === 2000)).toBe(true);
+		spy.mockRestore();
+	});
+});
+
+describe('round 6: query parameters match the spec', () => {
+	it('the spec check names a query parameter the route does not define', () => {
+		expect(unknownQueryParams('GET', `${DEMO}/accounts/a/templates`, { folder: 'x', count: '1' })).toEqual(['folder']);
+	});
+
+	it('template Get Many sends Folder as folder_ids', async () => {
+		const ctx = createMockContext({ credentials: C, parameters: params({ accountId: 'acct-1', returnAll: false, limit: 10, filters: { folder: 'f-1', folderIds: 'f-2' } }), httpResponses: [{}] });
+		await handleTemplate(ctx, 'getAll', 0);
+		const qs = getRecordedRequests(ctx)[0].options.qs as IDataObject;
+		expect(qs.folder_ids).toBe('f-1,f-2');
+		expect(qs).not.toHaveProperty('folder');
+	});
+
+	it('Connect event log filters Status after DocuSign returns the logs', async () => {
+		const ctx = createMockContext({
+			credentials: C,
+			parameters: params({ accountId: 'acct-1', filters: { status: 'failed' } }),
+			httpResponses: [{ logs: [{ logId: '1', status: 'Failed' }, { logId: '2', status: 'Sent' }] }],
+		});
+		const out = (await handleConnectConfiguration(ctx, 'getEventLog', 0)) as { logs: IDataObject[] };
+		expect(out.logs.map((l) => l.logId)).toEqual(['1']);
+		expect(getRecordedRequests(ctx)[0].options.qs ?? {}).not.toHaveProperty('status');
+	});
+});
+
+describe('round 6: the package carries the trademark notice', () => {
+	it('files includes docs/TRADEMARKS.md', () => {
+		const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { files: string[] };
+		expect(pkg.files).toContain('docs/TRADEMARKS.md');
 	});
 });

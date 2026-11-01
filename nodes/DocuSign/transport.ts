@@ -397,9 +397,10 @@ export async function docuSignRequest(
 				status !== undefined && (idempotent ? RETRY_CODES.has(status) : status === 429);
 
 			if (attempt < MAX_RETRIES && retryable) {
-				const retryAfterMs = parseRetryAfter(
-					err.response?.headers?.['retry-after'],
-				);
+				// n8n's NodeApiError keeps the Axios response under cause; raw errors carry it directly.
+				const cause = (err as { cause?: { response?: { headers?: Record<string, unknown> } } }).cause;
+				const headers = err.response?.headers ?? cause?.response?.headers;
+				const retryAfterMs = parseRetryAfter(headers?.['retry-after'] as string | undefined);
 				const baseDelay = Math.min(
 					1_000 * Math.pow(2, attempt),
 					10_000,

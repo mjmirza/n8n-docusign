@@ -178,7 +178,7 @@ export const templateFields: INodeProperties[] = [
 		default: {},
 		displayOptions: { show: { resource: ['template'], operation: ['getAll'] } },
 		options: [
-			{ displayName: 'Folder', name: 'folder', type: 'string', default: '' },
+			{ displayName: 'Folder', name: 'folder', type: 'string', default: '', description: 'A folder ID, sent as folder_ids together with Folder IDs' },
 			{ displayName: 'Folder IDs', name: 'folderIds', type: 'string', default: '' },
 			{ displayName: 'Order By', name: 'orderBy', type: 'options', options: [{ name: 'Name', value: 'name' }, { name: 'Modified', value: 'modified' }, { name: 'Used', value: 'used' }], default: 'name' },
 			{ displayName: 'Order Direction', name: 'order', type: 'options', options: [{ name: 'Ascending', value: 'asc' }, { name: 'Descending', value: 'desc' }], default: 'asc' },

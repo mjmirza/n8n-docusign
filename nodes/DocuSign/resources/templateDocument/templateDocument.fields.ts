@@ -18,7 +18,10 @@ export const templateDocumentFields: INodeProperties[] = [
 				displayName: 'Content',
 				name: 'content',
 				values: [
+					{ displayName: 'Base64 Content', name: 'documentBase64', type: 'string', default: '', displayOptions: { show: { source: ['base64'] } } },
+					{ displayName: 'Binary Property', name: 'binaryProperty', type: 'string', default: 'data', displayOptions: { show: { source: ['binary'] } } },
 					{ displayName: 'Document Name', name: 'name', type: 'string', default: '' },
+					{ displayName: 'File Extension', name: 'fileExtension', type: 'options', options: [{ name: 'PDF', value: 'pdf' }, { name: 'DOCX', value: 'docx' }, { name: 'HTML', value: 'html' }], default: 'pdf' },
 					{
 						displayName: 'Source',
 						name: 'source',
@@ -29,9 +32,6 @@ export const templateDocumentFields: INodeProperties[] = [
 						],
 						default: 'binary',
 					},
-					{ displayName: 'Binary Property', name: 'binaryProperty', type: 'string', default: 'data', displayOptions: { show: { source: ['binary'] } } },
-					{ displayName: 'Base64 Content', name: 'documentBase64', type: 'string', default: '', displayOptions: { show: { source: ['base64'] } } },
-					{ displayName: 'File Extension', name: 'fileExtension', type: 'options', options: [{ name: 'PDF', value: 'pdf' }, { name: 'DOCX', value: 'docx' }, { name: 'HTML', value: 'html' }], default: 'pdf' },
 				],
 			},
 		],

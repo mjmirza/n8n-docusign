@@ -14,7 +14,7 @@ export class DocuSignTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'DocuSign Trigger',
 		name: 'docuSignTrigger',
-		icon: 'file:docusign.png',
+		icon: { light: 'file:docusign.light.svg', dark: 'file:docusign.dark.svg' },
 		group: ['trigger'],
 		version: 1,
 		subtitle: '={{$parameter["events"].join(", ")}}',
@@ -99,51 +99,51 @@ export class DocuSignTrigger implements INodeType {
 				description: 'The envelope events to listen for',
 				options: [
 					{
-						name: 'Envelope — Completed',
+						name: 'Envelope Completed',
 						value: 'envelope-completed',
 					},
 					{
-						name: 'Envelope — Created',
+						name: 'Envelope Created',
 						value: 'envelope-created',
 					},
 					{
-						name: 'Envelope — Declined',
+						name: 'Envelope Declined',
 						value: 'envelope-declined',
 					},
 					{
-						name: 'Envelope — Delivered',
+						name: 'Envelope Delivered',
 						value: 'envelope-delivered',
 					},
 					{
-						name: 'Envelope — Sent',
+						name: 'Envelope Sent',
 						value: 'envelope-sent',
 					},
 					{
-						name: 'Envelope — Voided',
+						name: 'Envelope Voided',
 						value: 'envelope-voided',
 					},
 					{
-						name: 'Recipient — Auth Failed',
+						name: 'Recipient Auth Failed',
 						value: 'recipient-authenticationfailed',
 					},
 					{
-						name: 'Recipient — Auto Responded',
+						name: 'Recipient Auto Responded',
 						value: 'recipient-autoresponded',
 					},
 					{
-						name: 'Recipient — Completed',
+						name: 'Recipient Completed',
 						value: 'recipient-completed',
 					},
 					{
-						name: 'Recipient — Declined',
+						name: 'Recipient Declined',
 						value: 'recipient-declined',
 					},
 					{
-						name: 'Recipient — Delivered',
+						name: 'Recipient Delivered',
 						value: 'recipient-delivered',
 					},
 					{
-						name: 'Recipient — Sent',
+						name: 'Recipient Sent',
 						value: 'recipient-sent',
 					},
 				],
@@ -222,8 +222,12 @@ export class DocuSignTrigger implements INodeType {
 						if (config && (config.urlToPublishTo as string) === webhookUrl) {
 							return true;
 						}
-					} catch {
-						// Connect configuration no longer exists
+					} catch (error) {
+						// The Connect configuration was removed or is unreachable, so n8n recreates it.
+						this.logger.warn('DocuSign Connect configuration check failed', {
+							connectId: String(webhookData.connectId),
+							error: (error as Error).message,
+						});
 					}
 				}
 
@@ -322,8 +326,12 @@ export class DocuSignTrigger implements INodeType {
 							'DELETE',
 							`/accounts/${accountId}/connect/${connectId}`,
 						);
-					} catch {
-						// Ignore cleanup errors
+					} catch (error) {
+						// Cleanup is best effort, the workflow still deactivates.
+						this.logger.warn('DocuSign Connect configuration cleanup failed', {
+							connectId: String(webhookData.connectId),
+							error: (error as Error).message,
+						});
 					}
 				}
 

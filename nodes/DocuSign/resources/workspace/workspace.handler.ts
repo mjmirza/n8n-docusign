@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { docuSignRequest, accountPath, assertSafeId } from '../../transport';
 
 /**
@@ -47,7 +48,7 @@ export async function handleWorkspace(
 					ctx.getNodeParameter('requestBody', i) as string,
 				) as IDataObject;
 			} catch {
-				throw new Error('Invalid JSON in request body');
+				throw new NodeOperationError(ctx.getNode(), 'Invalid JSON in request body');
 			}
 			return docuSignRequest(ctx, 'PUT', `${basePath}/${workspaceId}`, body);
 		}

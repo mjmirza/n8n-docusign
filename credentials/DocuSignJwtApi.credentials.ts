@@ -1,4 +1,5 @@
 import type {
+	Icon,
 	ICredentialTestRequest,
 	ICredentialType,
 	INodeProperties,
@@ -7,6 +8,10 @@ import type {
 export class DocuSignJwtApi implements ICredentialType {
 	name = 'docuSignJwtApi';
 	displayName = 'DocuSign JWT API';
+	icon: Icon = {
+		light: 'file:../nodes/DocuSign/docusign.light.svg',
+		dark: 'file:../nodes/DocuSign/docusign.dark.svg',
+	};
 	documentationUrl = 'https://developers.docusign.com/platform/auth/jwt/';
 
 	properties: INodeProperties[] = [

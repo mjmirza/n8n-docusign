@@ -41,13 +41,13 @@ export const templateViewFields: INodeProperties[] = [
 			show: { resource: ['templateView'], operation: ['createEdit'] },
 		},
 		options: [
-			{ displayName: 'Show Back Button', name: 'showBackButton', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false' },
 			{ displayName: 'Back Button Action', name: 'backButtonAction', type: 'string', default: '', description: 'Action when back button is clicked' },
+			{ displayName: 'Lock Token', name: 'lockToken', type: 'string', typeOptions: { password: true }, default: '', description: 'Lock token if template is locked' },
+			{ displayName: 'Show Advanced Options', name: 'showAdvancedOptions', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false' },
+			{ displayName: 'Show Back Button', name: 'showBackButton', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false' },
 			{ displayName: 'Show Discard Action', name: 'showDiscardAction', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'true' },
 			{ displayName: 'Show Header Actions', name: 'showHeaderActions', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'true' },
-			{ displayName: 'Show Advanced Options', name: 'showAdvancedOptions', type: 'options', options: [{ name: 'Yes', value: 'true' }, { name: 'No', value: 'false' }], default: 'false' },
 			{ displayName: 'Starting Screen', name: 'startingScreen', type: 'string', default: '', description: 'Initial screen to display (e.g., "tagger", "prepare", "recipients")' },
-			{ displayName: 'Lock Token', name: 'lockToken', type: 'string', default: '', description: 'Lock token if template is locked' },
 		],
 	},
 ];

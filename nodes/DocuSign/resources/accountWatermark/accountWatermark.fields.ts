@@ -46,9 +46,17 @@ export const accountWatermarkFields: INodeProperties[] = [
 			{
 				displayName: 'Font Color',
 				name: 'fontColor',
-				type: 'string',
+				type: 'options',
+				options: [
+					{ name: 'Account Default', value: '' },
+					{ name: 'Black', value: 'black' },
+					{ name: 'Blue', value: 'blue' },
+					{ name: 'Gray', value: 'gray' },
+					{ name: 'Red', value: 'red' },
+					{ name: 'Yellow', value: 'yellow' },
+				],
 				default: '',
-				description: 'The color of the watermark font (e.g., "#000000")',
+				description: 'The color of the watermark font',
 			},
 			{
 				displayName: 'Font Size',

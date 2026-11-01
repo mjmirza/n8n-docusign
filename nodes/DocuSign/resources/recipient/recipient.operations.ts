@@ -6,7 +6,7 @@ export const recipientOperations: INodeProperties[] = [
 		name: 'operation',
 		type: 'options',
 		noDataExpression: true,
-		displayOptions: { show: { resource: ['recipient'] } },
+		displayOptions: { show: { resource: ['recipient', 'envelopeRecipient'] } },
 		options: [
 			{
 				name: 'Add',
@@ -23,7 +23,7 @@ export const recipientOperations: INodeProperties[] = [
 			{
 				name: 'Get Many',
 				value: 'getAll',
-				description: 'Get all recipients of an envelope',
+				description: 'Get many recipients of an envelope',
 				action: 'Get many recipients',
 			},
 			{

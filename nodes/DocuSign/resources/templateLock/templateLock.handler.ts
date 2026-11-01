@@ -1,5 +1,5 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
-import { docuSignRequest, templatePath } from '../../transport';
+import { docuSignRequest, templatePath, lockEditOptions } from '../../transport';
 
 export async function handleTemplateLock(
 	ctx: IExecuteFunctions,
@@ -37,18 +37,16 @@ export async function handleTemplateLock(
 			const lockToken = ctx.getNodeParameter('lockToken', i, '') as string;
 			const templatePassword = ctx.getNodeParameter('templatePassword', i, '') as string;
 			const body: IDataObject = { lockDurationInSeconds: String(duration) };
-			if (lockToken) body.lockToken = lockToken;
 			if (templatePassword) body.templatePassword = templatePassword;
-			return docuSignRequest(ctx, 'PUT', basePath, body);
+			return docuSignRequest(ctx, 'PUT', basePath, body, undefined, lockEditOptions(lockToken, duration));
 		}
 
 		case 'delete': {
 			const lockToken = ctx.getNodeParameter('lockToken', i, '') as string;
 			const templatePassword = ctx.getNodeParameter('templatePassword', i, '') as string;
 			const body: IDataObject = {};
-			if (lockToken) body.lockToken = lockToken;
 			if (templatePassword) body.templatePassword = templatePassword;
-			return docuSignRequest(ctx, 'DELETE', basePath, body);
+			return docuSignRequest(ctx, 'DELETE', basePath, body, undefined, lockEditOptions(lockToken));
 		}
 
 		default:

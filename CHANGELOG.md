@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.0.1] - 2026-11-01
+
+### Fixed
+- DocuSign Trigger recognises its existing Connect configuration. DocuSign returns it inside a `configurations` list, which the check missed, so every restart registered a second subscription and events ran twice.
+- Recipient Update sends Access Code, Client User ID, delivery method and the email notification. Before, only email, name, routing order and note reached DocuSign, so an access code set here was silently dropped.
+- SMS delivery sends `deliveryMethod: SMS` and the phone as `{ countryCode, number }` on Envelope Create, Recipient Add and Update and Create From Template. Before, the phone went out as `{ phoneNumber }`, which DocuSign does not accept. Enter it as country code, a space, then the number, for example `+49 1701234567`.
+- Envelope and template lock Update and Delete send the lock token in the `X-DocuSign-Edit` header. Before, it went in the body, which DocuSign ignores, so extending or releasing a lock failed.
+- Template Document Delete calls `DELETE .../documents` with the document ID in the body. Template Recipient Create Preview posts to `.../templates/{id}/views/recipient_preview`. Envelope Publish posts to `connect/envelopes/publish/historical`. User Contact Create and Update send `contactList`.
+- Include Documents on the trigger now also asks for documents in the JSON event data, so the PDFs arrive.
+- JWT setup text names the Production consent host too and says to register a redirect URI.
+
+### Changed
+- Tests that asserted `true`, or only asserted inside a `catch`, now check the real result.
+- README says most, not all, of the eSignature API is covered.
+
 ## [2.0.0] - 2026-11-01
 
 ### Breaking

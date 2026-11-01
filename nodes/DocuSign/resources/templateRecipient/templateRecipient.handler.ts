@@ -88,7 +88,9 @@ export async function handleTemplateRecipient(
 
 		case 'createPreview': {
 			const returnUrl = ctx.getNodeParameter('returnUrl', i) as string;
-			return docuSignRequest(ctx, 'POST', `${basePath}/views/recipient_preview`, { returnUrl });
+			// The preview view hangs off the template, not its recipients: .../templates/{id}/views/recipient_preview
+			const previewPath = basePath.replace(/\/recipients$/, '/views/recipient_preview');
+			return docuSignRequest(ctx, 'POST', previewPath, { returnUrl });
 		}
 
 		default:

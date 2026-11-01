@@ -3,7 +3,7 @@
  * Tests every operation for security (ID validation) and correctness.
  */
 import { describe, it, expect } from '@jest/globals';
-import { createMockContext } from './helpers/mockContext';
+import { createMockContext, getRecordedRequests } from './helpers/mockContext';
 
 import { handleTemplate } from '../nodes/DocuSign/resources/template/template.handler';
 import { handleTemplateDocument } from '../nodes/DocuSign/resources/templateDocument/templateDocument.handler';
@@ -227,6 +227,10 @@ describe('handleTemplateDocument', () => {
 			httpResponses: [{}],
 		});
 		await handleTemplateDocument(ctx, 'delete', 0);
+		const req = getRecordedRequests(ctx)[0].options;
+		expect(req.method).toBe('DELETE');
+		expect(String(req.url)).toMatch(/\/templates\/[^/]+\/documents$/);
+		expect(req.body).toEqual({ documents: [{ documentId: '2' }] });
 	});
 
 	it('update — should PUT document with binary', async () => {

@@ -39,14 +39,16 @@ export async function handleUserContact(
 			if (additionalFields.signingGroupName) contact.signingGroupName = additionalFields.signingGroupName;
 			if (additionalFields.shared !== undefined) contact.shared = additionalFields.shared;
 
-			return docuSignRequest(ctx, 'POST', basePath, { contacts: [contact] } as unknown as IDataObject);
+			return docuSignRequest(ctx, 'POST', basePath, { contactList: [contact] } as unknown as IDataObject);
 		}
 
 		case 'update': {
 			const contacts = JSON.parse(
 				ctx.getNodeParameter('contactsBody', i) as string,
 			);
-			return docuSignRequest(ctx, 'PUT', basePath, { contacts } as unknown as IDataObject);
+			// contactModRequest takes contactList; accept a bare array or an object that already has it.
+			const contactList = Array.isArray(contacts) ? contacts : (contacts as IDataObject).contactList ?? [contacts];
+			return docuSignRequest(ctx, 'PUT', basePath, { contactList } as unknown as IDataObject);
 		}
 
 		case 'delete': {

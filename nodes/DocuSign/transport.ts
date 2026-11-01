@@ -304,6 +304,8 @@ export interface DocuSignRequestOptions {
 	returnFullResponse?: boolean;
 	/** null or 'arraybuffer' returns the body as a Buffer */
 	encoding?: null | 'arraybuffer';
+	/** Extra request headers, for example X-DocuSign-Edit for locked envelopes */
+	headers?: Record<string, string>;
 	json?: boolean;
 	contentType?: string;
 }
@@ -339,6 +341,7 @@ export async function docuSignRequest(
 		headers: {
 			Accept: 'application/json',
 			'Content-Type': options?.contentType || 'application/json',
+			...options?.headers,
 		},
 		json: options?.json !== false,
 		timeout: 30_000,
@@ -607,4 +610,15 @@ export function createCrudHandler(config: {
 				);
 		}
 	};
+}
+
+/**
+ * DocuSign proves lock ownership with the X-DocuSign-Edit header, a JSON object with the
+ * token from the lock create call. A lockToken in the body is ignored.
+ */
+export function lockEditOptions(lockToken: string, durationSeconds?: number): DocuSignRequestOptions | undefined {
+	if (!lockToken) return undefined;
+	const edit: Record<string, string> = { LockToken: lockToken };
+	if (durationSeconds !== undefined) edit.LockDurationInSeconds = String(durationSeconds);
+	return { headers: { 'X-DocuSign-Edit': JSON.stringify(edit) } };
 }

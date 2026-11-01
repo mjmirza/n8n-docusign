@@ -69,7 +69,9 @@ export class DocuSignJwtApi implements ICredentialType {
 			displayName:
 				'Setup: Go to developers.docusign.com → Settings → Apps and Keys → create an app. ' +
 				'Copy the Integration Key. Under Service Integration, click Generate RSA and save the private key. ' +
-				'Then grant consent once by visiting: https://account-d.docusign.com/oauth/auth?response_type=code&scope=signature%20impersonation&client_id=YOUR_INTEGRATION_KEY&redirect_uri=https://www.docusign.com',
+				'Add a Redirect URI to the app (any URL you control, for example https://www.docusign.com), then grant consent once as the impersonated user: ' +
+				'https://account-d.docusign.com/oauth/auth?response_type=code&scope=signature%20impersonation&client_id=YOUR_INTEGRATION_KEY&redirect_uri=YOUR_REDIRECT_URI for Demo, ' +
+				'or the same URL on account.docusign.com for Production.',
 			name: 'setupNotice',
 			type: 'notice',
 			default: '',

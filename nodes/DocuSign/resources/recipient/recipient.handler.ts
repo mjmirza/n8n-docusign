@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { applyDeliveryMethod } from '../../utils/recipientDelivery';
 import { docuSignRequest, assertSafeId, envelopePath } from '../../transport';
 
 /** Allowlist of valid DocuSign recipient types — prevents prototype pollution */
@@ -78,12 +79,7 @@ export async function handleRecipient(
 			}
 
 			// Delivery method + phone
-			if (additionalFields.deliveryMethod && additionalFields.deliveryMethod !== 'email') {
-				recipient.deliveryMethod = additionalFields.deliveryMethod;
-				if (additionalFields.phoneNumber) {
-					recipient.phoneNumber = { phoneNumber: additionalFields.phoneNumber };
-				}
-			}
+			applyDeliveryMethod(recipient, additionalFields.deliveryMethod, additionalFields.phoneNumber);
 
 			// Per-recipient email notification
 			if (additionalFields.emailNotificationSubject || additionalFields.emailNotificationBody) {
@@ -119,6 +115,15 @@ export async function handleRecipient(
 			if (updateFields.routingOrder)
 				recipient.routingOrder = updateFields.routingOrder;
 			if (updateFields.note) recipient.note = updateFields.note;
+			if (updateFields.accessCode) recipient.accessCode = updateFields.accessCode;
+			if (updateFields.clientUserId) recipient.clientUserId = updateFields.clientUserId;
+			applyDeliveryMethod(recipient, updateFields.deliveryMethod, updateFields.phoneNumber);
+			if (updateFields.emailNotificationSubject || updateFields.emailNotificationBody) {
+				const emailNotification: IDataObject = {};
+				if (updateFields.emailNotificationSubject) emailNotification.emailSubject = updateFields.emailNotificationSubject;
+				if (updateFields.emailNotificationBody) emailNotification.emailBody = updateFields.emailNotificationBody;
+				recipient.emailNotification = emailNotification;
+			}
 
 			return docuSignRequest(ctx, 'PUT', basePath, {
 				[recipientType]: [recipient],

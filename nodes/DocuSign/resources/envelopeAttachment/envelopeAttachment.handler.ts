@@ -32,8 +32,8 @@ export async function handleEnvelopeAttachment(
 			let data: string;
 			if (source === 'binary') {
 				const binaryProp = ctx.getNodeParameter('binaryProperty', i, 'data') as string;
-				const binaryData = ctx.helpers.assertBinaryData(i, binaryProp);
-				data = binaryData.data;
+				ctx.helpers.assertBinaryData(i, binaryProp);
+				data = (await ctx.helpers.getBinaryDataBuffer(i, binaryProp)).toString('base64');
 			} else {
 				data = ctx.getNodeParameter('base64Content', i) as string;
 			}

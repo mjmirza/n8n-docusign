@@ -159,7 +159,9 @@ export async function handleEnvelope(
 				// Document content source
 				if (doc.source === 'binary' && doc.binaryProperty) {
 					const binaryData = ctx.helpers.assertBinaryData(i, doc.binaryProperty as string);
-					document.documentBase64 = binaryData.data;
+					// binaryData.data is only a storage reference in filesystem and S3 binary mode.
+					const buffer = await ctx.helpers.getBinaryDataBuffer(i, doc.binaryProperty as string);
+					document.documentBase64 = buffer.toString('base64');
 					if (binaryData.fileName) document.name = document.name || binaryData.fileName;
 				} else if (doc.source === 'base64' && doc.documentBase64) {
 					document.documentBase64 = doc.documentBase64;
@@ -299,22 +301,8 @@ export async function handleEnvelope(
 				i,
 				{},
 			) as IDataObject;
-			const rolesList = (rolesData.role || []) as Array<{
-				roleName: string;
-				email: string;
-				name: string;
-				clientUserId?: string;
-			}>;
-
-			const templateRoles = rolesList.map((r) => {
-				const role: IDataObject = {
-					roleName: r.roleName,
-					email: r.email,
-					name: r.name,
-				};
-				if (r.clientUserId) role.clientUserId = r.clientUserId;
-				return role;
-			});
+			const rolesList = (rolesData.role || []) as IDataObject[];
+			const templateRoles = rolesList.map(buildTemplateRole);
 
 			const body: IDataObject = {
 				templateId,
@@ -446,15 +434,15 @@ export async function handleEnvelope(
 				ctx.getNodeParameter('envelopeId', i) as string,
 				'Envelope ID',
 			);
-			return docuSignRequest(
+			// DocuSign deletes by moving the envelope into the recycle bin folder.
+			// Voiding is a different action and fails for drafts and completed envelopes.
+			await docuSignRequest(
 				ctx,
 				'PUT',
-				`${basePath}/${envelopeId}`,
-				{
-					status: 'voided',
-					voidedReason: 'Moved to recycle bin via n8n',
-				},
+				`${accountPath(accountId)}/folders/recyclebin`,
+				{ envelopeIds: [envelopeId] },
 			);
+			return { envelopeId, deleted: true };
 		}
 
 		case 'downloadDocuments': {
@@ -605,4 +593,36 @@ export async function handleEnvelope(
 				`Unsupported envelope operation: ${operation}`,
 			);
 	}
+}
+
+/** Parses "+49 1701234567" into DocuSign's phone shape; without a space it is all number. */
+export function toRecipientPhone(value: string): IDataObject {
+	const trimmed = value.trim();
+	const match = /^\+?(\d{1,4})[\s-]+(.+)$/.exec(trimmed);
+	if (match) {
+		return { countryCode: match[1], number: match[2].replace(/\D/g, '') };
+	}
+	return { number: trimmed.replace(/\D/g, '') };
+}
+
+/** Maps one Template Role entry to the DocuSign templateRole shape, keeping every set field. */
+export function buildTemplateRole(r: IDataObject): IDataObject {
+	const role: IDataObject = {
+		roleName: r.roleName,
+		email: r.email,
+		name: r.name,
+	};
+	if (r.clientUserId) role.clientUserId = r.clientUserId;
+	if (r.accessCode) role.accessCode = r.accessCode;
+	if (r.emailNotificationSubject || r.emailNotificationBody) {
+		const emailNotification: IDataObject = {};
+		if (r.emailNotificationSubject) emailNotification.emailSubject = r.emailNotificationSubject;
+		if (r.emailNotificationBody) emailNotification.emailBody = r.emailNotificationBody;
+		role.emailNotification = emailNotification;
+	}
+	if (r.deliveryMethod === 'sms') {
+		role.deliveryMethod = 'SMS';
+		if (r.phoneNumber) role.phoneNumber = toRecipientPhone(String(r.phoneNumber));
+	}
+	return role;
 }

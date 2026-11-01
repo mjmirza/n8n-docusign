@@ -64,7 +64,7 @@ export async function handleWorkspaceItem(
 			if (uploadSource === 'binary') {
 				const binaryPropertyName = ctx.getNodeParameter('inputBinaryPropertyName', i, 'data') as string;
 				const binaryData = ctx.helpers.assertBinaryData(i, binaryPropertyName);
-				fileBase64 = binaryData.data;
+				fileBase64 = (await ctx.helpers.getBinaryDataBuffer(i, binaryPropertyName)).toString('base64');
 				fileName = binaryData.fileName || 'upload';
 			} else {
 				fileBase64 = ctx.getNodeParameter('base64Content', i) as string;
@@ -88,7 +88,7 @@ export async function handleWorkspaceItem(
 			if (uploadSource === 'binary') {
 				const binaryPropertyName = ctx.getNodeParameter('inputBinaryPropertyName', i, 'data') as string;
 				const binaryData = ctx.helpers.assertBinaryData(i, binaryPropertyName);
-				fileBase64 = binaryData.data;
+				fileBase64 = (await ctx.helpers.getBinaryDataBuffer(i, binaryPropertyName)).toString('base64');
 				fileName = binaryData.fileName || 'upload';
 			} else {
 				fileBase64 = ctx.getNodeParameter('base64Content', i) as string;

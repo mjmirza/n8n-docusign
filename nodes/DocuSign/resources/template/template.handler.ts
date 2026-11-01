@@ -37,7 +37,9 @@ export async function handleTemplate(
 				};
 				if (doc.source === 'binary' && doc.binaryProperty) {
 					const binaryData = ctx.helpers.assertBinaryData(i, doc.binaryProperty as string);
-					document.documentBase64 = binaryData.data;
+					// binaryData.data is only a storage reference in filesystem and S3 binary mode.
+					const buffer = await ctx.helpers.getBinaryDataBuffer(i, doc.binaryProperty as string);
+					document.documentBase64 = buffer.toString('base64');
 					if (binaryData.fileName) document.name = document.name || binaryData.fileName;
 				} else if (doc.source === 'base64' && doc.documentBase64) {
 					document.documentBase64 = doc.documentBase64;

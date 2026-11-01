@@ -25,7 +25,7 @@ jobs:
         run: test "v$(node -p 'require("./package.json").version')" = "${GITHUB_REF_NAME}"
       - run: npm ci
       - run: npm run build
-      - run: npm test
+      - run: npm run test:coverage
       - run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

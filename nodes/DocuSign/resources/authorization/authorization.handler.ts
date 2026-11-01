@@ -62,11 +62,13 @@ export async function handleAuthorization(
 		}
 
 		case 'getAgentUserAuthorizations': {
-			return docuSignRequest(ctx, 'GET', `${basePath}/authorization`, undefined, { permissions: 'manage' });
+			// Authorizations where this user is the agent: GET .../users/{userId}/authorizations/agent
+			return docuSignRequest(ctx, 'GET', `${basePath}/authorizations/agent`);
 		}
 
 		case 'getPrincipalUserAuthorizations': {
-			return docuSignRequest(ctx, 'GET', `${basePath}/authorization`, undefined, { permissions: 'sign' });
+			// Authorizations this user granted as principal: GET .../users/{userId}/authorizations
+			return docuSignRequest(ctx, 'GET', `${basePath}/authorizations`);
 		}
 
 		case 'getUserAuthorization': {

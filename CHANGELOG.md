@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.0.0] - 2026-11-01
+
+### Breaking
+- DocuSign Trigger needs the Connect HMAC key. Add it under Options, HMAC Secret, from DocuSign Admin, Connect, Connect Keys. Before, the trigger generated a random secret DocuSign never knew, so every signed event was rejected. Now activation fails with a clear message when the key is missing, and any unsigned or mismatched call gets HTTP 401.
+- Envelope Delete moves the envelope to the recycle bin and returns `{ envelopeId, deleted: true }`. Before, it tried to void the envelope, which fails for drafts and completed envelopes and returned the void response.
+- POST and PATCH calls are no longer repeated after a 502, 503 or 504, because DocuSign may already have created the envelope. They still retry on 429. GET, PUT and DELETE keep retrying on all transient codes.
+
+### Fixed
+- JWT credential now signs in. It builds the RS256 JWT grant, exchanges it at `/oauth/token` and sends the bearer token. Before, it had no authentication step, so every JWT request was rejected.
+- Requests go to the account's own DocuSign platform (na2, na3, eu and others), discovered from `/oauth/userinfo`. Before, every production call went to `www.docusign.net`. Only `https://*.docusign.net` hosts are accepted.
+- Trigger registers events in the `events` list that matches the event names it offers. Before, it sent them as legacy envelope and recipient events, which DocuSign does not accept in that form.
+- Trigger checks every `x-docusign-signature-N` header against every configured key, so key rotation works. Several keys can be separated with commas.
+- Downloads return the real file bytes. Before, the binary request option was ignored and documents could arrive corrupted.
+- Uploads read file content with `getBinaryDataBuffer`. Before, envelope, template, template document, attachment and workspace uploads sent the storage reference instead of the file when n8n stores binary data on disk or S3.
+- Create From Template sends Access Code, the email notification subject and body, and SMS delivery with the phone number. Before, only role name, email, name and client user ID reached DocuSign.
+- Chunked upload parts are sent as JSON with base64 data and committed with `?action=commit`. Console view posts to the account level `views/console`. Principal and agent authorization lists use `/authorizations` and `/authorizations/agent`.
+- Retries also recognise the status on `NodeApiError` (`httpCode`).
+- API errors keep the index of the item that failed.
+
+### Changed
+- CI runs on Node 22 and 24 and enforces the coverage floor. The thresholds now match measured coverage instead of unreached targets.
+- Tests assert the actual request URL, body and options, and cover each fix above.
+
 ## [1.1.0] - 2026-11-01
 
 ### Changed

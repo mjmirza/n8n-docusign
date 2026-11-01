@@ -157,7 +157,17 @@ The **DocuSign Trigger** registers a DocuSign Connect configuration for the work
 - Recipient Delivered
 - Recipient Sent
 
-Incoming calls are checked against an HMAC secret with a constant time comparison.
+Set **Options > HMAC Secret** to a key from DocuSign Admin, **Connect**, **Connect Keys**. DocuSign signs every event with its active keys, and the trigger accepts a call only when one signature header matches one of your keys (constant time comparison). Separate two keys with a comma while you rotate. Calls without a valid signature get HTTP 401, and the trigger will not activate without a key.
+
+## Upgrading to 2.0
+
+| Change | What to do |
+|---|---|
+| DocuSign Trigger requires the Connect HMAC key | Create a key in DocuSign Admin, Connect, Connect Keys, paste it into Options, HMAC Secret, then reactivate the workflow |
+| Envelope Delete moves the envelope to the recycle bin and returns `{ envelopeId, deleted: true }` | Update any step that read the old void response |
+| POST and PATCH are no longer retried after 502, 503 or 504 | Check the envelope list before retrying a failed create by hand, the first attempt may have succeeded |
+
+Saved workflows keep their parameters, no field was renamed or removed.
 
 ## Compatibility
 
@@ -206,4 +216,4 @@ npx @n8n/scan-community-package n8n-nodes-docusigns   # n8n verification scan of
 
 ## License
 
-[MIT](LICENSE). DocuSign is a trademark of DocuSign, Inc. This is an independent integration, see [docs/TRADEMARKS.md](docs/TRADEMARKS.md).
+[MIT](LICENSE). DocuSign is a trademark of DocuSign, Inc. This is an independent integration, see [docs/TRADEMARKS.md](https://github.com/mjmirza/n8n-docusign/blob/master/docs/TRADEMARKS.md).
